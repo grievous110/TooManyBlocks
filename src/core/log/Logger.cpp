@@ -1,0 +1,119 @@
+#include "log/Logger.h"
+#include <ctime>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
+
+// ANSI escape codes for colors
+const std::string RED = "\033[31m";
+const std::string GREEN = "\033[32m";
+const std::string YELLOW = "\033[33m";
+const std::string BLUE = "\033[34m";
+const std::string RESET = "\033[0m";
+
+namespace lgr {
+    Logger lout;
+
+    std::string Logger::getCurrentTime() const noexcept {
+        std::time_t now = std::time(nullptr);
+        std::tm* localTime = std::localtime(&now);
+        std::ostringstream oss;
+        oss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
+        return oss.str();
+    }
+
+    void Logger::log(const LogLevel& llevel, const std::string& msg) noexcept {
+        std::string tag;
+        std::string color;
+
+        switch (llevel) {
+            case DEBUG: 
+                color = GREEN;
+                tag = "DEBUG";
+                break;
+            case INFO:
+                color = BLUE;
+                tag = "INFO";
+                break;
+            case WARNING:
+                color = YELLOW;
+                tag = "WARNING";
+                break;
+            case ERR:
+                color = RED;
+                tag = "ERROR";
+                break;
+        }
+
+        if (m_consoleAvailable) {
+            tag = color + tag + RESET;
+        }
+
+        std::string timeStampedMessage = "[" + getCurrentTime() + "] [" + tag + "] " + msg;
+        if (m_consoleAvailable) {
+            std::cout << timeStampedMessage;
+        } else {
+            if(m_logFile.is_open()) {
+                m_logFile << timeStampedMessage;
+            }
+        }
+    }
+
+    Logger::Logger() noexcept {
+    #ifdef _WIN32
+        // Check if console is available on windows
+        if (GetConsoleWindow() != nullptr) {
+            m_consoleAvailable = true;
+
+            // Try and configure console for colored text ouput
+            HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (hOut != INVALID_HANDLE_VALUE) {
+                DWORD dwMode = 0;
+                if (GetConsoleMode(hOut, &dwMode)) {
+                    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+                    SetConsoleMode(hOut, dwMode);
+                };
+            }
+        } else {
+            m_consoleAvailable = false;
+            m_logFile.open("log.txt", std::ios::out | std::ios::trunc);
+        }
+    #else
+        // Check if console is available on other platform
+        if (isatty(fileno(stdout))) {
+            consoleAvailable = true;
+        } else {
+            consoleAvailable = false;
+            logFile.open("log.txt",  std::ios::out | std::ios::trunc);
+        }
+    #endif
+    }
+
+    Logger::~Logger() noexcept {
+        if (m_logFile.is_open()) {
+            m_logFile.close();
+        }
+    }
+
+    void lgr::Logger::debug(const std::string& msg) noexcept {
+        log(Logger::LogLevel::DEBUG, msg);
+    }
+
+     void lgr::Logger::info(const std::string& msg) noexcept {
+        log(Logger::LogLevel::INFO, msg);
+    }
+
+     void lgr::Logger::warn(const std::string& msg) noexcept {
+        log(Logger::LogLevel::WARNING, msg);
+    }
+
+     void lgr::Logger::error(const std::string& msg) noexcept {
+        log(Logger::LogLevel::ERR, msg);
+    }
+}
