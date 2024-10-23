@@ -7,10 +7,10 @@ Entity::~Entity() {
 	delete m_movement;
 }
 
-void Entity::update(long deltaTime) {
-	m_movement->update(deltaTime);
+void Entity::update(float msDelta) {
+	m_movement->update(msDelta);
 	
-	m_transform->translate(m_movement->getVelocity() * (static_cast<float>(deltaTime) / 1000.0f));
+	m_transform->translate(m_movement->getVelocity() * (-msDelta / 1000.0f));
 }
 
 const Transform& Entity::getTransform() const {

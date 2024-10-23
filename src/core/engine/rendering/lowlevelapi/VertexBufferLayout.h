@@ -26,6 +26,7 @@ public:
         m_elements.push_back({ type , typeSize, count, normalized });
         m_stride += count * typeSize;
 	}
+    
     inline const std::vector<BufferLayoutElement>& elements() const { return m_elements; }
 
     inline unsigned int stride() const { return m_stride; }

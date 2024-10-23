@@ -1,4 +1,6 @@
 #include "MainMenu.h"
+#include "Application.h"
+#include "engine/GameInstance.h"
 #include <imgui/imgui.h>
 
 namespace UI {
@@ -19,6 +21,7 @@ namespace UI {
 
 		ImGui::Begin("Main Menu", NULL, window_flags);
 		if (ImGui::Button("Start Game")) {
+			context.instance->initialize();
 			navigateToWindow(context, "GameOverlay");
 		}
 		ImGui::End();

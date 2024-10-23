@@ -20,7 +20,7 @@ public:
 
 	std::shared_ptr<Camera> getCamera() const;
 
-	void update(long deltaTime) override;
+	void update(float msDelta) override;
 
 	void notify(const KeyEvent& event, const KeyEventData& data) override;
 

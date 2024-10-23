@@ -1,5 +1,5 @@
 #include "FrameBuffer.h"
-#include <iostream>
+#include "Logger.h"
 
 unsigned int FrameBuffer::currentlyBoundFBO = 0;
 
@@ -15,7 +15,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTextu
     GLCALL(glReadBuffer(GL_NONE));
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        std::cerr << "Error: Framebuffer is not complete!" << std::endl;
+        lgr::lout.error("Framebuffer is not complete!");
     }
 
     GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));

@@ -14,7 +14,7 @@ public:
 	Entity();
 	~Entity();
 
-	void update(long deltaTime) override;
+	void update(float msDelta) override;
 
 	const Transform& getTransform() const;
 

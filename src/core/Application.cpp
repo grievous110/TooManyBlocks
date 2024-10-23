@@ -6,7 +6,6 @@
 #include "engine/ui/MainMenu.h"
 #include "engine/ui/Ui.h"
 #include "Logger.h"
-#include <chrono>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui_impl_glfw.h>
@@ -113,7 +112,7 @@ void Application::run() {
 		Application::setCurrentContext(context);
 
 		// Create a windowed mode window and its OpenGL context
-		context->window = glfwCreateWindow(960, 540, "Rendering TestApp", NULL, NULL);
+		context->window = glfwCreateWindow(960, 540, "TooManyBlocks", NULL, NULL);
 		if (!context->window) {
 			glfwTerminate();
 			throw runtime_error("Could not create window!");
@@ -183,33 +182,36 @@ void Application::run() {
 
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 
-		auto previousTime = chrono::high_resolution_clock::now();
+		double previousTime = glfwGetTime();
 		
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::navigateToWindow(*context, "MainMenu");
 
-		context->instance->initialize();
-
 		// Loop until the user closes the window
 		try {
 			GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 			while (!glfwWindowShouldClose(context->window)) {
-				auto currentTime = chrono::high_resolution_clock::now();
-				long ms_delta = static_cast<long>(chrono::duration_cast<chrono::milliseconds>(currentTime - previousTime).count());
-				previousTime = currentTime;
-				context->instance->update(ms_delta);
 
+				
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
 				ImGui::PushFont(font1);
 
-				Scene scene = context->instance->craftScene();
-				context->renderer->renderScene(scene, *context);
+				if (context->instance->isInitialized) {
+					double currentTime = glfwGetTime();
+					float msDelta = static_cast<float>((previousTime - currentTime) * 1000.0);
+					previousTime = currentTime;
+					
+					context->instance->update(msDelta);
+					Scene scene = context->instance->craftScene();
+					context->renderer->renderScene(scene, *context);
+
+				}
 
 				context->currentWindow->render(*context);
-
+				
 				ImGui::PopFont();
 
 				// Rendering

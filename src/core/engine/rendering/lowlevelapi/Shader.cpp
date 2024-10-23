@@ -1,6 +1,6 @@
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/Renderer.h"
-#include <iostream>
+#include "Logger.h"
 #include <sstream>
 #include <stdexcept>
 #include <fstream>
@@ -72,8 +72,10 @@ static unsigned int CompileShader(const unsigned int& type, const string& source
 		GLCALL(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
 		char* message = new char[length];
 		GLCALL(glGetShaderInfoLog(id, length, &length, message));
-		cout << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << endl;
-		cout << message << endl;
+        stringstream stream;
+		stream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << endl;
+		stream << message << endl;
+        lgr::lout.error(stream.str());
 		delete[] message;
 		GLCALL(glDeleteShader(id));
 		return 0;
@@ -206,7 +208,7 @@ int Shader::getUniformLocation(const string& name) {
 
     GLCALL(int location = glGetUniformLocation(m_rendererId, name.c_str()));
     if (location == -1) { // -1 is not found / can happen for unused uniforms also
-        cout << "Warning: location of '" << name << "' uniform was not found!" << endl;
+        lgr::lout.warn("Warning: location of '" + string(name) + "' uniform was not found!");
     }
 
     m_uniformLocationCache[name] = location;
