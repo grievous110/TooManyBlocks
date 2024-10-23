@@ -5,7 +5,7 @@ class Updatable {
 public:
 	virtual ~Updatable() = default;
 
-	virtual void update(long deltaTime) = 0;
+	virtual void update(float msDelta) = 0;
 };
 
 #endif

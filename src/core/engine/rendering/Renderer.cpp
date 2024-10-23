@@ -1,27 +1,28 @@
 #include "engine/rendering/Renderer.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/Camera.h"
-#include <iostream>
+#include "Logger.h"
 #include <memory>
+#include <sstream>
 #include <vector>
-
-using namespace std;
 
 void GLClearError() {
 	while (glGetError() != GL_NO_ERROR);
 }
 
 bool GLLogCall(const char* functionName, const char* file, int line) {
-	vector<GLenum> errors;
+	std::vector<GLenum> errors;
 	while (GLenum error = glGetError()) {
 		errors.push_back(error);
 	}
 	if (!errors.empty()) {
 		for (const GLenum& e : errors) {
-			cerr << "[OpenGL Error 0x" << hex << e <<
+			std::stringstream stream;
+			stream << "[OpenGL Error 0x" << std::hex << e <<
 				"] caused by " << functionName <<
 				" in " << file <<
-				" line " << line << endl;
+				" line " << line << std::endl;
+			lgr::lout.error(stream.str());
 		}
 		return false;
 	}
@@ -61,7 +62,7 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 	beginShadowpass(scene);
 
 	for (const Mesh* mesh : scene.m_meshes) {
-		const shared_ptr<Material> material = mesh->m_material;
+		const std::shared_ptr<Material> material = mesh->m_material;
 		if (material->supportsPass(PassType::ShadowPass)) {
 			material->bindForPass(PassType::ShadowPass, currentRenderContext);
 			drawMesh(*mesh, currentRenderContext);
@@ -85,7 +86,7 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 	beginMainpass(scene);
 
 	for (const Mesh* mesh : scene.m_meshes) {
-		const shared_ptr<Material> material = mesh->m_material;
+		const std::shared_ptr<Material> material = mesh->m_material;
 		if (material->supportsPass(PassType::MainPass)) {
 			material->bindForPass(PassType::MainPass, currentRenderContext);
 			drawMesh(*mesh, currentRenderContext);

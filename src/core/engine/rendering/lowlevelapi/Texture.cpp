@@ -1,6 +1,6 @@
 #include "engine/rendering/lowlevelapi/Texture.h"
+#include "Logger.h"
 #include <stb_image/stb_image.h>
-#include <iostream>
 
 Texture::Texture(const std::string path) :
 	m_filepath(path),
@@ -12,7 +12,7 @@ Texture::Texture(const std::string path) :
 	stbi_set_flip_vertically_on_load(1);
 	m_locabuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bitsPerPixel, 4);
 	if (!m_locabuffer) {
-		std::cerr << "Could not load Texture: " << path << std::endl;
+		lgr::lout.error("Could not load Texture: " + std::string(path));
 	}
 
 	GLCALL(glGenTextures(1, &m_rendererId));

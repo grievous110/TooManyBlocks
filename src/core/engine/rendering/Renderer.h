@@ -16,11 +16,7 @@
 #include <iostream>
 
 #define ASSERT(x, msg) if (!(x)) throw std::runtime_error(msg)
-#ifdef _DEBUG
-#define GLCALL(func) GLClearError(); func; if (!GLLogCall(#func, __FILE__, __LINE__)) __debugbreak()
-#else
-#define GLCALL(func) func;
-#endif
+#define GLCALL(func) GLClearError(); func; if (!GLLogCall(#func, __FILE__, __LINE__)) throw std::exception()
 
 void GLClearError();
 

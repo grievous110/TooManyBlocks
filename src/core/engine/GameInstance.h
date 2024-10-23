@@ -7,15 +7,17 @@
 #include "engine/rendering/Scene.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "rendering/lowlevelapi/Texture.h"
+#include "Updatable.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <unordered_map>
 
-class GameInstance {
+class GameInstance : public Updatable {
 public:
 	Player* m_player;
 	World* m_world;
 	Mesh* m_mesh;
+	bool isInitialized;
 
 	std::shared_ptr<Material> m_meshMaterial;
 
@@ -27,7 +29,7 @@ public:
 
 	Scene craftScene();
 
-	void update(long msDelta);
+	void update(float deltaSecs) override;
 };
 
 #endif

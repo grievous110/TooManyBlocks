@@ -17,7 +17,7 @@ public:
 	glm::vec3 getVelocity() const;
 	void setVelocity(const glm::vec3& velocity);
 
-	void update(long deltaTime) override;
+	void update(float msDelta) override;
 };
 
 #endif

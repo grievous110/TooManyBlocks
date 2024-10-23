@@ -12,4 +12,4 @@ void MovementComponent::setVelocity(const glm::vec3& velocity) {
 	m_velociy = velocity;
 }
 
-void MovementComponent::update(long deltaTime) {}
+void MovementComponent::update(float msDelta) {}

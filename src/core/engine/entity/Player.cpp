@@ -16,7 +16,7 @@ std::shared_ptr<Camera> Player::getCamera() const {
 	return m_camera;
 }
 
-void Player::update(long deltaTime) {
+void Player::update(float msDelta) {
 	glm::vec3 vel(0.0f);
 	const Transform& camTransform = m_camera->getTransform();
 	float cameraSpeed = 5.0f;
@@ -35,7 +35,7 @@ void Player::update(long deltaTime) {
 	}
 
 	m_movement->setVelocity(vel);
-	Entity::update(deltaTime);
+	Entity::update(msDelta);
 }
 
 void Player::notify(const KeyEvent& event, const KeyEventData& data) {

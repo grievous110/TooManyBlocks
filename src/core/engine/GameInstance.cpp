@@ -11,7 +11,7 @@
 using namespace std;
 
 GameInstance::GameInstance() 
-	: m_player(nullptr), m_world(nullptr), m_mesh(nullptr) {}
+	: m_player(nullptr), m_world(nullptr), m_mesh(nullptr), isInitialized(false) {}
 
 GameInstance::~GameInstance() {
 	if (m_player)
@@ -30,6 +30,7 @@ void GameInstance::initialize() {
 
 	m_meshMaterial = make_shared<SimpleMaterial>(make_shared<Shader>(SIMPLE_SHADER), glm::vec3(1.0f), make_shared<Texture>("res/textures/stone.png"));
 	m_mesh->assignMaterial(m_meshMaterial);
+	isInitialized = true;
 }
 
 Scene GameInstance::craftScene() {
@@ -38,7 +39,7 @@ Scene GameInstance::craftScene() {
 	return scene;
 }
 
-void GameInstance::update(long msDelta) {
+void GameInstance::update(float msDelta) {
 	m_player->update(msDelta);
 }
 

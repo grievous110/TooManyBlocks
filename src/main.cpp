@@ -9,7 +9,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		Application app;
 		app.run();
 	} catch (const std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		lgr::lout.error("Unaught error occured: " + std::string(e.what()));
 		return -1;
 	}
 	return 0;
