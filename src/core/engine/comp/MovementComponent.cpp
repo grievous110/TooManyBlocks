@@ -1,15 +1,19 @@
 #include "MovementComponent.h"
 
-MovementComponent::MovementComponent() : m_velociy(glm::vec3(0.0f)) {}
+MovementComponent::MovementComponent(Entity* owner) : owner(owner), m_velocity(glm::vec3(0.0f)), m_gravityEnabled(false) {}
 
 MovementComponent::~MovementComponent() {}
 
 glm::vec3 MovementComponent::getVelocity() const {
-	return m_velociy;
+	return m_velocity;
 }
 
 void MovementComponent::setVelocity(const glm::vec3& velocity) {
-	m_velociy = velocity;
+	m_velocity = velocity;
 }
 
-void MovementComponent::update(float msDelta) {}
+void MovementComponent::update(float msDelta) {
+	if (m_gravityEnabled) {
+		m_velocity.y -= GRAVITY * (msDelta / 1000.0f);
+	}
+}

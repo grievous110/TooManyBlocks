@@ -14,6 +14,7 @@
 
 class GameInstance : public Updatable {
 public:
+	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
 	Mesh* m_mesh;

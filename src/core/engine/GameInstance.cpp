@@ -2,6 +2,7 @@
 #include "engine/GameInstance.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "rendering/Mesh.h"
+#include "engine/controllers/PlayerController.h"
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui/imgui.h>
@@ -11,7 +12,7 @@
 using namespace std;
 
 GameInstance::GameInstance() 
-	: m_player(nullptr), m_world(nullptr), m_mesh(nullptr), isInitialized(false) {}
+	: m_playerController(nullptr), m_player(nullptr), m_world(nullptr), m_mesh(nullptr), isInitialized(false) {}
 
 GameInstance::~GameInstance() {
 	if (m_player)
@@ -23,8 +24,10 @@ GameInstance::~GameInstance() {
 }
 
 void GameInstance::initialize() {
+	m_playerController = new PlayerController;
 	m_player = new Player;
 	m_world = new World;
+	m_playerController->possess(m_player);
 	m_world->loadChunk(0, 0);
 	m_mesh = m_world->generateMeshForChunk(*m_world->getChunk(0, 0));
 
