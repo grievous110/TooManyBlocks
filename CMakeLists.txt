@@ -37,7 +37,7 @@ function(add_source_group_from_directory dir)
 endfunction()
 
 #Set default build type to Release if none is specified
-if(NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type was set - Autoselected \"Release\"")
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type (default is Release)" FORCE)
 endif()
@@ -90,11 +90,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 
 # Windows-specific settings for console/GUI applications in Release mode
 if(WIN32)
-    # Set WIN32_EXECUTABLE to avoid a console window in Release mode on Windows
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        $<$<CONFIG:Release>:WIN32_EXECUTABLE> TRUE
-    )
-
     # Define WIN_MAIN to switch to WinMain entry point on Windows in Release mode
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         $<$<CONFIG:Release>:WIN_MAIN>
