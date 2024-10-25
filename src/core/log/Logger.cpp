@@ -57,10 +57,10 @@ namespace lgr {
 
         std::string timeStampedMessage = "[" + getCurrentTime() + "] [" + tag + "] " + msg;
         if (m_consoleAvailable) {
-            std::cout << timeStampedMessage;
+            std::cout << timeStampedMessage << std::endl;
         } else {
             if(m_logFile.is_open()) {
-                m_logFile << timeStampedMessage;
+                m_logFile << timeStampedMessage << std::endl;
             }
         }
     }
