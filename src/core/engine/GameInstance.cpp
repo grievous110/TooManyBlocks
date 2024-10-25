@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
+#include "engine/rendering/Renderer.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "rendering/Mesh.h"
 #include "engine/controllers/PlayerController.h"
@@ -31,7 +32,10 @@ void GameInstance::initialize() {
 	m_world->loadChunk(0, 0);
 	m_mesh = m_world->generateMeshForChunk(*m_world->getChunk(0, 0));
 
-	m_meshMaterial = make_shared<SimpleMaterial>(make_shared<Shader>(SIMPLE_SHADER), glm::vec3(1.0f), make_shared<Texture>("res/textures/stone.png"));
+	Renderer* renderer = Application::getContext()->renderer;
+	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
+	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/stone.png");
+	m_meshMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(1.0f), texture);
 	m_mesh->assignMaterial(m_meshMaterial);
 	isInitialized = true;
 }

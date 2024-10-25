@@ -2,7 +2,6 @@
 #define TEXTURE_H
 
 #include "RenderApiObject.h"
-#include "engine/rendering/Renderer.h"
 #include <string>
 
 class Texture : virtual public RenderApiObject {

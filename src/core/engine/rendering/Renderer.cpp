@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include "Renderer.h"
 
 void GLClearError() {
 	const int maxChecks = 10;  // Limit number of error checks
@@ -133,6 +134,26 @@ void Renderer::draw(const VertexArray& va, const IndexBuffer& ib, const Shader& 
 	// glDrawArrays(GL_TRIANGLES, 0, 3 * 2);
 }
 
-std::shared_ptr<Shader> Renderer::getShader(const std::string& shader) {
-	return m_shaderCache.getShader(shader);
+std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPath) {
+	auto it = m_shaderCache.find(shaderPath);
+	if (it != m_shaderCache.end()) {
+		return it->second;
+	}
+
+	// Use the provided creator function to create the new object
+	std::shared_ptr<Shader> newShader = std::make_shared<Shader>(shaderPath);
+	m_shaderCache[shaderPath] = newShader;
+	return newShader;
+}
+
+std::shared_ptr<Texture> Renderer::getTextureFromFile(const std::string& texturePath) {
+   	auto it = m_textureCacher.find(texturePath);
+	if (it != m_textureCacher.end()) {
+		return it->second;
+	}
+
+	// Use the provided creator function to create the new object
+	std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(texturePath);
+	m_textureCacher[texturePath] = newTexture;
+	return newTexture;
 }
