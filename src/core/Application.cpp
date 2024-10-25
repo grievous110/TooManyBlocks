@@ -83,10 +83,12 @@ void Application::deleteCurrentContext() {
 		if (context->currentWindow) {
 			delete context->currentWindow;
 		}
+		delete context->io;
+
+		// Keep last deletion!!!
 		if (context->window) {
 			glfwDestroyWindow(context->window); // This implicitly destroys open gl context -> gl calls afterwards will cause error
 		}
-		delete context->io;
 		delete context;
 	}
 }
