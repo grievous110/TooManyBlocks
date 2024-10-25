@@ -78,13 +78,13 @@ ApplicationContext* Application::createContext() {
 void Application::deleteCurrentContext() {
 	ApplicationContext* context = Application::currentContext;
 	if (context) {
-		if (context->window) {
-			glfwDestroyWindow(context->window);
-		}
 		delete context->renderer;
 		delete context->instance;
 		if (context->currentWindow) {
 			delete context->currentWindow;
+		}
+		if (context->window) {
+			glfwDestroyWindow(context->window); // This implicitly destroys open gl context -> gl calls afterwards will cause error
 		}
 		delete context->io;
 		delete context;
@@ -143,11 +143,11 @@ void Application::run() {
 		detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << std::endl;
 
 		int samples;
-		glGetIntegerv(GL_SAMPLES, &samples);
+		GLCALL(glGetIntegerv(GL_SAMPLES, &samples));
 		detailsBuf << "Antialiasing: MSAA " << samples << std::endl;
 
 		int maxTextureImageUnits;
-		glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureImageUnits);
+		GLCALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureImageUnits));
 		detailsBuf << "Max texture image units: " << maxTextureImageUnits << std::endl;
 		lgr::lout.info(detailsBuf.str());
 	}
@@ -235,7 +235,7 @@ void Application::run() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
+	Application::deleteCurrentContext();	
 	// Dont use GLCALL because gl context is removed when reaching this
-	Application::deleteCurrentContext();
 	glfwTerminate();
 }
