@@ -1,6 +1,5 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
-#include "engine/rendering/cache/ShaderCache.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
@@ -85,7 +84,7 @@ void Application::deleteCurrentContext() {
 		}
 		delete context->io;
 
-		// Keep last deletion!!!
+		// Keep as last deletion!!!
 		if (context->window) {
 			glfwDestroyWindow(context->window); // This implicitly destroys open gl context -> gl calls afterwards will cause error
 		}

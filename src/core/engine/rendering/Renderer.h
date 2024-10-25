@@ -2,16 +2,17 @@
 #define RENDERER_H
 
 #include "Application.h"
-#include "engine/rendering/cache/ShaderCache.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
+#include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/mat/Material.h"
 #include "engine/rendering/Mesh.h"
-#include "Scene.h"
+#include "engine/rendering/Scene.h"
 #include <gl/glew.h>
 #include <exception>
 #include <string>
+#include <unordered_map>
 #include <memory>
 #include <iostream>
 
@@ -24,7 +25,9 @@ bool GLLogCall(const char* functionName, const char* file, int line);
 
 class Renderer {
 private:
-	ShaderCache m_shaderCache;
+	std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaderCache;
+	std::unordered_map<std::string, std::shared_ptr<Texture>> m_textureCacher;
+
 	RenderContext currentRenderContext;
 
 	void beginShadowpass(const Scene& scene);
@@ -42,7 +45,9 @@ public:
 
 	void draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const;
 
-	std::shared_ptr<Shader> getShader(const std::string& shader);
+	std::shared_ptr<Shader> getShaderFromFile(const std::string& shaderPath);
+
+	std::shared_ptr<Texture> getTextureFromFile(const std::string& texturePath);
 };
 
 #endif
