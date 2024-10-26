@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iomanip>
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -66,7 +66,7 @@ namespace lgr {
     }
 
     Logger::Logger() noexcept {
-    #ifdef _WIN32
+    #if defined(_WIN32) || defined(_WIN64)
         // Check if console is available on windows
         if (GetConsoleWindow() != nullptr) {
             m_consoleAvailable = true;
