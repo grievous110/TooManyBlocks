@@ -1,7 +1,8 @@
 #include "engine/worldgen/PerlinNoise.h"
 #include <stdexcept>
 
-#define PI_CONSTANT_f 3.141593f
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // Minimalistic vector struct
 struct Vec2f {
@@ -23,7 +24,7 @@ static inline constexpr bool isPowerOfTwo(const int& n) {
 
 static inline Vec2f randomGradient(const int& x, const int& y, const unsigned int& seed) {
     unsigned int hash = (x * 73856093) ^ (y * 19349663) ^ (seed * 83492791); // Minimalistic hashing by multiplying with large primes and xor-ing the result
-    float angle = (hash % 360) * (PI_CONSTANT_f / 180.0f);
+    double angle = (hash % 360) * (M_PI / 180.0);
     return Vec2f(cos(angle), sin(angle)); // Return unit vector
 }
 
