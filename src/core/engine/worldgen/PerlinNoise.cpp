@@ -25,7 +25,7 @@ static inline constexpr bool isPowerOfTwo(const int& n) {
 static inline Vec2f randomGradient(const int& x, const int& y, const unsigned int& seed) {
     unsigned int hash = (x * 73856093) ^ (y * 19349663) ^ (seed * 83492791); // Minimalistic hashing by multiplying with large primes and xor-ing the result
     double angle = (hash % 360) * (M_PI / 180.0);
-    return Vec2f(cos(angle), sin(angle)); // Return unit vector
+    return Vec2f(static_cast<float>(cos(angle)), static_cast<float>(sin(angle))); // Return unit vector
 }
 
 static float inline calculateNoise(const int& x, const int& y, const int& xGradOffset, const int& yGradOffset, const int& subsectionSize, const int& gradCountAlongX, const Vec2f* gradients) {
