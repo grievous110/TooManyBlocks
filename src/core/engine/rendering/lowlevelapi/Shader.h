@@ -6,17 +6,14 @@
 #include <string>
 #include <unordered_map>
 
-#define DEPTH_SHADER "res/shaders/depth.shader"
-#define SIMPLE_SHADER "res/shaders/simpleShader.shader"
-
 class Shader : virtual public RenderApiObject {
 private:
 	static unsigned int currentlyBoundShader;
-	const std::string m_filepath;
+	const std::string m_shaderPath;
 	std::unordered_map<std::string, int> m_uniformLocationCache;
 
 public:
-	Shader(const std::string& filepath);
+	Shader(const std::string& shaderPath);
 	~Shader();
 
 	void bind() const;
