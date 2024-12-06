@@ -20,45 +20,26 @@ enum CurrentlyReading {
 
 unsigned int Shader::currentlyBoundShader = 0;
 
-static ShaderSource shaderSourceFromFile(const string& path) {
-    ifstream file(path);
+string readFile(const string& filepath) {
+    ifstream file(filepath, ios::in);
     if (!file.is_open()) {
-        throw runtime_error(string("Error opening file " + path).c_str());
+        throw runtime_error("Failed to open file: " + filepath);
     }
-
-    const string vertexShaderIdentifier = "#vertex shader";
-    const string fragmentShaderIdentifier = "#fragment shader";
-
-    string line;
-    stringstream vertexCodeBuffer;
-    stringstream fragmentCodeBuffer;
-    CurrentlyReading cReading = CurrentlyReading::NOTHING;
-
-    while (getline(file, line)) {
-        if (line.find(vertexShaderIdentifier) != string::npos) {
-            cReading = CurrentlyReading::VERTEX;
-            continue;
-        } else if (line.find(fragmentShaderIdentifier) != string::npos) {
-            cReading = CurrentlyReading::FRAGMENT;
-            continue;
-        } else {
-            if (cReading == CurrentlyReading::VERTEX) {
-                vertexCodeBuffer << line << endl;
-            } else if (cReading == CurrentlyReading::FRAGMENT) {
-                fragmentCodeBuffer << line << endl;
-            }
-        }
-    }
-
-    ShaderSource source = { vertexCodeBuffer.str(), fragmentCodeBuffer.str() };
-    if (source.vertexSource.empty() || source.fragmentSource.empty()) {
-        throw runtime_error("Vertex or shader source code was not found");
-    }
-
-    return { vertexCodeBuffer.str(), fragmentCodeBuffer.str() };
+    return string((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
 }
 
-static unsigned int CompileShader(const unsigned int& type, const string& source) {
+ShaderSource shaderSourceFromFile(const string& shaderPath) {
+    string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
+    string vertFile = shaderPath + "/" + basename + ".vert";
+    string fragFile = shaderPath + "/" + basename + ".frag";
+
+    string vertexShaderCode = readFile(vertFile);
+    string fragmentShaderCode = readFile(fragFile);
+
+    return { vertexShaderCode, fragmentShaderCode };
+}
+
+unsigned int CompileShader(const unsigned int& type, const string& source) {
 	unsigned int id = glCreateShader(type);
 	const char* src = source.c_str();
 	GLCALL(glShaderSource(id, 1, &src, nullptr));
@@ -84,7 +65,7 @@ static unsigned int CompileShader(const unsigned int& type, const string& source
 	return id;
 }
 
-static unsigned int CreateShader(const string& vertexShader, const string& fragmentShader) {
+unsigned int CreateShader(const string& vertexShader, const string& fragmentShader) {
     GLCALL(unsigned int program = glCreateProgram());
     unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
     unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
@@ -101,8 +82,8 @@ static unsigned int CreateShader(const string& vertexShader, const string& fragm
 }
 
 
-Shader::Shader(const string& filepath) : m_filepath(filepath) {
-    ShaderSource source = shaderSourceFromFile(filepath);
+Shader::Shader(const string& shaderPath) : m_shaderPath(shaderPath) {
+    ShaderSource source = shaderSourceFromFile(shaderPath);
     m_rendererId = CreateShader(source.vertexSource, source.fragmentSource);
 }
 
