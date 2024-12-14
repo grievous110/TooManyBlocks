@@ -2,10 +2,11 @@
 #define PERLINOISE_H
 
 #include <memory>
+#include <vector>
 
 class PerlinNoise {
 private:
-	const unsigned int m_seed;
+	const uint32_t m_seed;
 
 public:
 	/**
@@ -13,26 +14,25 @@ public:
 	 *
 	 * @param seed The seed value for generating random gradients. Different seeds will produce different noise patterns.
 	 */
-	PerlinNoise(const unsigned int& seed);
+    PerlinNoise(uint32_t seed) : m_seed(seed) {};
 
-    /**
-     * @brief Generates a Perlin noise map.
-     *
-     * @param xStart The x-coordinate offset to start generating noise from.
-     * @param yStart The y-coordinate offset to start generating noise from.
-     * @param xExtend The width of the noise map.
-     * @param yExtend The height of the noise map.
-     * @param baseSubsectionSize The subsection size (width and height) of the base noise layer. It should be a power of two and at least 2.
-     * @param octaves The number of layers of noise to combine. Each additional octave increases the detail of the noise.
-     * @param amplitude The initial amplitude (height) multiplier of the noise. It influences how strong the noise is.
-     * @param persistence The rate at which the amplitude decreases with each octave. A value between 0 and 1 typically gives a good effect.
-     * @return Pointer to an unsigned char array representing the generated noise map, where each value is in the range [0, 255].
-     *         Note: Returned array is one-dimensional but represents a 2D noise map, so access it as follows:
-     *         - For a pixel at (x, y), use `noiseMap[y * size + x]`
-     */
-	std::shared_ptr<unsigned char> generatePerlinNoise(const int& xStart, const int& yStart, const int& xExtend, const int& yExtend, const int& baseSubsectionSize = 256, const int& octaves = 1, const float& amplitude = 1.0f, const float& persistence = 0.5f);
+	/**
+	 * @brief Generates a Perlin noise map for a given region.
+	 *
+	 * @param regionSize Dimensions of the noise map (e.g., {width, height} for 2D or {width, height, depth} for 3D).
+	 * @param regionOffset Starting offsets in each dimension to allow subregion generation.
+	 * @param baseSubsectionSize Size of the base gradient grid cells (must be a power of two and at least 2).
+	 * @param octaves Number of noise layers to combine, increasing detail with each layer.
+	 * @param amplitude Initial amplitude (magnitude) multiplier for the noise, controlling contrast.
+	 * @param persistence Rate at which amplitude decreases with each octave (values in [0, 1] give natural results).
+	 * @return A `std::shared_ptr<float>` pointing to a 1D array of floats in [0.0f, 1.0f] representing the noise map.
+	 *
+	 * @note The array is 1D but represents an N-dimensional map. For a coordinate (x, y, ...):
+	 *       `index = x + (y * width) + (z * width * height)` for 3D.
+	 */
+	std::shared_ptr<float> generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize = 256, int octaves = 1, float amplitude = 1.0f, float persistence = 0.5f);
 
-	unsigned int seed() const;
+    inline uint32_t seed() const { return m_seed; };
 };
 
 #endif
