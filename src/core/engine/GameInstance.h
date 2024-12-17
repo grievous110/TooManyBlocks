@@ -17,7 +17,7 @@ public:
 	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
-	Mesh* m_mesh;
+	std::shared_ptr<Mesh> m_mesh;
 	bool isInitialized;
 
 	std::shared_ptr<Material> m_meshMaterial;

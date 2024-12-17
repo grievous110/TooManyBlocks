@@ -1,12 +1,15 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/Renderer.h"
-#include "engine/rendering/mat/SimpleMaterial.h"
+#include "engine/rendering/mat/ChunkMaterial.h"
+#include "engine/rendering/MeshCreate.h"
+#include "engine/rendering/ShaderPathsConstants.h"
 #include "rendering/Mesh.h"
 #include "engine/controllers/PlayerController.h"
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui/imgui.h>
+#include <random>
 #include <iostream>
 #include <vector>
 
@@ -18,31 +21,40 @@ GameInstance::GameInstance()
 GameInstance::~GameInstance() {
 	if (m_player)
 		delete m_player;
-	if (m_mesh)
-		delete m_mesh;
 	if (m_world)
 		delete m_world;
 }
 
 void GameInstance::initialize() {
+	// Random seed
+	std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
+	uint32_t seed = distribution(generator);
+
 	m_playerController = new PlayerController;
 	m_player = new Player;
-	m_world = new World;
+	m_world = new World(seed);
 	m_playerController->possess(m_player);
-	m_world->loadChunk(0, 0);
-	m_mesh = m_world->generateMeshForChunk(*m_world->getChunk(0, 0));
+
+	// TestChunk
+	glm::ivec3 testChunkPos(2, 0, 0);
+	m_world->loadChunk(testChunkPos);
+	m_mesh = generateMeshForChunk(*m_world->getChunk(testChunkPos));
 
 	Renderer* renderer = Application::getContext()->renderer;
-	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
+	shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
 	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/stone.png");
-	m_meshMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(1.0f), texture);
+	m_meshMaterial = make_shared<ChunkMaterial>(shader, texture);
 	m_mesh->assignMaterial(m_meshMaterial);
+	Transform& mTr = m_mesh->getLocalTransform();
+	mTr.setPosition(testChunkPos);
 	isInitialized = true;
 }
 
 Scene GameInstance::craftScene() {
 	Scene scene;
-	scene.m_meshes.push_back(m_mesh);
+	scene.m_meshes.push_back(m_mesh.get());
 	return scene;
 }
 
