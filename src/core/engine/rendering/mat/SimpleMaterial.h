@@ -21,7 +21,6 @@ public:
     void bindForPass(PassType passType, const RenderContext& context) const override;
 
     void unbindForPass(PassType passType) const override;
-
 };
 
 #endif

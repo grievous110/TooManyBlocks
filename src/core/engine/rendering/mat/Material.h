@@ -9,7 +9,9 @@
 
 struct RenderContext {
 	std::vector<Light> lights;
-	glm::mat4 modelViewProjection;
+	glm::mat4 viewProjection;
+	glm::mat4 modelMatrix;
+	glm::vec3 meshPosition;
 };
 
 enum PassType {
