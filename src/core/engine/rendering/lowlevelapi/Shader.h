@@ -19,9 +19,9 @@ public:
 	void bind() const;
 	void unbind() const;
 
-	void setUniform(const std::string& name, const int& value);
-	void setUniform(const std::string& name, const unsigned int& value);
-	void setUniform(const std::string& name, const float& value);
+	void setUniform(const std::string& name, int value);
+	void setUniform(const std::string& name, unsigned int value);
+	void setUniform(const std::string& name, float value);
 	void setUniform(const std::string& name, const glm::vec2& vector);
 	void setUniform(const std::string& name, const glm::vec3& vector);
 	void setUniform(const std::string& name, const glm::vec4& vector);
@@ -30,7 +30,7 @@ public:
 	void setUniform(const std::string& name, const glm::ivec4& vector);
 	void setUniform(const std::string& name, const glm::mat3& matrix);
 	void setUniform(const std::string& name, const glm::mat4& matrix);
-	void setUniform(const std::string& name, const bool& value);
+	void setUniform(const std::string& name, bool value);
 	void setUniform(const std::string& name, const glm::vec2* vectors, int count);
 	void setUniform(const std::string& name, const glm::vec3* vectors, int count);
 	void setUniform(const std::string& name, const glm::vec4* vectors, int count);
