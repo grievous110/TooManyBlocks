@@ -98,11 +98,15 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 
 	glm::mat4 view = glm::lookAt(position, position + forward, up);
 	glm::mat4 proj = context.instance->m_player->m_camera->getProjectionMatrix();
-	currentRenderContext.modelViewProjection = proj * view * glm::mat4(1.0f);
+	currentRenderContext.viewProjection = proj * view;
 
 	beginMainpass(scene);
 
-	for (const Mesh* mesh : scene.m_meshes) {
+	for (Mesh* mesh : scene.m_meshes) {
+		const Transform& meshTr = mesh->getLocalTransform();
+		currentRenderContext.modelMatrix = meshTr.getModelMatrix();
+		currentRenderContext.meshPosition = meshTr.getPosition();
+
 		const std::shared_ptr<Material> material = mesh->m_material;
 		if (material->supportsPass(PassType::MainPass)) {
 			material->bindForPass(PassType::MainPass, currentRenderContext);

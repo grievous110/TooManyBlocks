@@ -16,7 +16,7 @@ void SimpleMaterial::bindForPass(PassType passType, const RenderContext& context
 		m_shader->bind();
 		m_shader->setUniform("u_color", m_color);
 		m_shader->setUniform("u_useTexture", m_texture != nullptr);
-		m_shader->setUniform("u_mvp", context.modelViewProjection);
+		m_shader->setUniform("u_mvp", context.viewProjection * context.modelMatrix);
 		if (m_texture != nullptr) {
 			m_texture->bind(0);
 			m_shader->setUniform("u_texture", 0);
