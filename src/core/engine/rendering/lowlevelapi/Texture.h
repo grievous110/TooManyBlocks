@@ -22,7 +22,6 @@ public:
 
 	inline int width() const { return m_width; }
 	inline int height() const { return m_height; }
-
 };
 
 #endif
