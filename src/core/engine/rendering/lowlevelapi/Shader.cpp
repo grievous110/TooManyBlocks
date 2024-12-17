@@ -106,15 +106,15 @@ void Shader::unbind() const {
     }
 }
 
-void Shader::setUniform(const string& name, const int& value) {
+void Shader::setUniform(const string& name, int value) {
     GLCALL(glUniform1i(getUniformLocation(name), value));
 }
 
-void Shader::setUniform(const std::string& name, const unsigned int& value) {
+void Shader::setUniform(const std::string& name, unsigned int value) {
     GLCALL(glUniform1ui(getUniformLocation(name), value));
 }
 
-void Shader::setUniform(const std::string& name, const float& value) {
+void Shader::setUniform(const std::string& name, float value) {
     GLCALL(glUniform1f(getUniformLocation(name), value));
 }
 
@@ -150,7 +150,7 @@ void Shader::setUniform(const string& name, const glm::mat4& matrix) {
     GLCALL(glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
 }
 
-void Shader::setUniform(const std::string& name, const bool& value) {
+void Shader::setUniform(const std::string& name, bool value) {
     GLCALL(glUniform1i(getUniformLocation(name), static_cast<int>(value)));
 }
 
