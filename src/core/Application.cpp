@@ -153,6 +153,7 @@ void Application::run() {
 		lgr::lout.info(detailsBuf.str());
 	}
 	{
+		GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
 		GLCALL(glEnable(GL_BLEND));
 		GLCALL(glEnable(GL_DEPTH_TEST));
 		GLCALL(glEnable(GL_CULL_FACE));         // Enable face culling

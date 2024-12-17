@@ -7,7 +7,7 @@ class VertexBuffer : virtual public RenderApiObject {
 private:
 	static unsigned int currentlyBoundVBO;
 public:
-	VertexBuffer(const void* data, int size);
+	VertexBuffer(const void* data, int size); // size is in bytes
 	~VertexBuffer();
 
 	void bind() const;
