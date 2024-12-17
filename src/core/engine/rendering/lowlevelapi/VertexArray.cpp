@@ -21,7 +21,9 @@ void VertexArray::addBuffer(const VertexBuffer& vb, const VertexBufferLayout& la
 	for (unsigned int i = 0; i < elements.size(); i++) {
 		const BufferLayoutElement& element = elements[i];
 		GLCALL(glEnableVertexAttribArray(i));
-		GLCALL(glVertexAttribPointer(i, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE, layout.stride(), (const void*)(uintptr_t) offset));
+		// TODO: Generalize for all
+		//GLCALL(glVertexAttribPointer(i, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE, layout.stride(), (const void*)(uintptr_t) offset));
+		GLCALL(glVertexAttribIPointer(i, element.count, element.type, layout.stride(), (const void*)(uintptr_t) offset));
 		offset += element.count * element.typeSize;
 	}
 }
