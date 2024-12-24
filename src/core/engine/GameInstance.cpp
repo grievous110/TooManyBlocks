@@ -54,7 +54,7 @@ void GameInstance::initialize() {
 
 Scene GameInstance::craftScene() {
 	Scene scene;
-	scene.m_meshes.push_back(m_mesh.get());
+	scene.meshes.push_back(m_mesh);
 	return scene;
 }
 

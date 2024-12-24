@@ -1,12 +1,6 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "Logger.h"
 
-ChunkMaterial::ChunkMaterial(std::shared_ptr<Shader> shader, std::shared_ptr<Texture> textureAtlas)	:
-	Material(shader),
-	m_textureAtlas(textureAtlas) {}
-
-ChunkMaterial::~ChunkMaterial() {}
-
 bool ChunkMaterial::supportsPass(PassType passType) const {
 	return passType == PassType::MainPass;
 }

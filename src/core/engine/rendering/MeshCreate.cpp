@@ -4,6 +4,7 @@
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include "engine/rendering/MeshCreate.h"
+#include "GLFW/glfw3.h"
 #include <vector>
 
 std::shared_ptr<Mesh> generateMeshForChunk(const Chunk& chunk) {
@@ -41,22 +42,22 @@ std::shared_ptr<Mesh> generateMeshForChunk(const Chunk& chunk) {
         }
     }
 
+    std::shared_ptr<MeshRenderData> meshData = std::make_shared<MeshRenderData>();
     // Vertex Buffer Object (VBO)
-    VertexBuffer* vbo = new VertexBuffer(vertexBuffer.data(), static_cast<int>(vertexBuffer.size() * sizeof(CompactChunkVertex)));
+    meshData->vbo = std::make_unique<VertexBuffer>(vertexBuffer.data(), static_cast<int>(vertexBuffer.size() * sizeof(CompactChunkVertex)));
 
     // Vertex Attribute Pointer 
     VertexBufferLayout layout;
-    layout.push<unsigned int>(1);
-    layout.push<unsigned int>(1);
+    layout.push(GL_UNSIGNED_INT, sizeof(unsigned int), 1);
+    layout.push(GL_UNSIGNED_INT, sizeof(unsigned int), 1);
 
     // Vertex Array Object (VAO)
-    VertexArray* vao = new VertexArray();
-    vao->addBuffer(*vbo, layout);
+    meshData->vao = std::make_unique<VertexArray>();
+    meshData->vao->addBuffer(*meshData->vbo, layout);
 
     // Index Buffer Object (IBO)
-    IndexBuffer* ibo = new IndexBuffer(indexBuffer.data(), static_cast<unsigned int>(indexBuffer.size()));
-
-    return std::make_shared<Mesh>(vao, vbo, ibo);
+    meshData->ibo = std::make_unique<IndexBuffer>(indexBuffer.data(), static_cast<unsigned int>(indexBuffer.size()));
+    return std::make_shared<Mesh>(meshData);
 }
 
 CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, FaceDirection faceDirection) {

@@ -8,18 +8,26 @@
 #include "engine/rendering/mat/Material.h"
 #include <memory>
 
+struct MeshRenderData {
+	std::unique_ptr<VertexArray> vao;
+	std::unique_ptr<VertexBuffer> vbo;
+	std::unique_ptr<IndexBuffer> ibo;
+};
+
 class Mesh : public SceneComponent {
-public:
-	VertexArray* m_vao;
-	VertexBuffer* m_vbo;
-	IndexBuffer* m_ibo;
-
+private:
+	std::shared_ptr<MeshRenderData> m_data;
 	std::shared_ptr<Material> m_material;
-public:
-	Mesh(VertexArray* vao, VertexBuffer* vbo, IndexBuffer* ibo);
-	~Mesh();
 
-	void assignMaterial(std::shared_ptr<Material> material);
+public:
+	Mesh(std::shared_ptr<MeshRenderData> data, std::shared_ptr<Material> material = nullptr) : m_data(data), m_material(material) {}
+	~Mesh() = default;
+
+	inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
+
+	inline std::shared_ptr<MeshRenderData> renderData() const { return m_data; }
+
+	inline std::shared_ptr<Material> getMaterial() const { return m_material; }
 };
 
 #endif
