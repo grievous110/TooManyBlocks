@@ -5,9 +5,9 @@ class RenderApiObject {
 protected:
 	unsigned int m_rendererId;
 
-	RenderApiObject();
-	RenderApiObject(unsigned int id);
-	virtual ~RenderApiObject() = 0;
+	RenderApiObject(unsigned int id = 0) : m_rendererId(id) {};
+	virtual ~RenderApiObject() {};
+	
 public:
 	inline unsigned int rendererId() const { return m_rendererId; }
 };

@@ -19,7 +19,7 @@ private:
 
 public:
 	Camera(float fovy, float aspectRatio);
-	~Camera();
+	~Camera() {}
 	
 	Transform& getTransform();
 	glm::mat4 getProjectionMatrix();
