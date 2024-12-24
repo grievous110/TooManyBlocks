@@ -48,7 +48,7 @@ inline void putRandomGradient(float* gradientDest, const int* sourceCoords, int 
 
     if (magnitude == 0.0f) {
         // Handle zero magnitude by generating a default normalized vector
-        float value = 1.0f / std::sqrtf(dimension);
+        float value = 1.0f / std::sqrtf(static_cast<float>(dimension));
         for (int i = 0; i < dimension; i++) {
             gradientDest[i] = value;
         }
@@ -61,7 +61,7 @@ inline void putRandomGradient(float* gradientDest, const int* sourceCoords, int 
 }
 
 std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize, int octaves, float amplitude, float persistence) {
-    int dimensions = regionOffset.size();
+    int dimensions = static_cast<int>(regionOffset.size());
     if (dimensions < 1 || regionSize.size() != dimensions) {
         throw std::runtime_error("Starts and extents must have the same non-zero dimensions.");
     }
@@ -102,7 +102,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
         }
 
         octaveSubsectionSizes[oi] = currentSubsectionSize;
-        octaveAmplitudeScales[oi] = amplitude * std::powf(persistence, oi); // Exponential dropoff [persistence < 1.0f] or increase [persistence > 1.0f]
+        octaveAmplitudeScales[oi] = amplitude * std::powf(persistence, static_cast<float>(oi)); // Exponential dropoff [persistence < 1.0f] or increase [persistence > 1.0f]
 
         // Compute gradient grid offsets for each dimension
         int totalGradCount = 1; // Total number of gradients for this octave
@@ -160,8 +160,8 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
         float* cornerDotProducts = new float[cornerCount];
 
         // Calculate noise map values
-        for (int i = 0; i < totalNoisePoints; i++) {
-            calcNDVecFromFlatIndex(tmpCoordBuff, i, regionOffset.data(), regionSize.data(), dimensions);
+        for (int t = 0; t < totalNoisePoints; t++) {
+            calcNDVecFromFlatIndex(tmpCoordBuff, t, regionOffset.data(), regionSize.data(), dimensions);
             float total = 0.0f;
 
             for (int oi = 0; oi < validOctaveCount; oi++) {                
@@ -223,7 +223,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
                 // #################### End noise point calculation #####################                
             }
 
-            noiseMap[i] = (total / maxTotalAmplitude + 1.0f) * 0.5f; // Map [-1, 1] to [0, 1]
+            noiseMap[t] = (total / maxTotalAmplitude + 1.0f) * 0.5f; // Map [-1, 1] to [0, 1]
         }
 
         // Cleanup per pixel buffers
