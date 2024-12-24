@@ -3,12 +3,12 @@
 #include "Logger.h"
 #include <stb_image/stb_image.h>
 
-Texture::Texture(const std::string path) :
+Texture::Texture(const std::string& path) :
 	m_filepath(path),
+	m_locabuffer(nullptr),
 	m_width(0),
 	m_height(0),
-	m_bitsPerPixel(0),
-	m_locabuffer(nullptr) {
+	m_bitsPerPixel(0) {
 
 	stbi_set_flip_vertically_on_load(1);
 	m_locabuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bitsPerPixel, 4);
@@ -30,10 +30,10 @@ Texture::Texture(const std::string path) :
 }
 
 Texture::Texture(unsigned int width, unsigned int height, bool isDepth) :
+	m_locabuffer(nullptr),
 	m_width(width),
 	m_height(height),
-	m_bitsPerPixel(0),
-	m_locabuffer(nullptr) {
+	m_bitsPerPixel(0) {
 
 	GLCALL(glGenTextures(1, &m_rendererId));
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));

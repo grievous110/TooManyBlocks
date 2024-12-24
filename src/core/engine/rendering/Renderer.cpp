@@ -78,8 +78,8 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 
 	beginShadowpass(scene);
 
-	for (const Mesh* mesh : scene.m_meshes) {
-		const std::shared_ptr<Material> material = mesh->m_material;
+	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
+		const std::shared_ptr<Material> material = mesh->getMaterial();
 		if (material->supportsPass(PassType::ShadowPass)) {
 			material->bindForPass(PassType::ShadowPass, currentRenderContext);
 			drawMesh(*mesh, currentRenderContext);
@@ -102,12 +102,12 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 
 	beginMainpass(scene);
 
-	for (Mesh* mesh : scene.m_meshes) {
+	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
 		const Transform& meshTr = mesh->getLocalTransform();
 		currentRenderContext.modelMatrix = meshTr.getModelMatrix();
 		currentRenderContext.meshPosition = meshTr.getPosition();
 
-		const std::shared_ptr<Material> material = mesh->m_material;
+		const std::shared_ptr<Material> material = mesh->getMaterial();
 		if (material->supportsPass(PassType::MainPass)) {
 			material->bindForPass(PassType::MainPass, currentRenderContext);
 			drawMesh(*mesh, currentRenderContext);
@@ -119,23 +119,12 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 }
 
 void Renderer::drawMesh(const Mesh& mesh, const RenderContext& context) {
-	mesh.m_material->m_shader->bind();
-	mesh.m_vao->bind();
-	mesh.m_ibo->bind();
+	const std::shared_ptr<MeshRenderData> rData = mesh.renderData();
+	mesh.getMaterial()->getShader()->bind();
+	rData->vao->bind();
+	rData->ibo->bind();
 
-	GLCALL(glDrawElements(GL_TRIANGLES, mesh.m_ibo->count(), GL_UNSIGNED_INT, nullptr));
-}
-
-void Renderer::draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const {
-	shader.bind();
-	va.bind();
-	ib.bind();
-
-	// For use with IBOs
-	GLCALL(glDrawElements(GL_TRIANGLES, ib.count(), GL_UNSIGNED_INT, nullptr));
-
-	// For use with solely VBOs
-	// glDrawArrays(GL_TRIANGLES, 0, 3 * 2);
+	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo->count(), GL_UNSIGNED_INT, nullptr));
 }
 
 std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPath) {

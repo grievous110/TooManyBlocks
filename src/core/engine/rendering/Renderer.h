@@ -17,7 +17,7 @@
 #include <iostream>
 
 #define ASSERT(x, msg) if (!(x)) throw std::runtime_error(msg)
-#define GLCALL(func) GLClearError(); func; if (!GLLogCall(#func, __FILE__, __LINE__)) throw std::exception()
+#define GLCALL(func) GLClearError(); func; if (!GLLogCall(#func, __FILE__, __LINE__)) throw std::runtime_error("Something went wrong in open gl")
 
 void GLClearError();
 
@@ -42,8 +42,6 @@ public:
 	void renderScene(const Scene& scene, const ApplicationContext& context);
 
 	void drawMesh(const Mesh& mesh, const RenderContext& context);
-
-	void draw(const VertexArray& va, const IndexBuffer& ib, const Shader& shader) const;
 
 	std::shared_ptr<Shader> getShaderFromFile(const std::string& shaderPath);
 

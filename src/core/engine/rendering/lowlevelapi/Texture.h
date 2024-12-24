@@ -13,7 +13,7 @@ private:
 	int m_bitsPerPixel;
 
 public:
-	Texture(const std::string path);
+	Texture(const std::string& path);
 	Texture(unsigned int width, unsigned int height, bool isDepth);
 	~Texture();
 
