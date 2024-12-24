@@ -7,6 +7,7 @@ class IndexBuffer : virtual public RenderApiObject {
 private:
 	static unsigned int currentlyBoundIBO;
 	unsigned int m_count;
+	
 public:
 	IndexBuffer(const unsigned int* data, unsigned int count);
 	~IndexBuffer();

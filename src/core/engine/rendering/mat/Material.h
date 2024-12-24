@@ -24,10 +24,10 @@ public:
 	std::shared_ptr<Shader> m_shader;
 
 public:
-	Material(std::shared_ptr<Shader> shader);
+	Material(std::shared_ptr<Shader> shader = nullptr) : m_shader(shader) {}
 	virtual ~Material() = default;
 
-	const std::shared_ptr<Shader> getShader() const;
+	inline std::shared_ptr<Shader> getShader() const { return m_shader; }
 
 	virtual bool supportsPass(PassType passType) const = 0;
 	virtual void bindForPass(PassType passType, const RenderContext& context) const = 0;

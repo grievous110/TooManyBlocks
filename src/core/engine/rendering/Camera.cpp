@@ -7,8 +7,6 @@ Camera::Camera(float fovy, float aspectRatio)
 	updateView();
 }
 
-Camera::~Camera() {}
-
 Transform& Camera::getTransform() {
 	return *m_transform;
 }

@@ -1,12 +1,5 @@
 #include "engine/rendering/mat/SimpleMaterial.h"
 
-SimpleMaterial::SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture)	:
-	Material(shader),
-	m_color(color),
-	m_texture(texture) {}
-
-SimpleMaterial::~SimpleMaterial() {}
-
 bool SimpleMaterial::supportsPass(PassType passType) const {
 	return passType == PassType::MainPass;
 }
