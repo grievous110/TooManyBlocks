@@ -21,7 +21,7 @@ struct ApplicationContext {
 
 class AppIO : public MouseObservable, public KeyObservable {
 private:
-	AppIO() {};
+	virtual ~AppIO() = default;
 
 	friend Application;
 

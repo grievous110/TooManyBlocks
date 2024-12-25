@@ -10,7 +10,7 @@ private:
 public:
 	VertexBuffer(const void* data, int size); // size is in bytes
 	VertexBuffer(VertexBuffer&& other) noexcept;
-	~VertexBuffer();
+	virtual ~VertexBuffer();
 
 	void bind() const;
 	void unbind() const;

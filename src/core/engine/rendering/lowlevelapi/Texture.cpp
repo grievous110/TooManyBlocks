@@ -72,7 +72,12 @@ Texture::~Texture() {
 		stbi_image_free(m_locabuffer);
 	}
 	if (m_rendererId != 0) {
-		GLCALL(glDeleteTextures(1, &m_rendererId));
+		try {
+			unbind();
+			GLCALL(glDeleteTextures(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during Texture cleanup");
+		}
 	}
 }
 
@@ -94,7 +99,12 @@ Texture& Texture::operator=(Texture&& other) noexcept {
 			stbi_image_free(m_locabuffer);
 		}
 		if (m_rendererId != 0) {
-			GLCALL(glDeleteTextures(1, &m_rendererId));
+			try {
+				unbind();
+				GLCALL(glDeleteTextures(1, &m_rendererId));
+			} catch (const std::exception& e) {
+				lgr::lout.error("Error during Texture cleanup");
+			}
 		}
 		RenderApiObject::operator=(std::move(other));
 		

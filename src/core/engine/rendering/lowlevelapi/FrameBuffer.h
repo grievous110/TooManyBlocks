@@ -14,7 +14,7 @@ private:
 public:
     FrameBuffer(unsigned int width, unsigned int height);
     FrameBuffer(FrameBuffer&& other) noexcept;
-    ~FrameBuffer();
+    virtual ~FrameBuffer();
 
     void bind() const;
     void unbind() const;

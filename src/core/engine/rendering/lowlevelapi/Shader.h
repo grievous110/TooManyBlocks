@@ -15,7 +15,7 @@ private:
 public:
 	Shader(const std::string& shaderPath);
 	Shader(Shader&& other) noexcept;
-	~Shader();
+	virtual ~Shader();
 
 	void bind() const;
 	void unbind() const;

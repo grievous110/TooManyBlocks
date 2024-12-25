@@ -1,6 +1,6 @@
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/Renderer.h"
-#include "IndexBuffer.h"
+#include "Logger.h"
 
 unsigned int IndexBuffer::currentlyBoundIBO = 0;
 
@@ -17,8 +17,12 @@ IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept : RenderApiObject(std::mo
 
 IndexBuffer::~IndexBuffer() {
 	if (m_rendererId != 0) {
-		unbind();
-		GLCALL(glDeleteBuffers(1, &m_rendererId));
+		try {
+			unbind();
+			GLCALL(glDeleteBuffers(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during IndexBuffer cleanup");
+		}
 	}
 }
 
@@ -42,8 +46,13 @@ void IndexBuffer::unbind() const {
 IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
     if (this != &other) {
 		if (m_rendererId != 0) {
+		try {
+			unbind();
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during IndexBuffer cleanup");
 		}
+	}
 		RenderApiObject::operator=(std::move(other));
 		m_count = other.m_count;
 		

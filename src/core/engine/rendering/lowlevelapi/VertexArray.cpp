@@ -1,7 +1,6 @@
 #include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "VertexBufferLayout.h"
 #include "engine/rendering/Renderer.h"
-#include "VertexArray.h"
+#include "Logger.h"
 
 unsigned int VertexArray::currentlyBoundVAO = 0;
 
@@ -17,8 +16,12 @@ VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::mo
 
 VertexArray::~VertexArray() {
 	if (m_rendererId != 0) {
-		unbind();
-		GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+		try {
+			unbind();
+			GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during VertexArray cleanup");
+		}
 	}
 }
 
@@ -62,7 +65,12 @@ void VertexArray::unbind() const {
 VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
 	if (this != &other) {
 		if (m_rendererId != 0) {
-			GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+			try {
+				unbind();
+				GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+			} catch (const std::exception& e) {
+				lgr::lout.error("Error during VertexArray cleanup");
+			}
 		}
 		RenderApiObject::operator=(std::move(other));
 	}

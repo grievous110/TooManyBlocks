@@ -62,7 +62,7 @@ inline void putRandomGradient(float* gradientDest, const int* sourceCoords, int 
 
 std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize, int octaves, float amplitude, float persistence) {
     int dimensions = static_cast<int>(regionOffset.size());
-    if (dimensions < 1 || regionSize.size() != dimensions) {
+    if (dimensions < 1 || static_cast<int>(regionSize.size()) != dimensions) {
         throw std::runtime_error("Starts and extents must have the same non-zero dimensions.");
     }
     for (int d = 0; d < dimensions; d++) {
