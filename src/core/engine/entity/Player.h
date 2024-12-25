@@ -12,8 +12,8 @@ public:
 	std::shared_ptr<Camera> m_camera;
 
 public:
-	Player();
-	~Player();
+	Player() : m_camera(std::make_shared<Camera>(45.0f, 950.0f / 540.0f)) {}
+	virtual ~Player() = default;
 
 	std::shared_ptr<Camera> getCamera() const;
 

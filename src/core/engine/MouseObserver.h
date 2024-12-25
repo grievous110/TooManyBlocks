@@ -24,7 +24,7 @@ struct MouseEventData {
 
 class MouseObserver {
 public:
-	virtual void notify(const MousEvent& event, const MouseEventData& data) = 0;
+	virtual void notify(MousEvent event, MouseEventData data) = 0;
 	virtual ~MouseObserver() = default;
 };
 
@@ -34,7 +34,7 @@ private:
 public:
 	virtual void attach(MouseObserver* observer);
 	virtual void detach(MouseObserver* observer);
-	virtual void notifyObservers(const MousEvent& event, const MouseEventData& data);
+	virtual void notifyObservers(MousEvent event, MouseEventData data);
 };
 
 #endif

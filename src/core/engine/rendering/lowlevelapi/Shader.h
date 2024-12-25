@@ -6,7 +6,7 @@
 #include <string>
 #include <unordered_map>
 
-class Shader : virtual public RenderApiObject {
+class Shader : public RenderApiObject {
 private:
 	static unsigned int currentlyBoundShader;
 	std::string m_shaderPath;

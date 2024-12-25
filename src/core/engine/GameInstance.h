@@ -24,7 +24,7 @@ public:
 
 public:
 	GameInstance();
-	~GameInstance();
+	virtual ~GameInstance();
 
 	void initialize();
 

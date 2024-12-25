@@ -4,7 +4,7 @@
 #include "RenderApiObject.h"
 #include <string>
 
-class Texture : virtual public RenderApiObject {
+class Texture : public RenderApiObject {
 private:
 	std::string m_filepath;
 	unsigned char* m_locabuffer;

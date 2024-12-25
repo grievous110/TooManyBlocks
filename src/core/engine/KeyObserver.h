@@ -15,7 +15,7 @@ struct KeyEventData {
 
 class KeyObserver {
 public:
-	virtual void notify(const KeyEvent& event, const KeyEventData& data) = 0;
+	virtual void notify(KeyEvent event, KeyEventData data) = 0;
 	virtual ~KeyObserver() = default;
 };
 
@@ -25,7 +25,7 @@ private:
 public:
 	virtual void attach(KeyObserver* observer);
 	virtual void detach(KeyObserver* observer);
-	virtual void notifyObservers(const KeyEvent& event, const KeyEventData& data);
+	virtual void notifyObservers(KeyEvent event, KeyEventData data);
 };
 
 #endif

@@ -3,7 +3,7 @@
 
 #include "RenderApiObject.h"
 
-class IndexBuffer : virtual public RenderApiObject {
+class IndexBuffer : public RenderApiObject {
 private:
 	static unsigned int currentlyBoundIBO;
 	unsigned int m_count;

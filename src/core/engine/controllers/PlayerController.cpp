@@ -16,17 +16,17 @@ PlayerController::~PlayerController() {
 	Application::getContext()->io->detach(static_cast<MouseObserver*>(this));
 }
 
-void PlayerController::notify(const KeyEvent &event, const KeyEventData &data) {
+void PlayerController::notify(KeyEvent event, KeyEventData data) {
     keyStates[data.keycode] = event == KeyEvent::ButtonDown;
 }
 
-void PlayerController::notify(const MousEvent &event, const MouseEventData &data) {
+void PlayerController::notify(MousEvent event, MouseEventData data) {
     if (event == MousEvent::Move) {
 		if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
             Transform& tr = pl->m_camera->getTransform();
 
-            float pitchDelta = -data.delta.y;
-            float yawDelta = -data.delta.x;
+            float pitchDelta = static_cast<float>(-data.delta.y);
+            float yawDelta = static_cast<float>(-data.delta.x);
 
             glm::vec3 eulerAngles = tr.getRotationEuler();
             eulerAngles.x = glm::clamp(eulerAngles.x + pitchDelta, -89.0f, 89.0f);

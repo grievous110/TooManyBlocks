@@ -12,8 +12,8 @@ private:
 	Transform* m_transform;
 
 public:
-	SceneComponent();
-	~SceneComponent();
+	SceneComponent() : parent(nullptr), m_transform(new Transform) {};
+	virtual ~SceneComponent();
 
 	void attachChild(SceneComponent* child);
 	void detachChild(SceneComponent* child);

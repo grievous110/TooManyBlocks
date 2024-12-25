@@ -11,7 +11,7 @@ private:
 public:
     ChunkMaterial(std::shared_ptr<Shader> shader, std::shared_ptr<Texture> textureAtlas) : Material(shader), m_textureAtlas(textureAtlas) {}
     
-    ~ChunkMaterial() {}
+    virtual ~ChunkMaterial() = default;
 
     bool supportsPass(PassType passType) const override;
 
