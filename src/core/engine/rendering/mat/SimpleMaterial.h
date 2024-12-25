@@ -9,8 +9,8 @@
 
 class SimpleMaterial : public Material {
 private:
-    std::shared_ptr<Texture> m_texture;
     glm::vec3 m_color;
+    std::shared_ptr<Texture> m_texture;
 
 public:
     SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr) : Material(shader), m_color(color), m_texture(texture) {}

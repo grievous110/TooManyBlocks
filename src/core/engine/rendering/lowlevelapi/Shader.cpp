@@ -94,8 +94,12 @@ Shader::Shader(Shader&& other) noexcept : RenderApiObject(std::move(other)), m_s
 
 Shader::~Shader() {
     if (m_rendererId != 0) {
-        unbind();
-        GLCALL(glDeleteProgram(m_rendererId));
+        try {
+            unbind();
+            GLCALL(glDeleteProgram(m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during Shader cleanup");
+		}
     }
 }
 
@@ -252,8 +256,13 @@ void Shader::setUniform(const std::string& name, const float* values, int count)
 Shader& Shader::operator=(Shader&& other) noexcept {
     if (this != &other) {
         if (m_rendererId != 0) {
+        try {
+            unbind();
             GLCALL(glDeleteProgram(m_rendererId));
-        }
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during Shader cleanup");
+		}
+    }
         RenderApiObject::operator=(std::move(other));
 
         m_shaderPath = std::move(other.m_shaderPath);

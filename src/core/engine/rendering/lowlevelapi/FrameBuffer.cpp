@@ -29,7 +29,12 @@ FrameBuffer::~FrameBuffer() {
     if (m_depthTexture)
         delete m_depthTexture;
     if (m_rendererId != 0) {
-        GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+        try {
+            unbind();
+            GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during Shader cleanup");
+		}
     }
 }
 
@@ -56,7 +61,12 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
             delete m_depthTexture;
         }
         if (m_rendererId != 0) {
-            GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+            try {
+                unbind();
+                GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+            } catch (const std::exception& e) {
+                lgr::lout.error("Error during Shader cleanup");
+            }
         }
         RenderApiObject::operator=(std::move(other));
 

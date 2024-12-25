@@ -3,8 +3,7 @@
 
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "RenderApiObject.h"
-
-class VertexBufferLayout;
+#include "VertexBufferLayout.h"
 
 class VertexArray : virtual public RenderApiObject {
 private:
@@ -13,7 +12,7 @@ private:
 public:
 	VertexArray();
 	VertexArray(VertexArray&& other) noexcept;
-	~VertexArray();
+	virtual ~VertexArray();
 
 	void addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
 

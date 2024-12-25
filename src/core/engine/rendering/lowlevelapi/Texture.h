@@ -16,7 +16,7 @@ public:
 	Texture(const std::string& path);
 	Texture(unsigned int width, unsigned int height, bool isDepth);
 	Texture(Texture&& other) noexcept;
-	~Texture();
+	virtual ~Texture();
 
 	void bind(unsigned int slot = 0) const;
 	void unbind() const;

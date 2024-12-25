@@ -1,6 +1,6 @@
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/Renderer.h"
-#include "VertexBuffer.h"
+#include "Logger.h"
 
 unsigned int VertexBuffer::currentlyBoundVBO = 0;
 
@@ -15,8 +15,12 @@ VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std:
 
 VertexBuffer::~VertexBuffer() {
 	if (m_rendererId != 0) {
-		unbind();
-		GLCALL(glDeleteBuffers(1, &m_rendererId));
+		try {
+			unbind();
+			GLCALL(glDeleteBuffers(1, &m_rendererId));
+		} catch (const std::exception& e) {
+			lgr::lout.error("Error during VertexBuffer cleanup");
+		}
 	}
 }
 
@@ -40,7 +44,12 @@ void VertexBuffer::unbind() const {
 VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
     if (this != &other) {
 		if (m_rendererId != 0) {
-			GLCALL(glDeleteBuffers(1, &m_rendererId)); // Free current ressource
+			try {
+				unbind();
+				GLCALL(glDeleteBuffers(1, &m_rendererId));
+			} catch (const std::exception& e) {
+				lgr::lout.error("Error during VertexBuffer cleanup");
+			}
 		}
 		RenderApiObject::operator=(std::move(other));
 	}

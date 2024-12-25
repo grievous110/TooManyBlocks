@@ -11,7 +11,7 @@ private:
 public:
 	IndexBuffer(const unsigned int* data, unsigned int count);
 	IndexBuffer(IndexBuffer&& other) noexcept;
-	~IndexBuffer();
+	virtual ~IndexBuffer();
 
 	void bind() const;
 	void unbind() const;
