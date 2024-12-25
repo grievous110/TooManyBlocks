@@ -57,11 +57,11 @@ static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 	Application::getContext()->io->notifyObservers(event, data);
 }
 
-void Application::setCurrentContext(ApplicationContext* currentContext) {
+void Application::setCurrentContext(ApplicationContext* context) {
 	if (Application::currentContext) {
 		Application::deleteCurrentContext();
 	}
-	Application::currentContext = currentContext;
+	Application::currentContext = context;
 }
 
 ApplicationContext* Application::createContext() {
