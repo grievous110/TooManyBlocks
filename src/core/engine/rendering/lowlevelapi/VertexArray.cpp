@@ -19,7 +19,7 @@ VertexArray::~VertexArray() {
 		try {
 			unbind();
 			GLCALL(glDeleteVertexArrays(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during VertexArray cleanup");
 		}
 	}
@@ -68,7 +68,7 @@ VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
 			try {
 				unbind();
 				GLCALL(glDeleteVertexArrays(1, &m_rendererId));
-			} catch (const std::exception& e) {
+			} catch (const std::exception&) {
 				lgr::lout.error("Error during VertexArray cleanup");
 			}
 		}

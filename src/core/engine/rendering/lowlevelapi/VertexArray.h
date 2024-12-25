@@ -5,7 +5,7 @@
 #include "RenderApiObject.h"
 #include "VertexBufferLayout.h"
 
-class VertexArray : virtual public RenderApiObject {
+class VertexArray : public RenderApiObject {
 private:
 	static unsigned int currentlyBoundVAO;
 

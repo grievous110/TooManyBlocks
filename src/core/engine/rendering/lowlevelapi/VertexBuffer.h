@@ -3,7 +3,7 @@
 
 #include "RenderApiObject.h"
 
-class VertexBuffer : virtual public RenderApiObject {
+class VertexBuffer : public RenderApiObject {
 private:
 	static unsigned int currentlyBoundVBO;
 	

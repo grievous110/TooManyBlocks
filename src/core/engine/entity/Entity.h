@@ -16,7 +16,7 @@ protected:
 
 public:
 	Entity();
-	~Entity();
+	virtual ~Entity();
 
 	void update(float msDelta) override;
 

@@ -23,7 +23,7 @@ private:
 
 public:
 	Mesh(std::shared_ptr<MeshRenderData> data, std::shared_ptr<Material> material = nullptr) : m_data(data), m_material(material) {}
-	~Mesh() = default;
+	virtual ~Mesh() = default;
 
 	inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
 

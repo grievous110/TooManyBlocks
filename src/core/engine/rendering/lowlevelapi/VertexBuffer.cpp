@@ -18,7 +18,7 @@ VertexBuffer::~VertexBuffer() {
 		try {
 			unbind();
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during VertexBuffer cleanup");
 		}
 	}
@@ -47,7 +47,7 @@ VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
 			try {
 				unbind();
 				GLCALL(glDeleteBuffers(1, &m_rendererId));
-			} catch (const std::exception& e) {
+			} catch (const std::exception&) {
 				lgr::lout.error("Error during VertexBuffer cleanup");
 			}
 		}

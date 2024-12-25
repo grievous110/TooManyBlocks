@@ -15,7 +15,7 @@ private:
 public:
     SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr) : Material(shader), m_color(color), m_texture(texture) {}
 
-    ~SimpleMaterial() {}
+    virtual ~SimpleMaterial() = default;
 
     bool supportsPass(PassType passType) const override;
 

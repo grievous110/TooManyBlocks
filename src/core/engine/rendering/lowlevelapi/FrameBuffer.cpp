@@ -32,7 +32,7 @@ FrameBuffer::~FrameBuffer() {
         try {
             unbind();
             GLCALL(glDeleteFramebuffers(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during Shader cleanup");
 		}
     }
@@ -64,7 +64,7 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
             try {
                 unbind();
                 GLCALL(glDeleteFramebuffers(1, &m_rendererId));
-            } catch (const std::exception& e) {
+            } catch (const std::exception&) {
                 lgr::lout.error("Error during Shader cleanup");
             }
         }

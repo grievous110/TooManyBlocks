@@ -75,7 +75,7 @@ Texture::~Texture() {
 		try {
 			unbind();
 			GLCALL(glDeleteTextures(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during Texture cleanup");
 		}
 	}
@@ -102,7 +102,7 @@ Texture& Texture::operator=(Texture&& other) noexcept {
 			try {
 				unbind();
 				GLCALL(glDeleteTextures(1, &m_rendererId));
-			} catch (const std::exception& e) {
+			} catch (const std::exception&) {
 				lgr::lout.error("Error during Texture cleanup");
 			}
 		}

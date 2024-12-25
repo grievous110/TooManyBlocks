@@ -20,7 +20,7 @@ IndexBuffer::~IndexBuffer() {
 		try {
 			unbind();
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during IndexBuffer cleanup");
 		}
 	}
@@ -49,7 +49,7 @@ IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
 		try {
 			unbind();
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
-		} catch (const std::exception& e) {
+		} catch (const std::exception&) {
 			lgr::lout.error("Error during IndexBuffer cleanup");
 		}
 	}

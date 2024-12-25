@@ -9,7 +9,7 @@ void KeyObservable::detach(KeyObserver* observer) {
     m_observers.erase(std::remove(m_observers.begin(), m_observers.end(), observer), m_observers.end());
 }
 
-void KeyObservable::notifyObservers(const KeyEvent& event, const KeyEventData& data) {
+void KeyObservable::notifyObservers(KeyEvent event, KeyEventData data) {
     for (KeyObserver* observer : m_observers) {
         if (observer) {
             observer->notify(event, data);

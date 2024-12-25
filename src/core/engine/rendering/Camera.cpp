@@ -1,10 +1,15 @@
 #include "engine/rendering/Camera.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "Camera.h"
 
 Camera::Camera(float fovy, float aspectRatio)
 	: m_fovy(fovy), m_aspectRatio(aspectRatio), m_projDirty(true), m_viewDirty(true), m_transform(new Transform) {
 	updateProjection();
 	updateView();
+}
+
+Camera::~Camera() {
+	delete m_transform;
 }
 
 Transform& Camera::getTransform() {
