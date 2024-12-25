@@ -19,6 +19,7 @@ private:
     void updateQuatFromEuler();
     void normalizeEuler();
     float normalizeAngle(float degrees);
+
 public:
     Transform();
     Transform(const glm::vec3& position, const glm::vec3& rotation = glm::vec3(0.0f), const glm::vec3& scale = glm::vec3(1.0f));

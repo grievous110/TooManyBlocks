@@ -22,9 +22,10 @@ namespace lgr {
 
     std::string Logger::getCurrentTime() const noexcept {
         std::time_t now = std::time(nullptr);
-        std::tm* localTime = std::localtime(&now);
+        std::tm localTime {};
+        localtime_s(&localTime, &now);
         std::ostringstream oss;
-        oss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
+        oss << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
         return oss.str();
     }
 

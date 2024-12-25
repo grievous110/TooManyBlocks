@@ -39,7 +39,7 @@ private:
 	static ApplicationContext* currentContext;
 
 public:
-	static void setCurrentContext(ApplicationContext* currentContext);
+	static void setCurrentContext(ApplicationContext* context);
 	static ApplicationContext* createContext();
 	static void deleteCurrentContext();
 	static ApplicationContext* getContext();
