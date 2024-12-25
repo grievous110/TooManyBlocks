@@ -121,10 +121,10 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 void Renderer::drawMesh(const Mesh& mesh, const RenderContext& context) {
 	const std::shared_ptr<MeshRenderData> rData = mesh.renderData();
 	mesh.getMaterial()->getShader()->bind();
-	rData->vao->bind();
-	rData->ibo->bind();
+	rData->vao.bind();
+	rData->ibo.bind();
 
-	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo->count(), GL_UNSIGNED_INT, nullptr));
+	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo.count(), GL_UNSIGNED_INT, nullptr));
 }
 
 std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPath) {
