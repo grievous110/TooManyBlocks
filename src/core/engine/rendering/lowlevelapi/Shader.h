@@ -9,11 +9,12 @@
 class Shader : virtual public RenderApiObject {
 private:
 	static unsigned int currentlyBoundShader;
-	const std::string m_shaderPath;
+	std::string m_shaderPath;
 	std::unordered_map<std::string, int> m_uniformLocationCache;
 
 public:
 	Shader(const std::string& shaderPath);
+	Shader(Shader&& other) noexcept;
 	~Shader();
 
 	void bind() const;
@@ -38,6 +39,8 @@ public:
 	void setUniform(const std::string& name, const int* values, int count);
 	void setUniform(const std::string& name, const unsigned int* values, int count);
 	void setUniform(const std::string& name, const float* values, int count);
+
+	Shader& operator=(Shader&& other) noexcept;
 
 private:
 	int getUniformLocation(const std::string& name);

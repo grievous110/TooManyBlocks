@@ -42,9 +42,8 @@ std::shared_ptr<Mesh> generateMeshForChunk(const Chunk& chunk) {
         }
     }
 
-    std::shared_ptr<MeshRenderData> meshData = std::make_shared<MeshRenderData>();
     // Vertex Buffer Object (VBO)
-    meshData->vbo = std::make_unique<VertexBuffer>(vertexBuffer.data(), static_cast<int>(vertexBuffer.size() * sizeof(CompactChunkVertex)));
+    VertexBuffer vbo(vertexBuffer.data(), static_cast<int>(vertexBuffer.size() * sizeof(CompactChunkVertex)));
 
     // Vertex Attribute Pointer 
     VertexBufferLayout layout;
@@ -52,11 +51,12 @@ std::shared_ptr<Mesh> generateMeshForChunk(const Chunk& chunk) {
     layout.push(GL_UNSIGNED_INT, sizeof(unsigned int), 1);
 
     // Vertex Array Object (VAO)
-    meshData->vao = std::make_unique<VertexArray>();
-    meshData->vao->addBuffer(*meshData->vbo, layout);
+    VertexArray vao;
+    vao.addBuffer(vbo, layout);
 
     // Index Buffer Object (IBO)
-    meshData->ibo = std::make_unique<IndexBuffer>(indexBuffer.data(), static_cast<unsigned int>(indexBuffer.size()));
+    IndexBuffer ibo(indexBuffer.data(), static_cast<unsigned int>(indexBuffer.size()));
+    std::shared_ptr<MeshRenderData> meshData = std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
     return std::make_shared<Mesh>(meshData);
 }
 

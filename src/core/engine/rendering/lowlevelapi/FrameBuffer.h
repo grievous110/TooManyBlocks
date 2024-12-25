@@ -13,11 +13,14 @@ private:
 
 public:
     FrameBuffer(unsigned int width, unsigned int height);
+    FrameBuffer(FrameBuffer&& other) noexcept;
     ~FrameBuffer();
 
     void bind() const;
     void unbind() const;
     Texture* getDepthTexture() const { return m_depthTexture; }
+
+    FrameBuffer& operator=(FrameBuffer&& other) noexcept;
 };
 
 #endif
