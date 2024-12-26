@@ -8,17 +8,16 @@ class SceneComponent {
 private:
 	SceneComponent* parent;
 	std::vector<SceneComponent*> children;
-	
-	Transform* m_transform;
+	Transform m_transform;
 
 public:
-	SceneComponent() : parent(nullptr), m_transform(new Transform) {};
+	SceneComponent() : parent(nullptr) {};
 	virtual ~SceneComponent();
 
 	void attachChild(SceneComponent* child);
 	void detachChild(SceneComponent* child);
 
-	inline Transform& getLocalTransform() { return *m_transform; }
+	inline Transform& getLocalTransform() { return m_transform; }
 };
 
 #endif
