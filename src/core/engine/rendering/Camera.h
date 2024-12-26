@@ -6,7 +6,7 @@
 
 class Camera {
 private:
-	Transform* m_transform;
+	Transform m_transform;
 	glm::mat4 m_proj;
 	glm::mat4 m_view;
 	float m_fovy;
@@ -19,9 +19,9 @@ private:
 
 public:
 	Camera(float fovy, float aspectRatio);
-	virtual ~Camera();
+	virtual ~Camera() = default;
 	
-	Transform& getTransform();
+	inline Transform& getTransform() { return m_transform; }
 	glm::mat4 getProjectionMatrix();
 	glm::mat4 getViewMatrix();
 	glm::mat4 getViewProjMatrix();

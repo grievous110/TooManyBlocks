@@ -3,17 +3,9 @@
 #include "Camera.h"
 
 Camera::Camera(float fovy, float aspectRatio)
-	: m_fovy(fovy), m_aspectRatio(aspectRatio), m_projDirty(true), m_viewDirty(true), m_transform(new Transform) {
+	: m_fovy(fovy), m_aspectRatio(aspectRatio), m_projDirty(true), m_viewDirty(true) {
 	updateProjection();
 	updateView();
-}
-
-Camera::~Camera() {
-	delete m_transform;
-}
-
-Transform& Camera::getTransform() {
-	return *m_transform;
 }
 
 glm::mat4 Camera::getProjectionMatrix() {
@@ -57,9 +49,9 @@ void Camera::updateProjection() {
 
 void Camera::updateView() {
 	if (m_viewDirty) {
-		glm::vec3 position = m_transform->getPosition();
-		glm::vec3 forward = m_transform->getForward();
-		glm::vec3 up = m_transform->getUp();
+		glm::vec3 position = m_transform.getPosition();
+		glm::vec3 forward = m_transform.getForward();
+		glm::vec3 up = m_transform.getUp();
 
 		m_view = glm::lookAt(position, position + forward, up);
 		m_viewDirty = false;

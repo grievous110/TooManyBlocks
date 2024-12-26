@@ -10,25 +10,25 @@ class MovementComponent;
 
 class Entity : public Updatable {
 protected:
-	Transform* m_transform;
+	Transform m_transform;
 	MovementComponent* m_movement;
 	Controller* m_controller;
 
 public:
-	Entity();
+	Entity() : m_movement(new MovementComponent(this)) {}
 	virtual ~Entity();
 
 	void update(float msDelta) override;
 
-	Transform& getTransform() const;
+	inline Transform& getTransform() { return m_transform; }
 
-	glm::vec3 getVelocity() const;
+	inline glm::vec3 getVelocity() const { return m_movement->getVelocity(); }
 
-	MovementComponent* getMovementComponent() const;
+	inline MovementComponent* getMovementComponent() const { return m_movement; }
 
-	Controller* getController() const;
+	inline Controller* getController() const { return m_controller; }
 	
-	bool isPossessed() const;
+	inline bool isPossessed() const { return m_controller != nullptr; }
 
 	friend class Controller;
 };

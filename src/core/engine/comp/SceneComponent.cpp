@@ -9,8 +9,6 @@ SceneComponent::~SceneComponent() {
 	for (SceneComponent* child : children) {
 		delete child;
 	}
-
-	delete m_transform;
 }
 
 void SceneComponent::attachChild(SceneComponent* child) {
