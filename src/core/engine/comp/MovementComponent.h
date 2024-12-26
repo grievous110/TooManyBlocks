@@ -23,7 +23,7 @@ public:
 
 	inline glm::vec3 getVelocity() const { return m_velocity; }
 	inline void setVelocity(const glm::vec3& velocity) { m_velocity = velocity; }
-	inline void setGravityEnabled(const bool& enabled) { m_gravityEnabled = enabled; }
+	inline void setGravityEnabled(bool enabled) { m_gravityEnabled = enabled; }
 	
 	void update(float msDelta) override;
 };
