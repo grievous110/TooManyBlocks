@@ -1,6 +1,7 @@
 #include "GameOverlay.h"
 #include "Application.h"
 #include "datatypes/Transform.h"
+#include "engine/entity/Entity.h"
 #include <imgui/imgui.h>
 #include <glm/vec3.hpp>
 

@@ -15,14 +15,14 @@ protected:
 	Controller* m_controller;
 
 public:
-	Entity() : m_movement(new MovementComponent(this)) {}
+	Entity();
 	virtual ~Entity();
 
 	void update(float msDelta) override;
 
 	inline Transform& getTransform() { return m_transform; }
 
-	inline glm::vec3 getVelocity() const { return m_movement->getVelocity(); }
+	glm::vec3 getVelocity() const;
 
 	inline MovementComponent* getMovementComponent() const { return m_movement; }
 

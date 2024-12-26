@@ -103,7 +103,7 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 	beginMainpass(scene);
 
 	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
-		const Transform& meshTr = mesh->getLocalTransform();
+		const Transform meshTr = mesh->getGlobalTransform();
 		currentRenderContext.modelMatrix = meshTr.getModelMatrix();
 		currentRenderContext.meshPosition = meshTr.getPosition();
 
