@@ -38,10 +38,10 @@ public:
     void setRotation(const glm::vec3& eulerAngles);
     void setScale(const glm::vec3& scale);
 
-    glm::vec3 getPosition() const;
-    glm::quat getRotationQuat() const;
-    glm::vec3 getRotationEuler() const;
-    glm::vec3 getScale() const;
+    inline glm::vec3 getPosition() const { return m_position; }
+    inline glm::quat getRotationQuat() const { return m_rotationQuat; }
+    inline glm::vec3 getRotationEuler() const { return m_eulerAngles; }
+    inline glm::vec3 getScale() const { return m_scale; }
     glm::vec3 getForward() const;
     glm::vec3 getRight() const;
     glm::vec3 getUp() const;

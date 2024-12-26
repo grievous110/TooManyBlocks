@@ -132,22 +132,6 @@ void Transform::setScale(const glm::vec3& scale) {
     m_dirty = true;
 }
 
-glm::vec3 Transform::getPosition() const {
-    return m_position;
-}
-
-glm::quat Transform::getRotationQuat() const {
-    return m_rotationQuat;
-}
-
-glm::vec3 Transform::getRotationEuler() const {
-    return m_eulerAngles;
-}
-
-glm::vec3 Transform::getScale() const {
-    return m_scale;
-}
-
 glm::vec3 Transform::getForward() const {
     return glm::normalize(m_rotationQuat * glm::vec3(0.0f, 0.0f, -1.0f)); // Forward is -Z in local space
 }

@@ -20,3 +20,11 @@ void SceneComponent::detachChild(SceneComponent* child) {
 	children.erase(std::remove(children.begin(), children.end(), child), children.end());
 	child->parent = nullptr;
 }
+
+Transform SceneComponent::getGlobalTransform() {
+    if (parent) {
+		return m_transform * parent->getGlobalTransform();
+	} else {
+		return m_transform;
+	}
+}
