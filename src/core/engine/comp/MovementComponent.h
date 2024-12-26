@@ -18,7 +18,7 @@ private:
 	bool m_gravityEnabled;
 
 public:
-	MovementComponent(Entity* owner) : owner(owner), m_velocity(glm::vec3(0.0f)), m_gravityEnabled(false) {}
+	MovementComponent(Entity* owner);
 	virtual ~MovementComponent() = default;
 
 	inline glm::vec3 getVelocity() const { return m_velocity; }
