@@ -1,34 +1,38 @@
-#include "engine/worldgen/PerlinNoise.h"
+#include "PerlinNoise.h"
 #include <stdexcept>
 #include <cmath>
 
 // Interpolation function
-constexpr float smoothstep(float t) {
+static constexpr float smoothstep(float t) {
     return t * t * (3.0f - 2.0f * t);
 }
 
 // Checks if a value is a power of two by checking if it is a: positive and b: has only 1 bit set
-constexpr bool isPowerOfTwo(int n) {
+static constexpr bool isPowerOfTwo(int n) {
     return n > 0 && (n & (n - 1)) == 0;
 }
 
-inline void calcNDVecFromFlatIndex(int* coordDest, int idx, const int* offsets, const int* sizeOfEachDimension, int dimensions) {
+static inline void calcNDVecFromFlatIndex(int* coordDest, int idx, const int* offsets, const int* sizeOfEachDimension, int dimensions) {
     for (int d = 0; d < dimensions; d++) {
         int localIndex = idx % sizeOfEachDimension[d];  // Get the local index within the current dimension's gradient count
-        coordDest[d] = offsets[d] + localIndex;         // Compute the global coordinate for this dimension
+        if (offsets != nullptr) {
+            coordDest[d] = offsets[d] + localIndex;     // Compute the global coordinate for this dimension
+        } else {
+            coordDest[d] = localIndex;
+        }
         idx /= sizeOfEachDimension[d];                  // Move to the next dimension by dividing by the gradient count of this dimension
     }
 }
 
 // Lightweight + platform independent replacement of rand()
-inline uint32_t xorshift32(uint32_t& state) {
+static inline uint32_t xorshift32(uint32_t& state) {
     state ^= state << 13;
     state ^= state >> 17;
     state ^= state << 5;
     return state;
 }
 
-inline void putRandomGradient(float* gradientDest, const int* sourceCoords, int dimension, uint32_t seed) {
+static inline void putRandomGradient(float* gradientDest, const int* sourceCoords, int dimension, uint32_t seed) {
     // Combine coord values and seed into source hash
     uint32_t hash = seed;
     for (int i = 0; i < dimension; i++) {
@@ -76,14 +80,16 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
 
     // ############## Precompute values ###################
     // Raw manually allocated arrays to store precomputed values for each octave for least overhead and efficiency
-    float** octaveGradientVectors = new float*[octaves]; // Per octave you have different amounts of vectors (Here layed out in sequence in memory)
+    float** octaveGradientVectors = new float*[octaves]; // Per octave you have different amounts of vectors (!!! Here vectors of same octave are layed out in sequence in memory !!!)
     int* octaveTotalGradients = new int[octaves];
     int* octaveSubsectionSizes = new int[octaves];
     int** octaveGradientOffsets = new int*[octaves];
     int** octaveGradCountsPerDim = new int*[octaves]; // Total number of gradients along each dimension per octave
+    int** octaveLocalPixelOffsets = new int*[octaves];
     for (int oi = 0; oi < octaves; oi++) {
         octaveGradientOffsets[oi] = new int[dimensions];
         octaveGradCountsPerDim[oi] = new int[dimensions];
+        octaveLocalPixelOffsets[oi] = new int[dimensions];
     }
     float* octaveAmplitudeScales = new float[octaves];
     float maxTotalAmplitude = 0.0f;
@@ -95,7 +101,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
     int validOctaveCount = octaves; // Track how many "relevant" octaves there are (octaves whose subsections are larger than 1x1 units)
     for (int oi = 0; oi < octaves; oi++) {
         const int currentSubsectionSize = baseSubsectionSize / (1 << oi); // Half each subsection size for each octave (Increase frequency)
-        
+
         if (currentSubsectionSize <= 1) {
             validOctaveCount = oi;
             break; // Exit the loop as further octaves will not be meaningful
@@ -107,13 +113,25 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
         // Compute gradient grid offsets for each dimension
         int totalGradCount = 1; // Total number of gradients for this octave
         for (int d = 0; d < dimensions; d++) {
+            octaveLocalPixelOffsets[oi][d] = regionOffset[d] % currentSubsectionSize;
+            if (octaveLocalPixelOffsets[oi][d] < 0) {
+                octaveLocalPixelOffsets[oi][d] += currentSubsectionSize;
+            }
+
             int gradientStartIdx = regionOffset[d] / currentSubsectionSize;
             if (regionOffset[d] < 0 && regionOffset[d] % currentSubsectionSize != 0) {
                 gradientStartIdx--;
             }
             octaveGradientOffsets[oi][d] = gradientStartIdx;
 
-            int gradientEndIdx = (regionOffset[d] + regionSize[d] + currentSubsectionSize - 1) / currentSubsectionSize;
+            int regionEnd = regionOffset[d] + regionSize[d] - 1; // Last pixel in region
+            int gradientEndIdx = regionEnd / currentSubsectionSize;
+            if (regionEnd < 0 && regionEnd % currentSubsectionSize != 0) {
+                gradientEndIdx--;
+            }
+            
+            gradientEndIdx++; // Include the gradient at the far-right edge of the region
+
             octaveGradCountsPerDim[oi][d] = (gradientEndIdx - gradientStartIdx) + 1;
             totalGradCount *= octaveGradCountsPerDim[oi][d];
         }
@@ -128,7 +146,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
             for (int d = 0; d < dimensions; d++) {
                 tmpCoordBuff[d] *= currentSubsectionSize; // Map to global coordinates
             }
-            putRandomGradient(octaveGradientVectors[oi] + gi, tmpCoordBuff, dimensions, m_seed);
+            putRandomGradient(octaveGradientVectors[oi] + (gi * dimensions) /* Place vector at correct location in memory */, tmpCoordBuff, dimensions, m_seed);
         }
     }
     // Precalculate maximal total amplitude after combining octaves (for normalization)
@@ -160,8 +178,8 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
         float* cornerDotProducts = new float[cornerCount];
 
         // Calculate noise map values
-        for (int t = 0; t < totalNoisePoints; t++) {
-            calcNDVecFromFlatIndex(tmpCoordBuff, t, regionOffset.data(), regionSize.data(), dimensions);
+        for (int i = 0; i < totalNoisePoints; i++) {
+            calcNDVecFromFlatIndex(tmpCoordBuff, i, nullptr, regionSize.data(), dimensions);
             float total = 0.0f;
 
             for (int oi = 0; oi < validOctaveCount; oi++) {                
@@ -169,15 +187,18 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
                 // Constants for calculation
                 const int subsectionSize = octaveSubsectionSizes[oi];
                 const float amplitudeScale = octaveAmplitudeScales[oi];
-                const int* gradOffset = octaveGradientOffsets[oi];
                 const float* gradients = octaveGradientVectors[oi];
                 const int* gradCounts = octaveGradCountsPerDim[oi];
+                const int* localOffset = octaveLocalPixelOffsets[oi];
 
-                for (int i = 0; i < dimensions; i++) {
-                    localCellCoord[i] = tmpCoordBuff[i] & (subsectionSize - 1); // Fast modulo (subsectionSize is powers of 2)
+                for (int d = 0; d < dimensions; d++) {
+                    localCellCoord[d] = (tmpCoordBuff[d] + localOffset[d]) & (subsectionSize - 1); // Fast modulo (subsectionSize is powers of 2)
                     // Determine relative grid cell coordinate based on the subsection size (From first generated gradient)
-                    gridCoord[i] = tmpCoordBuff[i] / subsectionSize;
-                    localCellCoordAsFraction[i] = static_cast<float>(localCellCoord[i]) / subsectionSize;
+                    gridCoord[d] = (tmpCoordBuff[d] + localOffset[d]) / subsectionSize;
+                    localCellCoordAsFraction[d] = static_cast<float>(localCellCoord[d]) / subsectionSize;
+
+                    // Smooth interpolation factors using fade function
+                    interpolationFactors[d] = smoothstep(localCellCoordAsFraction[d]);
                 }
 
                 for (int corner = 0; corner < cornerCount; corner++) {
@@ -185,17 +206,15 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
                     int gradientIndex = 0;
 
                     // Calculate the flattened index for this corner
-                    for (int d = 0; d < dimensions; d++) {
-                        cornerCoord[d] = gridCoord[d] - gradOffset[d] + ((corner >> d) & 1);  // Add corner offset
-                    }
-
-                    // Retrieve the gradient vector for the corner based on flattened index
                     int stride = 1;
                     for (int d = 0; d < dimensions; d++) {
+                        cornerCoord[d] = gridCoord[d] + ((corner >> d) & 1);  // Add corner offset
+                        // Retrieve the gradient vector for the corner based on flattened index
                         gradientIndex += cornerCoord[d] * stride;
                         stride *= gradCounts[d];  // Update stride for each dimension
                     }
-                    const float* gradient = gradients + gradientIndex;
+
+                    const float* gradient = gradients + (gradientIndex * dimensions); // Access vector at correct location in memory
 
                     // Compute the dot product between gradient and local offset
                     float dotProduct = 0.0f;
@@ -206,16 +225,11 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
                     cornerDotProducts[corner] = dotProduct;
                 }
 
-                // Smooth interpolation factors using fade function
-                for (int d = 0; d < dimensions; d++) {
-                    interpolationFactors[d] = smoothstep(localCellCoordAsFraction[d]);
-                }
-
                 // Perform interpolation across all dot products
                 for (int dim = dimensions - 1; dim >= 0; dim--) {
                     int step = 1 << dim;
-                    for (int i = 0; i < step; i++) {
-                        cornerDotProducts[i] = cornerDotProducts[i] + interpolationFactors[dim] * (cornerDotProducts[i + step] - cornerDotProducts[i]);
+                    for (int s = 0; s < step; s++) {
+                        cornerDotProducts[s] = cornerDotProducts[s] + interpolationFactors[dim] * (cornerDotProducts[s + step] - cornerDotProducts[s]);
                     }
                 }
                 // Add result
@@ -223,7 +237,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
                 // #################### End noise point calculation #####################                
             }
 
-            noiseMap[t] = (total / maxTotalAmplitude + 1.0f) * 0.5f; // Map [-1, 1] to [0, 1]
+            noiseMap[i] = (total / maxTotalAmplitude + 1.0f) * 0.5f; // Map [-1, 1] to [0, 1]
         }
 
         // Cleanup per pixel buffers
@@ -240,6 +254,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
         delete[] octaveGradientVectors[oi];
         delete[] octaveGradientOffsets[oi];
         delete[] octaveGradCountsPerDim[oi];
+        delete[] octaveLocalPixelOffsets[oi];
     }
     delete[] octaveGradientVectors;
     delete[] octaveTotalGradients;
@@ -247,6 +262,7 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
     delete[] octaveGradientOffsets;
     delete[] octaveGradCountsPerDim;
     delete[] octaveAmplitudeScales;
+    delete[] octaveLocalPixelOffsets;
 
     delete[] tmpCoordBuff;
 
