@@ -2,10 +2,12 @@
 #include "engine/GameInstance.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
+#include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/ShaderPathsConstants.h"
 #include "rendering/Mesh.h"
 #include "engine/controllers/PlayerController.h"
+#include "Logger.h"
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui/imgui.h>
@@ -31,35 +33,86 @@ void GameInstance::initialize() {
     std::mt19937 generator(rd());
     std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
 	uint32_t seed = distribution(generator);
-
 	m_playerController = new PlayerController;
 	m_player = new Player;
 	m_world = new World(seed);
 	m_playerController->possess(m_player);
 
-	// TestChunk
-	glm::ivec3 testChunkPos(2, 0, 0);
-	m_world->loadChunk(testChunkPos);
-	m_mesh = generateMeshForChunk(*m_world->getChunk(testChunkPos));
-
 	Renderer* renderer = Application::getContext()->renderer;
-	shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
-	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/stone.png");
-	m_meshMaterial = make_shared<ChunkMaterial>(shader, texture);
-	m_mesh->assignMaterial(m_meshMaterial);
-	Transform& mTr = m_mesh->getLocalTransform();
-	mTr.setPosition(testChunkPos);
+
+	m_mesh = buildFromMeshData(*readMeshDataFromObjFile("res/models/testUnitBlock.obj", true)); 
+	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
+	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
+	std::shared_ptr<Material> m_testMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
+	m_mesh->assignMaterial(m_testMaterial);
+	m_mesh->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+
+	// Capture and hide the mouse cursor
+	glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	isInitialized = true;
 }
 
+// static bool isBoxInFrustum(const glm::vec3& position, const glm::vec3& size, const glm::vec4* planes) {
+// 	for (int i = 0; i < 6; i++) {
+// 		const glm::vec4& plane = planes[i];
+// 		glm::vec3 corner = position;
+
+// 		// Choose the farthest corner along the plane's normal
+// 		if (plane.x >= 0) corner.x += size.x;
+// 		if (plane.y >= 0) corner.y += size.y;
+// 		if (plane.z >= 0) corner.z += size.z;
+
+// 		// Check if the corner is outside the plane
+// 		if (plane.x * corner.x + plane.y * corner.y + plane.z * corner.z + plane.w < 0) {
+// 			return false; // Completely outside the frustum
+// 		}
+// 	}
+// 	return true; // Inside or intersecting the frustum
+// }
+
 Scene GameInstance::craftScene() {
 	Scene scene;
+
+	// glm::vec4 planes[6];
+
+	// int count = 0;
+
+	for (const auto& val : m_world->loadedChunks()) {
+		if (val.second && val.second->mesh) {
+			// glm::mat4 viewProjMatrix = m_player->getCamera()->getViewProjMatrix();
+			// viewProjMatrix *= m_player->getTransform().getModelMatrix();
+			// planes[0] = viewProjMatrix[3] + viewProjMatrix[0]; // Left plane
+			// planes[1] = viewProjMatrix[3] - viewProjMatrix[0]; // Right plane
+			// planes[2] = viewProjMatrix[3] + viewProjMatrix[1]; // Bottom plane
+			// planes[3] = viewProjMatrix[3] - viewProjMatrix[1]; // Top plane
+			// planes[4] = viewProjMatrix[3] + viewProjMatrix[2]; // Near plane
+			// planes[5] = viewProjMatrix[3] - viewProjMatrix[2]; // Far plane
+
+			// // Normalize planes
+			// for (int i = 0; i < 6; i++) {
+			// 	float length = glm::length(glm::vec3(planes[i]));
+			// 	planes[i] /= length;
+			// }
+
+			// glm::vec3 chunkPosition = val.second->mesh->getLocalTransform().getPosition();
+
+			// if (isBoxInFrustum(chunkPosition, {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH}, planes)) {
+            //     scene.meshes.push_back(val.second->mesh);
+			// 	count++;
+            // }
+
+			scene.meshes.push_back(val.second->mesh);
+		}
+	}
+	//lgr::lout.debug(std::to_string(count) + " meshes" + std::string("Rendering "));
 	scene.meshes.push_back(m_mesh);
 	return scene;
 }
 
 void GameInstance::update(float msDelta) {
 	m_player->update(msDelta);
+	m_mesh->getLocalTransform().rotate(glm::vec3(0.0f, 90.0f * (msDelta / 1000.0f), 0.0f));
+	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
 }
 
 	// ######## Constructor #########

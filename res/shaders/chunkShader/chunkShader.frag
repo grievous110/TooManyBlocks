@@ -13,10 +13,13 @@ layout(location = 0) out vec4 frag_color;
 
 void main() {
     vec2 uv_frag = fract(uv); // Effectively modulo for repeating texture on faces larger 1
+    uv_frag.y = 1.0 - uv_frag.y; // Flip vertically
+
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
 
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
     float row = floor(float(texIndex) / texturesPerRow);
+    row = texturesPerRow - 1.0 - row; // Flip Y-axis (Image is loaded starting from top left / opengl reads uvs starting from bottom left tho)
     float col = mod(float(texIndex), texturesPerRow);
 
     vec2 scaledUV = uv_frag * textureScale;
