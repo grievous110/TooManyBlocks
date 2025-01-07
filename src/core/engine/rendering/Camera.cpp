@@ -42,7 +42,7 @@ void Camera::setAspectRatio(float aspectRatio) {
 
 void Camera::updateProjection() {
 	if (m_projDirty) {
-		m_proj = glm::perspective(glm::radians(m_fovy), m_aspectRatio, 0.1f, 100.0f);
+		m_proj = glm::perspective(glm::radians(m_fovy), m_aspectRatio, 0.1f, 500.0f);
 		m_projDirty = false;
 	}
 }
