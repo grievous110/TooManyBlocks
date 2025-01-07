@@ -1,13 +1,15 @@
 #ifndef CHUNK_H
 #define CHUNK_H
 
+#include "datatypes/DatatypeDefs.h"
 #include <glm/vec3.hpp>
 #include <memory>
 #include <unordered_map>
 
-constexpr int CHUNK_WIDTH = 32;
-constexpr int CHUNK_DEPTH = 32;
-constexpr int CHUNK_HEIGHT = 32;
+constexpr int CHUNK_SIZE = 32;
+constexpr int CHUNK_WIDTH = CHUNK_SIZE;
+constexpr int CHUNK_DEPTH = CHUNK_SIZE;
+constexpr int CHUNK_HEIGHT = CHUNK_SIZE;
 constexpr int CHUNK_SLICE_SIZE = CHUNK_WIDTH * CHUNK_HEIGHT; 	// Vertical slice size in a chunk
 constexpr int CHUNK_PLANE_SIZE = CHUNK_WIDTH * CHUNK_DEPTH; 	// Horizontal plane size in a chunk
 constexpr int BLOCKS_PER_CHUNK = CHUNK_WIDTH * CHUNK_DEPTH * CHUNK_HEIGHT;
@@ -25,17 +27,8 @@ struct coord_hash {
 };
 
 struct Block {
-	int type;
+	uint16_t type;
 	bool isSolid;
-};
-
-enum FaceDirection {
-	LEFT,
-	RIGHT,
-	TOP,
-	BOTTOM,
-	FRONT,
-	BACK
 };
 
 struct Chunk {
@@ -48,6 +41,6 @@ constexpr int chunkBlockIndex(int x, int y, int z) {
     return z * CHUNK_SLICE_SIZE  + y * CHUNK_WIDTH + x;
 }
 
-bool isBlockFaceVisible(const Chunk& chunk, int x, int y, int z, FaceDirection faceDirection);
+bool isBlockFaceVisible(const Chunk& chunk, int x, int y, int z, AxisDirection faceDirection);
 
 #endif
