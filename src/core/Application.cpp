@@ -5,6 +5,7 @@
 #include "engine/ui/MainMenu.h"
 #include "engine/ui/Ui.h"
 #include "Logger.h"
+#include "threading/ThreadPool.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <imgui/imgui_impl_glfw.h>
@@ -66,6 +67,7 @@ void Application::setCurrentContext(ApplicationContext* context) {
 
 ApplicationContext* Application::createContext() {
 	ApplicationContext* context = new ApplicationContext;
+	context->workerPool = new ThreadPool(6);
 	context->window = nullptr;
 	context->renderer = new Renderer;
 	context->instance = new GameInstance;
@@ -77,6 +79,7 @@ ApplicationContext* Application::createContext() {
 void Application::deleteCurrentContext() {
 	ApplicationContext* context = Application::currentContext;
 	if (context) {
+		delete context->workerPool;
 		delete context->renderer;
 		delete context->instance;
 		if (context->currentWindow) {
@@ -128,8 +131,6 @@ void Application::run() {
 		glfwSetScrollCallback(context->window, mouseScrollCallback);
 		glfwSetCursorPosCallback(context->window, cursorPositionCallback);
 
-		// Capture and hide the mouse cursor
-		glfwSetInputMode(context->window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		// Sync with refresh rate
 		glfwSwapInterval(1);
 
@@ -153,7 +154,7 @@ void Application::run() {
 		lgr::lout.info(detailsBuf.str());
 	}
 	{
-		GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
+		//GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
 		GLCALL(glEnable(GL_BLEND));
 		GLCALL(glEnable(GL_DEPTH_TEST));
 		GLCALL(glEnable(GL_CULL_FACE));         // Enable face culling
@@ -169,6 +170,7 @@ void Application::run() {
 		ImGui_ImplGlfw_InitForOpenGL(context->window, true);
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+		//io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 		ImGui::StyleColorsDark();
 		
 		float fontSize1 = 32.0f;
