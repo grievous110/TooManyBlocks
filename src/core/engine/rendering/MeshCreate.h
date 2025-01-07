@@ -1,7 +1,9 @@
 #ifndef MESHCREATE_H
 #define MESHCREATE_H
 
+#include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/Mesh.h"
+#include "engine/env/Chunk.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <cstdint>
@@ -25,15 +27,6 @@
 #define SET_BITS(target, value, bitmask, position) (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
 #define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
 
-enum class NormalDirection : uint8_t {
-    PositiveX = 0,
-    NegativeX,
-    PositiveY,
-    NegativeY,
-    PositiveZ,
-    NegativeZ,
-};
-
 struct UVCoord {
     uint8_t x : 6;
     uint8_t y : 6; 
@@ -43,7 +36,7 @@ struct CompactChunkVertex {
     uint32_t position;      // 4 bytes compressed for 10bit positions (x, y, z)
     uint32_t packedData;    // 4 bytes for compressed data (texIndex, normal, uv)
 
-    CompactChunkVertex(const glm::ivec3& pos = glm::ivec3(0), uint16_t texIndex = 0, UVCoord uv = {0, 0}, NormalDirection normal = NormalDirection::PositiveX) {
+    CompactChunkVertex(const glm::ivec3& pos = glm::ivec3(0), uint16_t texIndex = 0, UVCoord uv = {0, 0}, AxisDirection normal = AxisDirection::PositiveX) {
         setPosition(pos);
         setTexIndex(texIndex);
         setUV(uv);
@@ -65,8 +58,8 @@ struct CompactChunkVertex {
         SET_BITS(packedData, static_cast<uint32_t>(uv.y), Y_UV_BITMASK, Y_UV_OFFSET);   // 6 bit y uv coord [0 - 63]
     }
 
-    inline void setNormal(NormalDirection normal) {
-        SET_BITS(packedData, static_cast<uint32_t>(normal), NORMAL_BITMASK, NORMAL_OFFSET);
+    inline void setNormal(AxisDirection normal) {
+        SET_BITS(packedData, static_cast<uint32_t>(normal), NORMAL_BITMASK, NORMAL_OFFSET);     // Compressed in 3 bit
     }
 
     inline glm::ivec3 getPosition() const {
@@ -79,12 +72,12 @@ struct CompactChunkVertex {
 
     inline glm::vec3 getNormal() const {
             switch (getNormalEnum()) {
-            case NormalDirection::PositiveX: return glm::vec3(1.0f, 0.0f, 0.0f);
-            case NormalDirection::NegativeX: return glm::vec3(-1.0f, 0.0f, 0.0f);
-            case NormalDirection::PositiveY: return glm::vec3(0.0f, 1.0f, 0.0f);
-            case NormalDirection::NegativeY: return glm::vec3(0.0f, -1.0f, 0.0f);
-            case NormalDirection::PositiveZ: return glm::vec3(0.0f, 0.0f, 1.0f);
-            case NormalDirection::NegativeZ: return glm::vec3(0.0f, 0.0f, -1.0f);
+            case AxisDirection::PositiveX: return glm::vec3(1.0f, 0.0f, 0.0f);
+            case AxisDirection::NegativeX: return glm::vec3(-1.0f, 0.0f, 0.0f);
+            case AxisDirection::PositiveY: return glm::vec3(0.0f, 1.0f, 0.0f);
+            case AxisDirection::NegativeY: return glm::vec3(0.0f, -1.0f, 0.0f);
+            case AxisDirection::PositiveZ: return glm::vec3(0.0f, 0.0f, 1.0f);
+            case AxisDirection::NegativeZ: return glm::vec3(0.0f, 0.0f, -1.0f);
             default: return glm::vec3(0.0f);
         }
     }
@@ -100,29 +93,41 @@ struct CompactChunkVertex {
         return uv;
     }
 
-    inline NormalDirection getNormalEnum() const {
-        return static_cast<NormalDirection>(GET_BITS(packedData, NORMAL_BITMASK, NORMAL_OFFSET));
+    inline AxisDirection getNormalEnum() const {
+        return static_cast<AxisDirection>(GET_BITS(packedData, NORMAL_BITMASK, NORMAL_OFFSET));
     }
-};
-
-struct CompactChunkFace {
-    CompactChunkVertex vertices[4];
-    unsigned int indices[6];
 };
 
 struct Vertex {
     glm::vec3 position;
     glm::vec2 uv;
     glm::vec3 normal;
+
+    bool operator==(const Vertex& other) const {
+		return position == other.position && uv == other.uv && normal == other.normal;
+	}
 };
 
-struct Face {
-    Vertex vertices[4];
-    unsigned int indices[6];
+struct RawChunkMeshData {
+    std::string name;
+	std::vector<CompactChunkVertex> vertices;
+	std::vector<unsigned int> indices;
 };
 
-std::shared_ptr<Mesh> generateMeshForChunk(const Chunk& chunk);
+struct RawMeshData {
+    std::string name;
+	std::vector<Vertex> vertices;
+	std::vector<unsigned int> indices;
+};
 
-CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, FaceDirection faceDirection);
+std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData& data);
+
+std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data);
+
+std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const BlockToTextureMap& texMap);
+
+std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk, const BlockToTextureMap& texMap);
+
+std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
 #endif

@@ -19,9 +19,7 @@ public:
 	World* m_world;
 	std::shared_ptr<Mesh> m_mesh;
 	bool isInitialized;
-
-	std::shared_ptr<Material> m_meshMaterial;
-
+	
 public:
 	GameInstance();
 	virtual ~GameInstance();
@@ -30,7 +28,7 @@ public:
 
 	Scene craftScene();
 
-	void update(float deltaSecs) override;
+	void update(float msDelta) override;
 };
 
 #endif
