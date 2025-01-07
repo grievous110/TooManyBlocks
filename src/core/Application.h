@@ -10,8 +10,10 @@ class Application;
 class Renderer;
 class GameInstance;
 class AppIO;
+class ThreadPool;
 
 struct ApplicationContext {
+	ThreadPool* workerPool;
 	GLFWwindow* window;
 	Renderer* renderer;
 	GameInstance* instance;
