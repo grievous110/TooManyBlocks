@@ -2,6 +2,7 @@
 #define RENDERER_H
 
 #include "Application.h"
+#include "compatability/Compatability.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
@@ -26,7 +27,7 @@ bool GLLogCall(const char* functionName, const char* file, int line);
 class Renderer {
 private:
 	std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaderCache;
-	std::unordered_map<std::string, std::shared_ptr<Texture>> m_textureCacher;
+	std::unordered_map<std::string, std::shared_ptr<Texture>> m_textureCache;
 
 	RenderContext currentRenderContext;
 
@@ -34,11 +35,8 @@ private:
 	void endShadowpass(const Scene& scene);
 	void beginMainpass(const Scene& scene);
 	void endMainpass(const Scene& scene);
-	void clear() const;
 
 public:
-	Renderer();
-
 	void renderScene(const Scene& scene, const ApplicationContext& context);
 
 	void drawMesh(const Mesh& mesh, const RenderContext& context);

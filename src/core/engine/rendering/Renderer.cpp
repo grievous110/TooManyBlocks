@@ -62,17 +62,6 @@ void Renderer::endMainpass(const Scene& scene) {
 
 }
 
-Renderer::Renderer() {
-	ASSERT(sizeof(float) == sizeof(GLfloat), "Size mismatch for GLfloat.");
-	ASSERT(sizeof(double) == sizeof(GLdouble), "Size mismatch for GLdouble.");
-	ASSERT(sizeof(int) == sizeof(GLint), "Size mismatch for GLint.");
-	ASSERT(sizeof(unsigned int) == sizeof(GLuint), "Size mismatch for GLuint.");
-	ASSERT(sizeof(short) == sizeof(GLshort), "Size mismatch for GLshort.");
-	ASSERT(sizeof(unsigned short) == sizeof(GLushort), "Size mismatch for GLushort.");
-	ASSERT(sizeof(char) == sizeof(GLbyte), "Size mismatch for GLbyte.");
-	ASSERT(sizeof(unsigned char) == sizeof(GLubyte), "Size mismatch for GLubyte.");
-}
-
 void Renderer::renderScene(const Scene& scene, const ApplicationContext& context) {
 	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 
@@ -140,13 +129,13 @@ std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPat
 }
 
 std::shared_ptr<Texture> Renderer::getTextureFromFile(const std::string& texturePath) {
-   	auto it = m_textureCacher.find(texturePath);
-	if (it != m_textureCacher.end()) {
+   	auto it = m_textureCache.find(texturePath);
+	if (it != m_textureCache.end()) {
 		return it->second;
 	}
 
 	// Use the provided creator function to create the new object
 	std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(texturePath);
-	m_textureCacher[texturePath] = newTexture;
+	m_textureCache[texturePath] = newTexture;
 	return newTexture;
 }
