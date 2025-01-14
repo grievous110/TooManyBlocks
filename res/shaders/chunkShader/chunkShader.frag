@@ -6,6 +6,7 @@ in vec2 uv;
 flat in vec3 normal;
 
 uniform sampler2D u_textureAtlas;
+uniform vec3 u_cameraPosition;
 uniform uint u_textureAtlasSize;
 uniform uint u_textureSize;
 
@@ -29,6 +30,16 @@ void main() {
     );
 
     // Sample the texture atlas
-    vec4 color = texture(u_textureAtlas, atlasUV);
+    vec3 color = vec3(texture(u_textureAtlas, atlasUV));
+
+    // Gradual fade to black for distant elements
+    float dist = length(u_cameraPosition - position);
+    float dropoffStartDistance = 50.0;
+    float fadeDistance = 32.0;
+    if (dist > dropoffStartDistance) {
+        float fade = clamp((dist - dropoffStartDistance) / fadeDistance, 0.0, 1.0);
+        color *= 1.0 - fade;
+    }
+
     frag_color = vec4(color.rgb, 1.0);
 }

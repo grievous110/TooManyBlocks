@@ -9,7 +9,8 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 	if (passType == PassType::MainPass) {
 		m_shader->bind();
 		m_shader->setUniform("u_viewProjection", context.viewProjection);
-		m_shader->setUniform("u_chunkPosition", context.meshPosition);
+		m_shader->setUniform("u_chunkPosition", context.meshTransform.getPosition());
+		m_shader->setUniform("u_cameraPosition", context.cameraTransform.getPosition());
 		if (m_textureAtlas) {
 			m_textureAtlas->bind(0);
 			m_shader->setUniform("u_textureAtlas", 0);

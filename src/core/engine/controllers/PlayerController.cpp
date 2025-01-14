@@ -23,10 +23,10 @@ void PlayerController::notify(KeyEvent event, KeyEventData data) {
 void PlayerController::notify(MousEvent event, MouseEventData data) {
     if (event == MousEvent::Move) {
 		if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
-            Transform& tr = pl->m_camera->getTransform();
+            Transform& tr = pl->m_camera->getLocalTransform();
 
-            float pitchDelta = static_cast<float>(-data.delta.y);
-            float yawDelta = static_cast<float>(-data.delta.x);
+            float pitchDelta = static_cast<float>(-data.delta.y) * 0.25f;
+            float yawDelta = static_cast<float>(-data.delta.x)  * 0.25f;
 
             glm::vec3 eulerAngles = tr.getRotationEuler();
             eulerAngles.x = glm::clamp(eulerAngles.x + pitchDelta, -89.0f, 89.0f);
@@ -39,8 +39,11 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
 void PlayerController::update(float msDelta) {
     if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
         glm::vec3 vel(0.0f);
-        const Transform& camTransform = pl->getCamera()->getTransform();
-        const float cameraSpeed = 5.0f;
+        const Transform& camTransform = pl->getCamera()->getLocalTransform();
+        float cameraSpeed = 5.0f;
+        if (keyStates[GLFW_KEY_LEFT_SHIFT]) {
+            cameraSpeed *= 2.5f;
+        }
         // Adjust velocity based on key states
         if (keyStates[GLFW_KEY_W]) vel += camTransform.getForward() * cameraSpeed;
         if (keyStates[GLFW_KEY_S]) vel -= camTransform.getForward() * cameraSpeed;

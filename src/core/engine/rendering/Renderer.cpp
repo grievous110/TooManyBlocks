@@ -46,26 +46,25 @@ bool GLLogCall(const char* functionName, const char* file, int line) {
 	return true;
 }
 
-void Renderer::beginShadowpass(const Scene& scene) {
+void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& context) {
+	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+}
+
+void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
 
 }
 
-void Renderer::endShadowpass(const Scene& scene) {
-
+void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
+	currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	currentRenderContext.cameraTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
-void Renderer::beginMainpass(const Scene& scene) {
-	
-}
-
-void Renderer::endMainpass(const Scene& scene) {
+void Renderer::endMainpass(const Scene& scene, const ApplicationContext& context) {
 
 }
 
 void Renderer::renderScene(const Scene& scene, const ApplicationContext& context) {
-	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-
-	beginShadowpass(scene);
+	beginShadowpass(scene, context);
 
 	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
 		const std::shared_ptr<Material> material = mesh->getMaterial();
@@ -76,25 +75,12 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		}
 	}
 
-	endShadowpass(scene);
+	endShadowpass(scene, context);
 
-	const Transform& playerTr = context.instance->m_player->getTransform();
-	Transform& camTr = context.instance->m_player->m_camera->getTransform();
-
-	glm::vec3 position = playerTr.getPosition();
-	glm::vec3 forward = camTr.getForward();
-	glm::vec3 up = camTr.getUp();
-
-	glm::mat4 view = glm::lookAt(position, position + forward, up);
-	glm::mat4 proj = context.instance->m_player->m_camera->getProjectionMatrix();
-	currentRenderContext.viewProjection = proj * view;
-
-	beginMainpass(scene);
+	beginMainpass(scene, context);
 
 	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
-		const Transform meshTr = mesh->getGlobalTransform();
-		currentRenderContext.modelMatrix = meshTr.getModelMatrix();
-		currentRenderContext.meshPosition = meshTr.getPosition();
+		currentRenderContext.meshTransform = mesh->getGlobalTransform();
 
 		const std::shared_ptr<Material> material = mesh->getMaterial();
 		if (material->supportsPass(PassType::MainPass)) {
@@ -104,7 +90,7 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		}
 	}
 
-	endMainpass(scene);
+	endMainpass(scene, context);
 }
 
 void Renderer::drawMesh(const Mesh& mesh, const RenderContext& context) {

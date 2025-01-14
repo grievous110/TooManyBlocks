@@ -1,6 +1,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include "datatypes/Transform.h"
 #include "engine/env/Light.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include <glm/glm.hpp>
@@ -10,8 +11,8 @@
 struct RenderContext {
 	std::vector<Light> lights;
 	glm::mat4 viewProjection;
-	glm::mat4 modelMatrix;
-	glm::vec3 meshPosition;
+	Transform cameraTransform;
+	Transform meshTransform;
 };
 
 enum PassType {
