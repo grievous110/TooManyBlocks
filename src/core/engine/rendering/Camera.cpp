@@ -3,7 +3,7 @@
 #include "Camera.h"
 
 Camera::Camera(float fovy, float aspectRatio)
-	: m_fovy(fovy), m_aspectRatio(aspectRatio), m_projDirty(true), m_viewDirty(true) {
+	: m_fovy(fovy), m_aspectRatio(aspectRatio), m_projDirty(true) {
 	updateProjection();
 	updateView();
 }
@@ -16,9 +16,7 @@ glm::mat4 Camera::getProjectionMatrix() {
 }
 
 glm::mat4 Camera::getViewMatrix() {
-	if (m_viewDirty) {
-		updateView();
-	}
+	updateView();
 	return m_view;
 }
 
@@ -41,19 +39,13 @@ void Camera::setAspectRatio(float aspectRatio) {
 }
 
 void Camera::updateProjection() {
-	if (m_projDirty) {
-		m_proj = glm::perspective(glm::radians(m_fovy), m_aspectRatio, 0.1f, 500.0f);
-		m_projDirty = false;
-	}
+	m_proj = glm::perspective(glm::radians(m_fovy), m_aspectRatio, 0.1f, 500.0f);
+	m_projDirty = false;
 }
 
 void Camera::updateView() {
-	if (m_viewDirty) {
-		glm::vec3 position = m_transform.getPosition();
-		glm::vec3 forward = m_transform.getForward();
-		glm::vec3 up = m_transform.getUp();
+	Transform tr = getGlobalTransform(); 
+	glm::vec3 position = tr.getPosition();
 
-		m_view = glm::lookAt(position, position + forward, up);
-		m_viewDirty = false;
-	}
+	m_view = glm::lookAt(position, position + tr.getForward(), tr.getUp());
 }
