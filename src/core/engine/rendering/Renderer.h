@@ -31,10 +31,10 @@ private:
 
 	RenderContext currentRenderContext;
 
-	void beginShadowpass(const Scene& scene);
-	void endShadowpass(const Scene& scene);
-	void beginMainpass(const Scene& scene);
-	void endMainpass(const Scene& scene);
+	void beginShadowpass(const Scene& scene, const ApplicationContext& context);
+	void endShadowpass(const Scene& scene, const ApplicationContext& context);
+	void beginMainpass(const Scene& scene, const ApplicationContext& context);
+	void endMainpass(const Scene& scene, const ApplicationContext& context);
 
 public:
 	void renderScene(const Scene& scene, const ApplicationContext& context);
