@@ -47,7 +47,7 @@ bool GLLogCall(const char* functionName, const char* file, int line) {
 }
 
 void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& context) {
-	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -55,6 +55,7 @@ void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& conte
 }
 
 void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
+	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	currentRenderContext.cameraTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
@@ -66,12 +67,16 @@ void Renderer::endMainpass(const Scene& scene, const ApplicationContext& context
 void Renderer::renderScene(const Scene& scene, const ApplicationContext& context) {
 	beginShadowpass(scene, context);
 
-	for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
-		const std::shared_ptr<Material> material = mesh->getMaterial();
-		if (material->supportsPass(PassType::ShadowPass)) {
-			material->bindForPass(PassType::ShadowPass, currentRenderContext);
-			drawMesh(*mesh, currentRenderContext);
-			material->unbindForPass(PassType::ShadowPass);
+	for (const std::shared_ptr<Light> light : scene.lights) {
+		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
+		
+		for (const std::shared_ptr<Mesh> mesh : scene.meshes) {
+			const std::shared_ptr<Material> material = mesh->getMaterial();
+			if (material->supportsPass(PassType::ShadowPass)) {
+				material->bindForPass(PassType::ShadowPass, currentRenderContext);
+				drawMesh(*mesh, currentRenderContext);
+				material->unbindForPass(PassType::ShadowPass);
+			}
 		}
 	}
 
