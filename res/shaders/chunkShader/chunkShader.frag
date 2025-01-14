@@ -37,7 +37,7 @@ void main() {
     float dropoffStartDistance = 50.0;
     float fadeDistance = 32.0;
     if (dist > dropoffStartDistance) {
-        float fade = clamp((dist - dropoffStartDistance) / fadeDistance, 0.0, 1.0);
+        float fade = clamp(smoothstep(0, 1, (dist - dropoffStartDistance) / fadeDistance), 0.0, 1.0);
         color *= 1.0 - fade;
     }
 
