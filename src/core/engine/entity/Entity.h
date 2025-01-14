@@ -3,6 +3,7 @@
 
 #include "datatypes/Transform.h"
 #include "engine/comp/MovementComponent.h"
+#include "engine/comp/SceneComponent.h"
 #include "engine/controllers/Controller.h"
 #include "engine/Updatable.h"
 
@@ -10,7 +11,7 @@ class MovementComponent;
 
 class Entity : public Updatable {
 protected:
-	Transform m_transform;
+	SceneComponent m_sceneRoot;
 	MovementComponent* m_movement;
 	Controller* m_controller;
 
@@ -20,7 +21,7 @@ public:
 
 	void update(float msDelta) override;
 
-	inline Transform& getTransform() { return m_transform; }
+	inline Transform& getTransform() { return m_sceneRoot.getLocalTransform(); }
 
 	glm::vec3 getVelocity() const;
 
