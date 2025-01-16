@@ -186,8 +186,6 @@ void Application::run() {
 		io.Fonts->Build();
 
 		ImGui_ImplOpenGL3_CreateFontsTexture();
-
-		double previousTime = glfwGetTime();
 		
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
@@ -195,21 +193,22 @@ void Application::run() {
 
 		// Loop until the user closes the window
 		try {
-			while (!glfwWindowShouldClose(context->window)) {				
+			double previousTime = glfwGetTime();
+
+			while (!glfwWindowShouldClose(context->window)) {
+				double currentTime = glfwGetTime();
+				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
+				previousTime = currentTime;
+
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
 				ImGui::PushFont(font1);
 
 				if (context->instance->isInitialized) {
-					double currentTime = glfwGetTime();
-					float msDelta = static_cast<float>((previousTime - currentTime) * 1000.0);
-					previousTime = currentTime;
-					
-					context->instance->update(msDelta);
+					context->instance->update(msframeTime);
 					Scene scene = context->instance->craftScene();
 					context->renderer->renderScene(scene, *context);
-
 				}
 
 				context->currentWindow->render(*context);
