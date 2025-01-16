@@ -6,16 +6,9 @@
 
 class Camera {
 private:
-	Transform* m_transform;
-	glm::mat4 m_proj;
-	glm::mat4 m_view;
 	float m_fovy;
 	float m_aspectRatio;
-	bool m_projDirty;
-	bool m_viewDirty;
-
-	void updateProjection();
-	void updateView();
+	float m_viewDistance;
 
 public:
 	Camera(float fovy, float aspectRatio);
@@ -26,8 +19,13 @@ public:
 	glm::mat4 getViewMatrix();
 	glm::mat4 getViewProjMatrix();
 
-	void setFovyRatio(float fovy);
-	void setAspectRatio(float aspectRatio);
+	inline float getFovy() const { return m_fovy; }
+	inline float getAspectRatio() const { return m_aspectRatio; }
+	inline float getViewDistance() const { return m_viewDistance; }
+
+	inline void setFovyRatio(float fovy) { m_fovy = fovy; }
+	inline void setAspectRatio(float aspectRatio) { m_aspectRatio = aspectRatio; }
+	inline void setViewDistance(float viewDistance) { m_viewDistance = viewDistance; }
 };
 
 #endif
