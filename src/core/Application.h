@@ -10,8 +10,10 @@ class Application;
 class Renderer;
 class GameInstance;
 class AppIO;
+class ThreadPool;
 
 struct ApplicationContext {
+	ThreadPool* workerPool;
 	GLFWwindow* window;
 	Renderer* renderer;
 	GameInstance* instance;
@@ -21,7 +23,7 @@ struct ApplicationContext {
 
 class AppIO : public MouseObservable, public KeyObservable {
 private:
-	AppIO() {};
+	virtual ~AppIO() = default;
 
 	friend Application;
 
@@ -39,7 +41,7 @@ private:
 	static ApplicationContext* currentContext;
 
 public:
-	static void setCurrentContext(ApplicationContext* currentContext);
+	static void setCurrentContext(ApplicationContext* context);
 	static ApplicationContext* createContext();
 	static void deleteCurrentContext();
 	static ApplicationContext* getContext();

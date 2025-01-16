@@ -12,11 +12,11 @@ private:
     
 public:
     PlayerController();
-    ~PlayerController();
+    virtual ~PlayerController();
 
-    void notify(const KeyEvent& event, const KeyEventData& data) override;
+    void notify(KeyEvent event, KeyEventData data) override;
 
-	void notify(const MousEvent& event, const MouseEventData& data) override;
+	void notify(MousEvent event, MouseEventData data) override;
     
     void update(float msDelta) override;
 };

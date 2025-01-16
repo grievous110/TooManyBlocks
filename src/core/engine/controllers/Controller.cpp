@@ -2,8 +2,6 @@
 #include "engine/entity/Entity.h"
 #include "Controller.h"
 
-Controller::Controller() : m_possessedEntity(nullptr) {}
-
 Controller::~Controller() {
     unpossess();
 }
