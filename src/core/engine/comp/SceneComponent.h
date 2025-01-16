@@ -18,7 +18,7 @@ public:
 	void detachChild(SceneComponent* child);
 
 	inline Transform& getLocalTransform() { return m_transform; }
-	Transform getGlobalTransform();
+	Transform getGlobalTransform() const;
 };
 
 #endif
