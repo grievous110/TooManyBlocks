@@ -21,7 +21,7 @@ void SceneComponent::detachChild(SceneComponent* child) {
 	child->parent = nullptr;
 }
 
-Transform SceneComponent::getGlobalTransform() {
+Transform SceneComponent::getGlobalTransform() const {
     if (parent) {
 		return m_transform * parent->getGlobalTransform();
 	} else {
