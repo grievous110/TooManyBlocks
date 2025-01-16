@@ -21,12 +21,27 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTextu
     GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
 }
 
+FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_depthTexture(other.m_depthTexture) {
+    other.m_depthTexture = nullptr;
+}
+
 FrameBuffer::~FrameBuffer() {
-    delete m_depthTexture;
-    GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+    if (m_depthTexture)
+        delete m_depthTexture;
+    if (m_rendererId != 0) {
+        try {
+            unbind();
+            GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+		} catch (const std::exception&) {
+			lgr::lout.error("Error during Shader cleanup");
+		}
+    }
 }
 
 void FrameBuffer::bind() const {
+    if (m_rendererId == 0)
+        throw std::runtime_error("Invalid state of FrameBuffer with id 0");
+
     if (FrameBuffer::currentlyBoundFBO != m_rendererId) {
         GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, m_rendererId));
         FrameBuffer::currentlyBoundFBO = m_rendererId;
@@ -38,4 +53,26 @@ void FrameBuffer::unbind() const {
         GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
         FrameBuffer::currentlyBoundFBO = 0;
     }
+}
+
+FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
+    if (this != &other) {
+        if (m_depthTexture) {
+            delete m_depthTexture;
+        }
+        if (m_rendererId != 0) {
+            try {
+                unbind();
+                GLCALL(glDeleteFramebuffers(1, &m_rendererId));
+            } catch (const std::exception&) {
+                lgr::lout.error("Error during Shader cleanup");
+            }
+        }
+        RenderApiObject::operator=(std::move(other));
+
+        m_depthTexture = other.m_depthTexture;
+
+        other.m_depthTexture = nullptr;
+    }
+    return *this;
 }

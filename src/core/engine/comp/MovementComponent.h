@@ -19,11 +19,11 @@ private:
 
 public:
 	MovementComponent(Entity* owner);
-	~MovementComponent();
+	virtual ~MovementComponent() = default;
 
-	glm::vec3 getVelocity() const;
-	void setVelocity(const glm::vec3& velocity);
-	void setGravityEnabled(const bool& enabled);
+	inline glm::vec3 getVelocity() const { return m_velocity; }
+	inline void setVelocity(const glm::vec3& velocity) { m_velocity = velocity; }
+	inline void setGravityEnabled(bool enabled) { m_gravityEnabled = enabled; }
 	
 	void update(float msDelta) override;
 };

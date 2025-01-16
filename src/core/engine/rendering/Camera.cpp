@@ -1,5 +1,6 @@
 #include "engine/rendering/Camera.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "Camera.h"
 
 Camera::Camera(float fovy, float aspectRatio) : m_fovy(fovy), m_aspectRatio(aspectRatio), m_viewDistance(500.0f) {}
 

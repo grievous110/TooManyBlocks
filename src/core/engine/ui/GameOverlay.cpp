@@ -1,6 +1,7 @@
 #include "GameOverlay.h"
 #include "Application.h"
 #include "datatypes/Transform.h"
+#include "engine/entity/Entity.h"
 #include <imgui/imgui.h>
 #include <glm/vec3.hpp>
 
@@ -18,7 +19,7 @@ void UI::GameOverlay::render(ApplicationContext& context) {
 
     ImGui::Begin("Debug Info", nullptr, window_flags);
 
-    Transform& cameraTransform = context.instance->m_player->getCamera()->getTransform();
+    Transform& cameraTransform = context.instance->m_player->getCamera()->getLocalTransform();
     glm::vec3 camRotation = cameraTransform.getRotationEuler();
     glm::vec3 camForward = cameraTransform.getForward();
     glm::vec3 playerPos = context.instance->m_player->getTransform().getPosition();

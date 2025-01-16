@@ -1,12 +1,18 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/Renderer.h"
+#include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
+#include "engine/rendering/MeshCreate.h"
+#include "engine/rendering/ShaderPathsConstants.h"
+#include "rendering/FrustumCulling.h"
 #include "rendering/Mesh.h"
 #include "engine/controllers/PlayerController.h"
+#include "Logger.h"
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <imgui/imgui.h>
+#include <random>
 #include <iostream>
 #include <vector>
 
@@ -18,78 +24,59 @@ GameInstance::GameInstance()
 GameInstance::~GameInstance() {
 	if (m_player)
 		delete m_player;
-	if (m_mesh)
-		delete m_mesh;
 	if (m_world)
 		delete m_world;
 }
 
 void GameInstance::initialize() {
+	// Random seed
+	std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
+	uint32_t seed = distribution(generator);
 	m_playerController = new PlayerController;
 	m_player = new Player;
-	m_world = new World;
+	m_world = new World(42);
 	m_playerController->possess(m_player);
-	m_world->loadChunk(0, 0);
-	m_mesh = m_world->generateMeshForChunk(*m_world->getChunk(0, 0));
 
 	Renderer* renderer = Application::getContext()->renderer;
+
+	m_mesh = buildFromMeshData(*readMeshDataFromObjFile("res/models/testUnitBlock.obj", true)); 
 	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
-	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/stone.png");
-	m_meshMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(1.0f), texture);
-	m_mesh->assignMaterial(m_meshMaterial);
+	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
+	std::shared_ptr<Material> m_testMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
+	m_mesh->assignMaterial(m_testMaterial);
+	m_mesh->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+
+	// Capture and hide the mouse cursor
+	glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	isInitialized = true;
 }
 
 Scene GameInstance::craftScene() {
 	Scene scene;
-	scene.m_meshes.push_back(m_mesh);
+
+	ApplicationContext* context = Application::getContext();
+	Frustum frustum(context->instance->m_player->getCamera()->getViewProjMatrix());
+
+	for (const auto& val : m_world->loadedChunks()) {
+		if (val.second && val.second->mesh) {
+			glm::vec3 chunkPosition = val.second->mesh->getLocalTransform().getPosition();
+
+			if (frustum.isBoxInside(chunkPosition, chunkPosition + glm::vec3(CHUNK_SIZE))) {
+                scene.meshes.push_back(val.second->mesh);
+            }
+		}
+	}
+	scene.meshes.push_back(m_mesh);
 	return scene;
 }
 
 void GameInstance::update(float msDelta) {
 	m_player->update(msDelta);
+	m_mesh->getLocalTransform().rotate(glm::vec3(0.0f, 90.0f * (msDelta / 1000.0f), 0.0f));
+	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
 }
-
-	// ######## Constructor #########
-	//float* vertices = new float[data.vertices.size()];
-	//unsigned int* indices = new unsigned int[data.indices.size()];
-	//
-	//for (int i = 0; i < data.vertices.size(); i++) {
-	//	vertices[i] = data.vertices[i];
-	//}
-
-	//for (int i = 0; i < data.indices.size(); i++) {
-	//	indices[i] = data.indices[i];
-	//}
-
-	//// Vertex Array Object (VAO)
-	//m_vao = new VertexArray();
-
-	//// Vertex Buffer Object (VBO)
-	//m_vbo = new VertexBuffer(vertices, static_cast<int>(data.vertices.size() * sizeof(float)));
-
-	//// Vertex Attribute Pointer 
-	//VertexBufferLayout layout;
-	//layout.push<float>(3);
-	//layout.push<float>(2);
-	//layout.push<float>(3);
-	//m_vao->addBuffer(*m_vbo, layout);
-
-	//// Index Buffer Object (IBO)
-	//m_ibo = new IndexBuffer(indices, static_cast<int>(data.indices.size()));
-
-	//m_shader->bind();
-
-	//m_shadowMapFBO = new FrameBuffer(4096, 4096);
-	//
-	//unsigned int tex_slot = 0;
-	//m_texture->bind(tex_slot);
-	//m_shader->setUniform1i("u_texture", tex_slot);
-
-	//m_vao->unbind();
-	//m_vbo->unbind();
-	//m_ibo->unbind();
-	//m_shader->unbind();
 
 //void GameInstance::render(Renderer& renderer) {
 	//static float bias = 0.0005f;
