@@ -162,6 +162,7 @@ void Application::run() {
 		GLCALL(glFrontFace(GL_CW));				// Specify frontfaces as faces with clockwise winding
 		GLCALL(glEnable(GL_MULTISAMPLE));		// Enable MSAA
 		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));	// Blending
+		GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
 		ApplicationContext* context = Application::getContext();
 
@@ -194,10 +195,7 @@ void Application::run() {
 
 		// Loop until the user closes the window
 		try {
-			GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-			while (!glfwWindowShouldClose(context->window)) {
-
-				
+			while (!glfwWindowShouldClose(context->window)) {				
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
@@ -222,8 +220,7 @@ void Application::run() {
 				ImGui::Render();
 				int display_w, display_h;
 				glfwGetFramebufferSize(context->window, &display_w, &display_h);
-				glViewport(0, 0, display_w, display_h);
-				//glClear(GL_COLOR_BUFFER_BIT);
+				GLCALL(glViewport(0, 0, display_w, display_h));
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 				// Swap front and back buffers
