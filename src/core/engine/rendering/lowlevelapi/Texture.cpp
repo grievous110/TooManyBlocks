@@ -3,12 +3,12 @@
 #include "Logger.h"
 #include <stb_image/stb_image.h>
 
-Texture::Texture(const std::string path) :
+Texture::Texture(const std::string& path) :
 	m_filepath(path),
+	m_locabuffer(nullptr),
 	m_width(0),
 	m_height(0),
-	m_bitsPerPixel(0),
-	m_locabuffer(nullptr) {
+	m_bitsPerPixel(0) {
 
 	stbi_set_flip_vertically_on_load(1);
 	m_locabuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bitsPerPixel, 4);
@@ -30,10 +30,10 @@ Texture::Texture(const std::string path) :
 }
 
 Texture::Texture(unsigned int width, unsigned int height, bool isDepth) :
+	m_locabuffer(nullptr),
 	m_width(width),
 	m_height(height),
-	m_bitsPerPixel(0),
-	m_locabuffer(nullptr) {
+	m_bitsPerPixel(0) {
 
 	GLCALL(glGenTextures(1, &m_rendererId));
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
@@ -57,18 +57,67 @@ Texture::Texture(unsigned int width, unsigned int height, bool isDepth) :
 	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
+Texture::Texture(Texture&& other) noexcept 
+	: RenderApiObject(std::move(other)), m_filepath(std::move(other.m_filepath)), 
+		m_locabuffer(other.m_locabuffer), m_width(other.m_width), 
+		m_height(other.m_height), m_bitsPerPixel(other.m_bitsPerPixel) {
+	other.m_width = 0;
+	other.m_height = 0;
+	other.m_bitsPerPixel = 0;
+	other.m_locabuffer = nullptr;
+}
+
 Texture::~Texture() {
 	if (m_locabuffer) {
 		stbi_image_free(m_locabuffer);
 	}
-	GLCALL(glDeleteTextures(1, &m_rendererId));
+	if (m_rendererId != 0) {
+		try {
+			unbind();
+			GLCALL(glDeleteTextures(1, &m_rendererId));
+		} catch (const std::exception&) {
+			lgr::lout.error("Error during Texture cleanup");
+		}
+	}
 }
 
 void Texture::bind(unsigned int slot) const {
+	if (m_rendererId == 0)
+        throw std::runtime_error("Invalid state of Texture with id 0");
+
 	GLCALL(glActiveTexture(GL_TEXTURE0 + slot));
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
 }
 
 void Texture::unbind() const {
 	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+}
+
+Texture& Texture::operator=(Texture&& other) noexcept {
+	if (this != &other) {
+		if (m_locabuffer) {
+			stbi_image_free(m_locabuffer);
+		}
+		if (m_rendererId != 0) {
+			try {
+				unbind();
+				GLCALL(glDeleteTextures(1, &m_rendererId));
+			} catch (const std::exception&) {
+				lgr::lout.error("Error during Texture cleanup");
+			}
+		}
+		RenderApiObject::operator=(std::move(other));
+		
+		m_filepath = std::move(other.m_filepath);
+		m_locabuffer = other.m_locabuffer;
+		m_width = other.m_width;
+		m_height = other.m_height;
+		m_bitsPerPixel = other.m_bitsPerPixel;
+
+		other.m_width = 0;
+		other.m_height = 0;
+		other.m_bitsPerPixel = 0;
+		other.m_locabuffer = nullptr;
+	}
+	return *this;
 }

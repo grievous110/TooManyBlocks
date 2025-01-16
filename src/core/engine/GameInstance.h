@@ -17,20 +17,18 @@ public:
 	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
-	Mesh* m_mesh;
+	std::shared_ptr<Mesh> m_mesh;
 	bool isInitialized;
-
-	std::shared_ptr<Material> m_meshMaterial;
-
+	
 public:
 	GameInstance();
-	~GameInstance();
+	virtual ~GameInstance();
 
 	void initialize();
 
 	Scene craftScene();
 
-	void update(float deltaSecs) override;
+	void update(float msDelta) override;
 };
 
 #endif
