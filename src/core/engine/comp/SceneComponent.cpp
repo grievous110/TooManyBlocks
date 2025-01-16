@@ -1,6 +1,16 @@
 #include "engine/comp/SceneComponent.h"
 #include <algorithm>
 
+SceneComponent::~SceneComponent() {
+	if (parent) {
+		parent->detachChild(this);
+	}
+
+	for (SceneComponent* child : children) {
+		delete child;
+	}
+}
+
 void SceneComponent::attachChild(SceneComponent* child) {
 	child->parent = this;
 	children.push_back(child);
@@ -11,14 +21,10 @@ void SceneComponent::detachChild(SceneComponent* child) {
 	child->parent = nullptr;
 }
 
-SceneComponent::SceneComponent() : parent(nullptr), m_transform(new Transform) {}
-
-SceneComponent::~SceneComponent() {
-	if (parent) {
-		parent->detachChild(this);
-	}
-
-	for (SceneComponent* child : children) {
-		delete child;
+Transform SceneComponent::getGlobalTransform() const {
+    if (parent) {
+		return m_transform * parent->getGlobalTransform();
+	} else {
+		return m_transform;
 	}
 }

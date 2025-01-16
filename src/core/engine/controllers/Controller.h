@@ -10,8 +10,8 @@ protected:
     Entity* m_possessedEntity;
 
 public:
-    Controller();
-    ~Controller();
+    Controller() : m_possessedEntity(nullptr) {};
+    virtual ~Controller();
 
     void possess(Entity* entity);
     void unpossess();

@@ -4,11 +4,11 @@
 #include "engine/rendering/Mesh.h"
 #include "engine/env/Light.h"
 #include <vector>
+#include <memory>
 
-class Scene {
-public:
-	std::vector<Light*> m_lights;
-	std::vector<Mesh*> m_meshes;
+struct Scene {
+	std::vector<std::shared_ptr<Light>> lights;
+	std::vector<std::shared_ptr<Mesh>> meshes;
 };
 
 #endif

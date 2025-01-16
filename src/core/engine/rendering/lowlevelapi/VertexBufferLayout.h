@@ -1,7 +1,6 @@
 #ifndef VERTEXBUFFERLAYOUT_H
 #define VERTEXBUFFERLAYOUT_H
 
-#include "compatability/OpenGLTypeConversion.h"
 #include <vector>
 
 struct BufferLayoutElement {
@@ -15,14 +14,11 @@ class VertexBufferLayout {
 private:
 	std::vector<BufferLayoutElement> m_elements;
     unsigned int m_stride;
+    
 public:
     VertexBufferLayout() : m_stride(0) {};
 
-	template<typename T>
-	void push(unsigned int count, bool normalized = false) {
-        unsigned int type = getOpenGLType<T>();
-        unsigned int typeSize = sizeof(T);
-
+	void push(unsigned int type, unsigned int typeSize, unsigned int count, bool normalized = false) {
         m_elements.push_back({ type , typeSize, count, normalized });
         m_stride += count * typeSize;
 	}
