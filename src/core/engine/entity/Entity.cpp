@@ -9,7 +9,7 @@ Entity::~Entity() {
 
 void Entity::update(float msDelta) {
 	m_movement->update(msDelta);
-	glm::vec3 deltaDistance = m_movement->getVelocity() * (-msDelta / 1000.0f);
+	glm::vec3 deltaDistance = m_movement->getVelocity() * (msDelta / 1000.0f);
 	m_sceneRoot.getLocalTransform().translate(deltaDistance);
 }
 
