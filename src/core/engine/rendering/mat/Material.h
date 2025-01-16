@@ -2,7 +2,7 @@
 #define MATERIAL_H
 
 #include "datatypes/Transform.h"
-#include "engine/env/Light.h"
+#include "engine/env/lights/Light.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include <glm/glm.hpp>
 #include <memory>

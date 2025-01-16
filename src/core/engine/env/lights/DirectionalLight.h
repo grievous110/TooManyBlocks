@@ -1,7 +1,7 @@
 #ifndef DIRECTIONALLIGHT_H
 #define DIRECTIONALLIGHT_H
 
-#include "engine/env/Light.h"
+#include "engine/env/lights/Light.h"
 
 class DirectionalLight : public Light {
 protected:

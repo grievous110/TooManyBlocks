@@ -1,7 +1,7 @@
 #ifndef SPOTLIGHT_H
 #define SPOTLIGHT_H
 
-#include "engine/env/Light.h"
+#include "engine/env/lights/Light.h"
 
 class Spotlight : public Light {
 protected:
