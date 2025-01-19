@@ -1,7 +1,6 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include "engine/rendering/Renderer.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "RenderApiObject.h"
 
