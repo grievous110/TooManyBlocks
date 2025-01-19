@@ -1,3 +1,4 @@
+#include "engine/rendering/Renderer.h"
 #include "FrameBuffer.h"
 #include "Logger.h"
 
