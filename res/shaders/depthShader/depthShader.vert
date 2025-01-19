@@ -2,8 +2,8 @@
 
 layout(location = 0) in vec3 v_position;
 
-uniform mat4 u_lightSpaceMatrix;
+uniform mat4 u_lightViewProjection;
 
 void main() {
-	gl_Position = u_lightSpaceMatrix * vec4(v_position, 1.0);
+	gl_Position = u_lightViewProjection * vec4(v_position, 1.0);
 }
