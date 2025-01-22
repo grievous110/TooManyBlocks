@@ -1,12 +1,12 @@
 #ifndef MESHCREATE_H
 #define MESHCREATE_H
 
+#include "engine/env/Chunk.h"
 #include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/Mesh.h"
-#include "engine/env/Chunk.h"
+#include <cstdint>
 #include <glm/glm.hpp>
 #include <memory>
-#include <cstdint>
 
 #define POSITION_BITMASK 0x3FF
 #define X_POSITION_OFFSET 20
@@ -21,7 +21,7 @@
 #define X_UV_OFFSET 10
 #define Y_UV_OFFSET 4
 
-#define NORMAL_BITMASK 0x05
+#define NORMAL_BITMASK 0x07
 #define NORMAL_OFFSET 0
 
 #define SET_BITS(target, value, bitmask, position) (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
@@ -112,15 +112,21 @@ struct RawChunkMeshData {
     std::string name;
 	std::vector<CompactChunkVertex> vertices;
 	std::vector<unsigned int> indices;
+    MeshBounds bounds;
 };
 
 struct RawMeshData {
     std::string name;
 	std::vector<Vertex> vertices;
 	std::vector<unsigned int> indices;
+    MeshBounds bounds;
 };
 
+std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData& data);
+
 std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData& data);
+
+std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData& data);
 
 std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data);
 

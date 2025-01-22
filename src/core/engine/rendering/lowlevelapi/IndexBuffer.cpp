@@ -1,6 +1,7 @@
-#include "engine/rendering/lowlevelapi/IndexBuffer.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
+#include "IndexBuffer.h"
 #include "Logger.h"
+#include <gl/glew.h>
 
 unsigned int IndexBuffer::currentlyBoundIBO = 0;
 

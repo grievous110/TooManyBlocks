@@ -1,7 +1,7 @@
 #ifndef MAINMENU_H
 #define MAINMENU_H
 
-#include "Ui.h"
+#include "engine/ui/Ui.h"
 
 namespace UI {
 	class MainMenu : public Window {

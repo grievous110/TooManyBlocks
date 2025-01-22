@@ -1,11 +1,8 @@
 #ifndef MOVEMENTCOMPONENT_H
 #define MOVEMENTCOMPONENT_H
 
-#include <glm/vec3.hpp>
-#include "engine/entity/Entity.h"
 #include "engine/Updatable.h"
-#include "engine/KeyObserver.h"
-#include "engine/MouseObserver.h"
+#include <glm/vec3.hpp>
 
 #define GRAVITY 9.8f
 

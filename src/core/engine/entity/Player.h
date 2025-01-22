@@ -1,11 +1,10 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "engine/rendering/Camera.h"
-#include "engine/entity/Entity.h"
 #include "engine/comp/SceneComponent.h"
+#include "engine/entity/Entity.h"
+#include "engine/rendering/Camera.h"
 #include <memory>
-#include <unordered_map>
 
 class Player : public Entity {
 public:

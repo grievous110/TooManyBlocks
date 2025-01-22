@@ -1,4 +1,4 @@
-#include "engine/MouseObserver.h"
+#include "MouseObserver.h"
 #include <algorithm>
 
 void MouseObservable::attach(MouseObserver* observer) {

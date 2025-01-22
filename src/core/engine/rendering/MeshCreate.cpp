@@ -1,19 +1,18 @@
 #include "compatability/Compatability.h"
-#include "engine/rendering/BlockToTextureMapping.h"
-#include "datatypes/DatatypeDefs.h"
 #include "datatypes/BlockTypes.h"
+#include "datatypes/DatatypeDefs.h"
 #include "engine/BitOperations.h"
 #include "engine/env/Chunk.h"
+#include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
-#include "engine/rendering/MeshCreate.h"
-#include "GLFW/glfw3.h"
+#include "gl/glew.h"
 #include "Logger.h"
 #include "MeshCreate.h"
 #include <array>
-#include <chrono>
+#include <cfloat>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
@@ -60,6 +59,24 @@ static glm::ivec3 axisToCoord(Axis axis, int slice, int row, int column) {
         case Axis::Z:  return glm::ivec3(column, row, slice);
         default: return glm::ivec3(0); // Unhandled case
     }
+}
+
+static MeshBounds calculateChunkMeshBounds(const std::vector<CompactChunkVertex>& vertexBuffer) {
+    MeshBounds bounds = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
+    for (const CompactChunkVertex& vertex : vertexBuffer) {
+        bounds.min = glm::min(bounds.min, glm::vec3(vertex.getPosition()));
+        bounds.max = glm::max(bounds.max, glm::vec3(vertex.getPosition()));
+    }
+    return bounds;
+}
+
+static MeshBounds calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) {
+    MeshBounds bounds = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
+    for (const Vertex& vertex : vertexBuffer) {
+        bounds.min = glm::min(bounds.min, vertex.position);
+        bounds.max = glm::max(bounds.max, vertex.position);
+    }
+    return bounds;
 }
 
 static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1) {
@@ -137,7 +154,7 @@ static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisD
     return face;
 }
 
-std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData &data) {
+std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData &data) {
     // Vertex Buffer Object (VBO)
     VertexBuffer vbo(data.vertices.data(), static_cast<int>(data.vertices.size() * sizeof(CompactChunkVertex)));
 
@@ -153,11 +170,14 @@ std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData &data) {
 
     // Index Buffer Object (IBO)
     IndexBuffer ibo(data.indices.data(), static_cast<unsigned int>(data.indices.size()));
-    std::shared_ptr<MeshRenderData> meshData = std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-    return std::make_shared<Mesh>(meshData);
+    return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData &data) {
+std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData &data) {
+    return std::make_shared<Mesh>(packToChunkRenderData(data), data.bounds);
+}
+
+std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData &data) {
     // Vertex Buffer Object (VBO)
     VertexBuffer vbo(data.vertices.data(), static_cast<int>(data.vertices.size() * sizeof(Vertex)));
 
@@ -173,8 +193,11 @@ std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData &data) {
 
     // Index Buffer Object (IBO)
     IndexBuffer ibo(data.indices.data(), static_cast<unsigned int>(data.indices.size()));
-    std::shared_ptr<MeshRenderData> meshData = std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-    return std::make_shared<Mesh>(meshData);
+    return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+}
+
+std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData &data) {
+    return std::make_shared<Mesh>(packToRenderData(data), data.bounds);
 }
 
 std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const BlockToTextureMap& texMap) {
@@ -215,6 +238,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
+    data->bounds = calculateChunkMeshBounds(data->vertices);
     return data;
 }
 
@@ -267,11 +291,11 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk,
 
             AxisDirection forward;
             AxisDirection backward;
-            if (axis == 0) {
+            if (axis == Axis::X) {
                 // X-Axis
                 forward = AxisDirection::PositiveX;
                 backward = AxisDirection::NegativeX;
-            } else if (axis == 1) {
+            } else if (axis == Axis::Y) {
                 // Y-Axis
                 forward = AxisDirection::PositiveY;
                 backward = AxisDirection::NegativeY;
@@ -378,6 +402,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk,
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
+    data->bounds = calculateChunkMeshBounds(data->vertices);
     return data;
 }
 
@@ -504,5 +529,6 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
     meshData->name = std::move(obj.name);
     meshData->vertices = std::move(obj.vertices);
     meshData->indices = std::move(obj.indices);
+    meshData->bounds = calculateMeshBounds(meshData->vertices);
     return meshData;
 }

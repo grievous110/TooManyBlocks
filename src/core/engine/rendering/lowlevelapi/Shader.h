@@ -1,7 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include "RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
@@ -11,6 +11,8 @@ private:
 	static unsigned int currentlyBoundShader;
 	std::string m_shaderPath;
 	std::unordered_map<std::string, int> m_uniformLocationCache;
+
+	int getUniformLocation(const std::string& name);
 
 public:
 	Shader(const std::string& shaderPath);
@@ -41,9 +43,6 @@ public:
 	void setUniform(const std::string& name, const float* values, int count);
 
 	Shader& operator=(Shader&& other) noexcept;
-
-private:
-	int getUniformLocation(const std::string& name);
 };
 
 #endif

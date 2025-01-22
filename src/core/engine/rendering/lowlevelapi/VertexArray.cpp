@@ -1,6 +1,7 @@
-#include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
 #include "Logger.h"
+#include "VertexArray.h"
+#include <gl/glew.h>
 
 unsigned int VertexArray::currentlyBoundVAO = 0;
 

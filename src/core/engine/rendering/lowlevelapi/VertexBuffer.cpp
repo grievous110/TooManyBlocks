@@ -1,17 +1,20 @@
-#include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
 #include "Logger.h"
+#include "VertexBuffer.h"
+#include <gl/glew.h>
 
 unsigned int VertexBuffer::currentlyBoundVBO = 0;
 
-VertexBuffer::VertexBuffer(const void* data, int size) {
+VertexBuffer::VertexBuffer(const void* data, int size) : m_size(size) {
 	// Vertex Buffer Object (VBO)
 	GLCALL(glGenBuffers(1, &m_rendererId));
 	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
 	GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
 }
 
-VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std::move(other)) {}
+VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_size(other.m_size) {
+	other.m_size = 0;
+}
 
 VertexBuffer::~VertexBuffer() {
 	if (m_rendererId != 0) {
@@ -52,6 +55,9 @@ VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
 			}
 		}
 		RenderApiObject::operator=(std::move(other));
+		m_size = other.m_size;
+		
+		other.m_size = 0;
 	}
     return *this;
 }

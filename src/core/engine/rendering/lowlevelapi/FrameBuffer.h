@@ -2,7 +2,7 @@
 #define FRAMEBUFFER_H
 
 #include "engine/rendering/lowlevelapi/Texture.h"
-#include "RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 
 // Currently only used for DepthTextures
 class FrameBuffer : public RenderApiObject {

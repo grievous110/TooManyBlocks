@@ -1,6 +1,7 @@
-#include "engine/rendering/lowlevelapi/Texture.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
 #include "Logger.h"
+#include "Texture.h"
+#include <gl/glew.h>
 #include <stb_image/stb_image.h>
 
 Texture::Texture(const std::string& path) :

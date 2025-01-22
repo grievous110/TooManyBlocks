@@ -1,16 +1,14 @@
-#include "engine/rendering/lowlevelapi/Shader.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
 #include "Logger.h"
+#include "Shader.h"
+#include <fstream>
+#include <gl/glew.h>
 #include <sstream>
 #include <stdexcept>
-#include <fstream>
-#include "Shader.h"
-
-using namespace std;
 
 struct ShaderSource {
-    const string vertexSource;
-    const string fragmentSource;
+    const std::string vertexSource;
+    const std::string fragmentSource;
 };
 
 enum CurrentlyReading {
@@ -21,26 +19,26 @@ enum CurrentlyReading {
 
 unsigned int Shader::currentlyBoundShader = 0;
 
-string readFile(const string& filepath) {
-    ifstream file(filepath, ios::in);
+std::string readFile(const std::string& filepath) {
+    std::ifstream file(filepath, std::ios::in);
     if (!file.is_open()) {
-        throw runtime_error("Failed to open file: " + filepath);
+        throw std::runtime_error("Failed to open file: " + filepath);
     }
-    return string((istreambuf_iterator<char>(file)), istreambuf_iterator<char>());
+    return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
-ShaderSource shaderSourceFromFile(const string& shaderPath) {
-    string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
-    string vertFile = shaderPath + "/" + basename + ".vert";
-    string fragFile = shaderPath + "/" + basename + ".frag";
+ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
+    std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
+    std::string vertFile = shaderPath + "/" + basename + ".vert";
+    std::string fragFile = shaderPath + "/" + basename + ".frag";
 
-    string vertexShaderCode = readFile(vertFile);
-    string fragmentShaderCode = readFile(fragFile);
+    std::string vertexShaderCode = readFile(vertFile);
+    std::string fragmentShaderCode = readFile(fragFile);
 
     return { vertexShaderCode, fragmentShaderCode };
 }
 
-unsigned int compileShader(const unsigned int& type, const string& source) {
+unsigned int compileShader(const unsigned int& type, const std::string& source) {
 	unsigned int id = glCreateShader(type);
 	const char* src = source.c_str();
 	GLCALL(glShaderSource(id, 1, &src, nullptr));
@@ -54,9 +52,9 @@ unsigned int compileShader(const unsigned int& type, const string& source) {
 		GLCALL(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
 		char* message = new char[length];
 		GLCALL(glGetShaderInfoLog(id, length, &length, message));
-        stringstream stream;
-		stream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << endl;
-		stream << message << endl;
+        std::stringstream stream;
+		stream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
+		stream << message << std::endl;
         lgr::lout.error(stream.str());
 		delete[] message;
 		GLCALL(glDeleteShader(id));
@@ -66,7 +64,7 @@ unsigned int compileShader(const unsigned int& type, const string& source) {
 	return id;
 }
 
-unsigned int createShader(const string& vertexShader, const string& fragmentShader) {
+unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader) {
     GLCALL(unsigned int program = glCreateProgram());
     unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
     unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
@@ -82,8 +80,21 @@ unsigned int createShader(const string& vertexShader, const string& fragmentShad
     return program;
 }
 
+int Shader::getUniformLocation(const std::string& name) {
+    if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end()) {
+        return m_uniformLocationCache[name];
+    }
 
-Shader::Shader(const string& shaderPath) : m_shaderPath(shaderPath) {
+    GLCALL(int location = glGetUniformLocation(m_rendererId, name.c_str()));
+    if (location == -1) { // -1 is not found / can happen for unused uniforms also
+        lgr::lout.warn("Warning: location of '" + std::string(name) + "' uniform was not found!");
+    }
+
+    m_uniformLocationCache[name] = location;
+    return location;
+}
+
+Shader::Shader(const std::string& shaderPath) : m_shaderPath(shaderPath) {
     ShaderSource source = shaderSourceFromFile(shaderPath);
     m_rendererId = createShader(source.vertexSource, source.fragmentSource);
 }
@@ -120,7 +131,7 @@ void Shader::unbind() const {
     }
 }
 
-void Shader::setUniform(const string& name, int value) {
+void Shader::setUniform(const std::string& name, int value) {
     if (m_rendererId == 0)
         throw std::runtime_error("Invalid state of Shader with id 0");
 
@@ -155,7 +166,7 @@ void Shader::setUniform(const std::string& name, const glm::vec3& vector) {
     GLCALL(glUniform3f(getUniformLocation(name), vector.x, vector.y, vector.z));
 }
 
-void Shader::setUniform(const string& name, const glm::vec4& vector) {
+void Shader::setUniform(const std::string& name, const glm::vec4& vector) {
     if (m_rendererId == 0)
         throw std::runtime_error("Invalid state of Shader with id 0");
 
@@ -190,7 +201,7 @@ void Shader::setUniform(const std::string& name, const glm::mat3& matrix) {
     GLCALL(glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
 }
 
-void Shader::setUniform(const string& name, const glm::mat4& matrix) {
+void Shader::setUniform(const std::string& name, const glm::mat4& matrix) {
     if (m_rendererId == 0)
         throw std::runtime_error("Invalid state of Shader with id 0");
 
@@ -271,18 +282,4 @@ Shader& Shader::operator=(Shader&& other) noexcept {
         other.m_uniformLocationCache.clear();
     }
     return *this;
-}
-
-int Shader::getUniformLocation(const string& name) {
-    if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end()) {
-        return m_uniformLocationCache[name];
-    }
-
-    GLCALL(int location = glGetUniformLocation(m_rendererId, name.c_str()));
-    if (location == -1) { // -1 is not found / can happen for unused uniforms also
-        lgr::lout.warn("Warning: location of '" + string(name) + "' uniform was not found!");
-    }
-
-    m_uniformLocationCache[name] = location;
-    return location;
 }

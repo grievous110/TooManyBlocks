@@ -1,7 +1,7 @@
 #ifndef INDEXBUFFER_H
 #define INDEXBUFFER_H
 
-#include "RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 
 class IndexBuffer : public RenderApiObject {
 private:

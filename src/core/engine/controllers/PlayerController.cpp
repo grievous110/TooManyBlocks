@@ -1,10 +1,10 @@
-#include "engine/controllers/PlayerController.h"
 #include "Application.h"
-#include "PlayerController.h"
 #include "datatypes/Transform.h"
-#include "engine/rendering/Camera.h"
+#include "engine/controllers/PlayerController.h"
 #include "engine/entity/Player.h"
+#include "engine/rendering/Camera.h"
 #include "GLFW/glfw3.h"
+#include "PlayerController.h"
 
 PlayerController::PlayerController() {
     Application::getContext()->io->attach(static_cast<KeyObserver*>(this));

@@ -1,6 +1,7 @@
-#include "engine/rendering/Renderer.h"
+#include "engine/rendering/GLUtils.h"
 #include "FrameBuffer.h"
 #include "Logger.h"
+#include <gl/glew.h>
 
 unsigned int FrameBuffer::currentlyBoundFBO = 0;
 

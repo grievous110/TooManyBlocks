@@ -1,4 +1,3 @@
-#include "engine/entity/Entity.h"
 #include "Entity.h"
 
 Entity::Entity() : m_movement(new MovementComponent(this)) {}

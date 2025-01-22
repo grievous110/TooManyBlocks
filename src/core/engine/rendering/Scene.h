@@ -1,10 +1,10 @@
 #ifndef SCENE_H
 #define SCENE_H
 
-#include "engine/rendering/Mesh.h"
 #include "engine/env/lights/Light.h"
-#include <vector>
+#include "engine/rendering/Mesh.h"
 #include <memory>
+#include <vector>
 
 struct Scene {
 	std::vector<std::shared_ptr<Light>> lights;
