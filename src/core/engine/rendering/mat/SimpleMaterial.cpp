@@ -1,4 +1,4 @@
-#include "engine/rendering/mat/SimpleMaterial.h"
+#include "SimpleMaterial.h"
 
 bool SimpleMaterial::supportsPass(PassType passType) const {
 	return passType == PassType::MainPass;

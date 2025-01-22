@@ -1,5 +1,5 @@
 #include "Application.h"
-#include "engine/entity/Player.h"
+#include "Player.h"
 
 void Player::update(float msDelta) {
 	m_controller->update(msDelta);

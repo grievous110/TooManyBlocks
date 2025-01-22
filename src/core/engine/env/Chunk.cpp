@@ -1,4 +1,4 @@
-#include "engine/env/Chunk.h"
+#include "Chunk.h"
 
 bool isBlockFaceVisible(const Chunk& chunk, int x, int y, int z, AxisDirection faceDirection) {
     // Check chunk/world bounds

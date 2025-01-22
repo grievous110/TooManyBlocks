@@ -1,8 +1,8 @@
 #ifndef BITOPERTAIONS_H
 #define BITOPERTAIONS_H
 
-#include <iostream>
 #include <climits>
+#include <iostream>
 #include <sstream>
 
 #if defined(_MSC_VER) // MSVC

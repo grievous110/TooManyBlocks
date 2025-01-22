@@ -1,9 +1,9 @@
 #ifndef VERTEXARRAY_H
 #define VERTEXARRAY_H
 
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include "RenderApiObject.h"
-#include "VertexBufferLayout.h"
+#include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 
 class VertexArray : public RenderApiObject {
 private:

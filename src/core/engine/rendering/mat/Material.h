@@ -3,16 +3,23 @@
 
 #include "datatypes/Transform.h"
 #include "engine/env/lights/Light.h"
+#include "engine/rendering/lowlevelapi/FrameBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
+#include <array>
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
 
 struct RenderContext {
-	std::vector<Light> lights;
+	std::vector<std::shared_ptr<Light>> lights;
 	glm::mat4 viewProjection;
-	Transform cameraTransform;
+	Transform viewportTransform;
 	Transform meshTransform;
+
+	LightPriority currentLightPrio;
+	unsigned int lightShadowAtlasIndex;
+	std::array<unsigned int, LightPriority::Count> shadowMapSizes;
+	std::array<std::shared_ptr<FrameBuffer>, LightPriority::Count> shadowMapAtlases;
 };
 
 enum PassType {

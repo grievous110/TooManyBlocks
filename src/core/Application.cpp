@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
+#include "engine/rendering/GLUtils.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
@@ -147,23 +148,9 @@ void Application::run() {
 		int samples;
 		GLCALL(glGetIntegerv(GL_SAMPLES, &samples));
 		detailsBuf << "Antialiasing: MSAA " << samples << std::endl;
-
-		int maxTextureImageUnits;
-		GLCALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxTextureImageUnits));
-		detailsBuf << "Max texture image units: " << maxTextureImageUnits << std::endl;
 		lgr::lout.info(detailsBuf.str());
 	}
 	{
-		//GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
-		GLCALL(glEnable(GL_BLEND));
-		GLCALL(glEnable(GL_DEPTH_TEST));
-		GLCALL(glEnable(GL_CULL_FACE));         // Enable face culling
-		GLCALL(glCullFace(GL_BACK));            // Specify that back faces should be culled (not rendered)
-		GLCALL(glFrontFace(GL_CW));				// Specify frontfaces as faces with clockwise winding
-		GLCALL(glEnable(GL_MULTISAMPLE));		// Enable MSAA
-		GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));	// Blending
-		GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
-
 		ApplicationContext* context = Application::getContext();
 
 		ImGui::CreateContext();
@@ -193,6 +180,7 @@ void Application::run() {
 
 		// Loop until the user closes the window
 		try {
+			context->renderer->initialize();
 			double previousTime = glfwGetTime();
 
 			while (!glfwWindowShouldClose(context->window)) {
@@ -217,9 +205,6 @@ void Application::run() {
 
 				// Rendering
 				ImGui::Render();
-				int display_w, display_h;
-				glfwGetFramebufferSize(context->window, &display_w, &display_h);
-				GLCALL(glViewport(0, 0, display_w, display_h));
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 				// Swap front and back buffers

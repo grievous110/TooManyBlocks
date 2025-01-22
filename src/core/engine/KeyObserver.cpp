@@ -1,4 +1,4 @@
-#include "engine/KeyObserver.h"
+#include "KeyObserver.h"
 #include <algorithm>
 
 void KeyObservable::attach(KeyObserver* observer) {

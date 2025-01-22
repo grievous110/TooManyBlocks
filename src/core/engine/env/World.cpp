@@ -1,19 +1,13 @@
-#include "engine/env/World.h"
-#include "engine/rendering/lowlevelapi/IndexBuffer.h"
-#include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
+#include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/Mesh.h"
-#include "engine/worldgen/PerlinNoise.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/Renderer.h"
-#include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/ShaderPathsConstants.h"
+#include "engine/worldgen/PerlinNoise.h"
 #include "Logger.h"
 #include "World.h"
 #include <glm/glm.hpp>
 #include <memory>
-#include <sstream>
 #include <unordered_set>
 #include <vector>
 
@@ -58,8 +52,9 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
             Renderer* renderer = Application::getContext()->renderer;
 
             shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
+            shared_ptr<Shader> depthShader = renderer->getShaderFromFile(CHUNK_DEPTH_SHADER);
             shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/blockTexAtlas.png");
-            std::shared_ptr<Material> material = std::make_shared<ChunkMaterial>(shader, texture);
+            std::shared_ptr<Material> material = std::make_shared<ChunkMaterial>(shader, depthShader, texture);
 
             while (!m_loadedMeshData.empty()) {
                 std::tuple<glm::ivec3, std::shared_ptr<Chunk>, std::shared_ptr<RawChunkMeshData>> data = m_loadedMeshData.front();

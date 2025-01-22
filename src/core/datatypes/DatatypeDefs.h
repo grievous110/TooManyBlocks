@@ -10,7 +10,7 @@ enum Axis {
 };
 
 enum class AxisDirection : uint8_t {
-    PositiveX = 0,
+    PositiveX = 0u,
     NegativeX,
     PositiveY,
     NegativeY,

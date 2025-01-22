@@ -2,10 +2,10 @@
 #define UIWINDOW_H
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
 
 struct ApplicationContext;
 

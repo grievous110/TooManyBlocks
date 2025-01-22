@@ -1,9 +1,9 @@
 #ifndef SIMPLEMATERIAL_H
 #define SIMPLEMATERIAL_H
 
-#include "engine/rendering/mat/Material.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/mat/Material.h"
 #include <glm/glm.hpp>
 #include <memory>
 

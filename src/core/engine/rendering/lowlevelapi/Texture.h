@@ -1,7 +1,7 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include "RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include <string>
 
 class Texture : public RenderApiObject {

@@ -1,6 +1,6 @@
-#include "MainMenu.h"
 #include "Application.h"
 #include "engine/GameInstance.h"
+#include "MainMenu.h"
 #include <imgui/imgui.h>
 
 namespace UI {

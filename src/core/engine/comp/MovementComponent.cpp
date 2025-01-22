@@ -1,3 +1,4 @@
+#include "engine/entity/Entity.h"
 #include "MovementComponent.h"
 
 MovementComponent::MovementComponent(Entity* owner) : owner(owner), m_velocity(glm::vec3(0.0f)), m_gravityEnabled(false) {}
