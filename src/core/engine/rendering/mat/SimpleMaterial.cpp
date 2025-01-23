@@ -16,10 +16,3 @@ void SimpleMaterial::bindForPass(PassType passType, const RenderContext& context
 		}
 	}
 }
-
-void SimpleMaterial::unbindForPass(PassType passType) const {
-	if (passType == PassType::MainPass) {
-		m_shader->unbind();
-		m_texture->unbind();
-	}
-}

@@ -4,14 +4,18 @@
 #include <gl/glew.h>
 #include <stb_image/stb_image.h>
 
-Texture::Texture(const std::string& path) :
-	m_filepath(path),
-	m_locabuffer(nullptr),
-	m_width(0),
-	m_height(0),
-	m_bitsPerPixel(0) {
+void Texture::bindDefault() {
+	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+}
 
-	stbi_set_flip_vertically_on_load(1);
+Texture::Texture(const std::string &path) : m_filepath(path),
+                                            m_locabuffer(nullptr),
+                                            m_width(0),
+                                            m_height(0),
+                                            m_bitsPerPixel(0)
+{
+
+    stbi_set_flip_vertically_on_load(1);
 	m_locabuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bitsPerPixel, 4);
 	if (!m_locabuffer) {
 		lgr::lout.error("Could not load Texture: " + std::string(path));
@@ -74,7 +78,7 @@ Texture::~Texture() {
 	}
 	if (m_rendererId != 0) {
 		try {
-			unbind();
+			GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 			GLCALL(glDeleteTextures(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during Texture cleanup");
@@ -90,10 +94,6 @@ void Texture::bind(unsigned int slot) const {
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
 }
 
-void Texture::unbind() const {
-	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
-}
-
 Texture& Texture::operator=(Texture&& other) noexcept {
 	if (this != &other) {
 		if (m_locabuffer) {
@@ -101,7 +101,7 @@ Texture& Texture::operator=(Texture&& other) noexcept {
 		}
 		if (m_rendererId != 0) {
 			try {
-				unbind();
+				GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 				GLCALL(glDeleteTextures(1, &m_rendererId));
 			} catch (const std::exception&) {
 				lgr::lout.error("Error during Texture cleanup");

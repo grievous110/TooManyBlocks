@@ -7,9 +7,12 @@
 
 class VertexArray : public RenderApiObject {
 private:
-	static unsigned int currentlyBoundVAO;
+	static thread_local unsigned int currentlyBoundVAO;
 
 public:
+	static void bindDefault();
+	static void syncBinding();
+
 	VertexArray();
 	VertexArray(VertexArray&& other) noexcept;
 	virtual ~VertexArray();
@@ -17,7 +20,6 @@ public:
 	void addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout);
 
 	void bind() const;
-	void unbind() const;
 
     VertexArray& operator=(VertexArray&& other) noexcept;
 };

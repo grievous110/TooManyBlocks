@@ -3,7 +3,20 @@
 #include "Logger.h"
 #include <gl/glew.h>
 
-unsigned int FrameBuffer::currentlyBoundFBO = 0;
+thread_local unsigned int FrameBuffer::currentlyBoundFBO = 0;
+
+void FrameBuffer::bindDefault() {
+	if (FrameBuffer::currentlyBoundFBO != 0) {
+		GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+		FrameBuffer::currentlyBoundFBO = 0;
+	}
+}
+
+void FrameBuffer::syncBinding() {
+    int binding;
+	GLCALL(glGetIntegerv(GL_FRAMEBUFFER_BINDING, &binding));
+    FrameBuffer::currentlyBoundFBO = static_cast<unsigned int>(binding);
+}
 
 FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTexture(new Texture(width, height, true)) {
     GLCALL(glGenFramebuffers(1, &m_rendererId));
@@ -20,7 +33,7 @@ FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTextu
         lgr::lout.error("Framebuffer is not complete!");
     }
 
-    GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, FrameBuffer::currentlyBoundFBO));
 }
 
 FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_depthTexture(other.m_depthTexture) {
@@ -32,7 +45,10 @@ FrameBuffer::~FrameBuffer() {
         delete m_depthTexture;
     if (m_rendererId != 0) {
         try {
-            unbind();
+            if (FrameBuffer::currentlyBoundFBO == m_rendererId) {
+                GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+                FrameBuffer::currentlyBoundFBO = 0;
+            }
             GLCALL(glDeleteFramebuffers(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during Shader cleanup");
@@ -50,13 +66,6 @@ void FrameBuffer::bind() const {
     }
 }
 
-void FrameBuffer::unbind() const {
-    if (FrameBuffer::currentlyBoundFBO == m_rendererId) {
-        GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
-        FrameBuffer::currentlyBoundFBO = 0;
-    }
-}
-
 FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
     if (this != &other) {
         if (m_depthTexture) {
@@ -64,7 +73,10 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
         }
         if (m_rendererId != 0) {
             try {
-                unbind();
+                 if (FrameBuffer::currentlyBoundFBO == m_rendererId) {
+                    GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+                    FrameBuffer::currentlyBoundFBO = 0;
+                }
                 GLCALL(glDeleteFramebuffers(1, &m_rendererId));
             } catch (const std::exception&) {
                 lgr::lout.error("Error during Shader cleanup");

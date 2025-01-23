@@ -3,14 +3,27 @@
 #include "VertexArray.h"
 #include <gl/glew.h>
 
-unsigned int VertexArray::currentlyBoundVAO = 0;
+thread_local unsigned int VertexArray::currentlyBoundVAO = 0;
 
 constexpr bool isIntegerBased(unsigned int type) {
 	return type == GL_INT || type == GL_UNSIGNED_INT || type == GL_SHORT || type == GL_UNSIGNED_SHORT || type == GL_BYTE || type == GL_UNSIGNED_BYTE;
 }
 
+void VertexArray::bindDefault() {
+	if (VertexArray::currentlyBoundVAO != 0) {
+		GLCALL(glBindVertexArray(0));
+		VertexArray::currentlyBoundVAO = 0;
+	}
+}
+
+void VertexArray::syncBinding() {
+	int binding;
+	GLCALL(glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &binding));
+	VertexArray::currentlyBoundVAO = static_cast<unsigned int>(binding);
+}
+
 VertexArray::VertexArray() {
-	GLCALL(glGenVertexArrays(1, &m_rendererId));
+    GLCALL(glGenVertexArrays(1, &m_rendererId));
 }
 
 VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::move(other)) {}
@@ -18,7 +31,10 @@ VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::mo
 VertexArray::~VertexArray() {
 	if (m_rendererId != 0) {
 		try {
-			unbind();
+			if (VertexArray::currentlyBoundVAO == m_rendererId) {
+				GLCALL(glBindVertexArray(0));
+				VertexArray::currentlyBoundVAO = 0;
+			}
 			GLCALL(glDeleteVertexArrays(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during VertexArray cleanup");
@@ -27,9 +43,6 @@ VertexArray::~VertexArray() {
 }
 
 void VertexArray::addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) {
-	if (m_rendererId == 0)
-		throw std::runtime_error("Invalid state of VertexArray with id 0");
-	
 	bind();
 	vb.bind();
 	const std::vector<BufferLayoutElement>& elements = layout.elements();
@@ -56,18 +69,14 @@ void VertexArray::bind() const {
 	}
 }
 
-void VertexArray::unbind() const {
-	if (VertexArray::currentlyBoundVAO == m_rendererId) {
-		GLCALL(glBindVertexArray(0));
-		VertexArray::currentlyBoundVAO = 0;
-	}
-}
-
 VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
 	if (this != &other) {
 		if (m_rendererId != 0) {
 			try {
-				unbind();
+				if (VertexArray::currentlyBoundVAO == m_rendererId) {
+					GLCALL(glBindVertexArray(0));
+					VertexArray::currentlyBoundVAO = 0;
+				}
 				GLCALL(glDeleteVertexArrays(1, &m_rendererId));
 			} catch (const std::exception&) {
 				lgr::lout.error("Error during VertexArray cleanup");
