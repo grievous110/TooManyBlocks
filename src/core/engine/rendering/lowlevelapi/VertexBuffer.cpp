@@ -3,13 +3,27 @@
 #include "VertexBuffer.h"
 #include <gl/glew.h>
 
-unsigned int VertexBuffer::currentlyBoundVBO = 0;
+thread_local unsigned int VertexBuffer::currentlyBoundVBO = 0;
 
-VertexBuffer::VertexBuffer(const void* data, int size) : m_size(size) {
-	// Vertex Buffer Object (VBO)
+void VertexBuffer::bindDefault() {
+	if (VertexBuffer::currentlyBoundVBO != 0) {
+		GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+		VertexBuffer::currentlyBoundVBO = 0;
+	}
+}
+
+void VertexBuffer::syncBinding() {
+	int binding;
+	GLCALL(glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &binding));
+	VertexBuffer::currentlyBoundVBO = static_cast<unsigned int>(binding);
+}
+
+VertexBuffer::VertexBuffer(const void *data, int size) : m_size(size) {
+    // Vertex Buffer Object (VBO)
 	GLCALL(glGenBuffers(1, &m_rendererId));
 	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
 	GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer::currentlyBoundVBO));
 }
 
 VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_size(other.m_size) {
@@ -19,7 +33,10 @@ VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std:
 VertexBuffer::~VertexBuffer() {
 	if (m_rendererId != 0) {
 		try {
-			unbind();
+			if (VertexBuffer::currentlyBoundVBO == m_rendererId) {
+				GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+				VertexBuffer::currentlyBoundVBO = 0;
+			}
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during VertexBuffer cleanup");
@@ -37,18 +54,14 @@ void VertexBuffer::bind() const {
 	}
 }
 
-void VertexBuffer::unbind() const {
-	if (VertexBuffer::currentlyBoundVBO == m_rendererId) {
-		GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
-		VertexBuffer::currentlyBoundVBO = 0;
-	}
-}
-
 VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
     if (this != &other) {
 		if (m_rendererId != 0) {
 			try {
-				unbind();
+				if (VertexBuffer::currentlyBoundVBO == m_rendererId) {
+					GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+					VertexBuffer::currentlyBoundVBO = 0;
+				}
 				GLCALL(glDeleteBuffers(1, &m_rendererId));
 			} catch (const std::exception&) {
 				lgr::lout.error("Error during VertexBuffer cleanup");

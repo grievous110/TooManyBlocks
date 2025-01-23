@@ -13,13 +13,14 @@ private:
 	int m_bitsPerPixel;
 
 public:
+	static void bindDefault();
+
 	Texture(const std::string& path);
 	Texture(unsigned int width, unsigned int height, bool isDepth);
 	Texture(Texture&& other) noexcept;
 	virtual ~Texture();
 
 	void bind(unsigned int slot = 0) const;
-	void unbind() const;
 
 	inline int width() const { return m_width; }
 	inline int height() const { return m_height; }

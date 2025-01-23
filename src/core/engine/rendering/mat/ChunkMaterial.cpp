@@ -75,12 +75,3 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 		}
 	}
 }
-
-void ChunkMaterial::unbindForPass(PassType passType) const {
-	if (passType == PassType::MainPass) {
-		m_shader->unbind();
-		m_textureAtlas->unbind();
-	} else if (passType == PassType::ShadowPass) {
-		m_depthShader->unbind();
-	}
-}

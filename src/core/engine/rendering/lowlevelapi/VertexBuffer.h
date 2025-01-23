@@ -5,10 +5,13 @@
 
 class VertexBuffer : public RenderApiObject {
 private:
-	static unsigned int currentlyBoundVBO;
+	static thread_local unsigned int currentlyBoundVBO;
 	int m_size;
 	
 public:
+	static void bindDefault();
+	static void syncBinding();
+
 	VertexBuffer(const void* data, int size); // size is in bytes
 	VertexBuffer(VertexBuffer&& other) noexcept;
 	virtual ~VertexBuffer();
@@ -16,7 +19,6 @@ public:
 	inline int getByteSize() const { return m_size; };
 
 	void bind() const;
-	void unbind() const;
 
 	VertexBuffer& operator=(VertexBuffer&& other) noexcept;
 };

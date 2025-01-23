@@ -26,10 +26,11 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
-	m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->unbind();
+
 }
 
 void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
+	FrameBuffer::bindDefault();
 	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	int display_w, display_h;
 	glfwGetFramebufferSize(context.window, &display_w, &display_h);
@@ -39,7 +40,7 @@ void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& conte
 }
 
 void Renderer::endMainpass(const Scene& scene, const ApplicationContext& context) {
-
+	m_currentRenderContext.lights.clear();
 }
 
 void Renderer::initialize() {
@@ -114,7 +115,7 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 	auto totalTimerStart = std::chrono::high_resolution_clock::now();
     beginShadowpass(scene, context);
 
-	for (const std::shared_ptr<Light> light : m_currentRenderContext.lights) {
+	for (const std::shared_ptr<Light>& light : m_currentRenderContext.lights) {
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
 		m_currentRenderContext.viewProjection = light->getViewProjMatrix();
@@ -135,7 +136,6 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 			if (material->supportsPass(PassType::ShadowPass)) {
 				material->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 				drawMesh(*mesh);
-				material->unbindForPass(PassType::ShadowPass);
 			}
 		}
 	}
@@ -153,7 +153,6 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 			auto testTimerStart = std::chrono::high_resolution_clock::now();
 			material->bindForPass(PassType::MainPass, m_currentRenderContext);
 			drawMesh(*mesh);
-			material->unbindForPass(PassType::MainPass);
 			testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 		}
 	}

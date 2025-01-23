@@ -39,7 +39,6 @@ public:
 
 	virtual bool supportsPass(PassType passType) const = 0;
 	virtual void bindForPass(PassType passType, const RenderContext& context) const = 0;
-	virtual void unbindForPass(PassType passType) const = 0;
 };
 
 #endif

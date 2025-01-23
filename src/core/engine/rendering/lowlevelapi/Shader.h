@@ -8,19 +8,21 @@
 
 class Shader : public RenderApiObject {
 private:
-	static unsigned int currentlyBoundShader;
+	static thread_local unsigned int currentlyBoundShader;
 	std::string m_shaderPath;
 	std::unordered_map<std::string, int> m_uniformLocationCache;
 
 	int getUniformLocation(const std::string& name);
 
 public:
+	static void bindDefault();
+	static void syncBinding();
+
 	Shader(const std::string& shaderPath);
 	Shader(Shader&& other) noexcept;
 	virtual ~Shader();
 
 	void bind() const;
-	void unbind() const;
 
 	void setUniform(const std::string& name, int value);
 	void setUniform(const std::string& name, unsigned int value);
