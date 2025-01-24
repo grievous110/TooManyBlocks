@@ -17,6 +17,8 @@ public:
     bool supportsPass(PassType passType) const override;
 
     void bindForPass(PassType passType, const RenderContext& context) const override;
+
+    void bindForMeshDraw(PassType passType, const RenderContext& context) const override;
 };
 
 #endif

@@ -48,7 +48,7 @@ void GameInstance::initialize() {
         light->setInnerCutoffAngle(25.0f);
 
         // Randomize position
-        glm::vec3 randomPosition(positionDist(generator), 12.0f, positionDist(generator));
+        glm::vec3 randomPosition(positionDist(generator), 10.0f, positionDist(generator));
         light->getLocalTransform().setPosition(randomPosition);
 
         // Randomize lookAt target

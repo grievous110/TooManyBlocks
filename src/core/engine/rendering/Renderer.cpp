@@ -21,8 +21,9 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
 	}
 
+	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-	m_currentRenderContext.lights = prioritizeLights(scene.lights, m_currentRenderContext);
+	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_maxShadowMapsPerPriority, m_currentRenderContext);
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -40,7 +41,7 @@ void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& conte
 }
 
 void Renderer::endMainpass(const Scene& scene, const ApplicationContext& context) {
-	m_currentRenderContext.lights.clear();
+
 }
 
 void Renderer::initialize() {
@@ -59,7 +60,10 @@ void Renderer::initialize() {
 	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxTextureImageUnits));
 	GLCALL(glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxCombinedTextureImageUnits));
 	GLCALL(glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &m_metaInfo.maxUniformBlockSize));
-	GLCALL(glGetIntegerv(GL_MAX_COMBINED_UNIFORM_BLOCKS, &m_metaInfo.maxCombinedUniformBlocks));
+	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &m_metaInfo.maxVertUniformBlocks));
+	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS, &m_metaInfo.maxFragUniformBlocks));
+	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &m_metaInfo.maxVertUniformComponents));
+	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS , &m_metaInfo.maxFragUniformComponents));
 	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_metaInfo.maxTextureSize));
 	GLCALL(glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_metaInfo.max3DTextureSize));
 	GLCALL(glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &m_metaInfo.maxArrayTextureLayers));
@@ -77,7 +81,10 @@ void Renderer::initialize() {
 	details << "Max texture image units: " << m_metaInfo.maxTextureImageUnits << std::endl;
 	details << "Max combined texture image units: " << m_metaInfo.maxCombinedTextureImageUnits << std::endl;
 	details << "Max uniform block size: " << m_metaInfo.maxUniformBlockSize << " bytes" << std::endl;
-	details << "Max combined uniform blocks: " << m_metaInfo.maxCombinedUniformBlocks << std::endl;
+	details << "Max vertex uniform blocks: " << m_metaInfo.maxVertUniformBlocks << std::endl;
+	details << "Max fragment uniform blocks: " << m_metaInfo.maxFragUniformBlocks << std::endl;
+	details << "Max vertex uniform components: " << m_metaInfo.maxVertUniformComponents << std::endl;
+	details << "Max fragment uniform components: " << m_metaInfo.maxFragUniformComponents << std::endl;
 	details << "Max texture size: " << m_metaInfo.maxTextureSize << "x" << m_metaInfo.maxTextureSize << std::endl;
 	details << "Max 3D texture size: " << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << std::endl;
 	details << "Max array texture layers: " << m_metaInfo.maxArrayTextureLayers << std::endl;
@@ -96,6 +103,14 @@ void Renderer::initialize() {
 	m_currentRenderContext.shadowMapSizes[LightPriority::Medium] = MEDIUMPRIO_SHADOWMAP_SIZE;
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Low] = std::make_shared<FrameBuffer>(SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION);
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
+
+	size_t totalSupportedLights = 0;
+    for (int i = 0; i < LightPriority::Count; i++) {
+        m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
+        m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
+		totalSupportedLights += m_maxShadowMapsPerPriority[i];
+    }
+	m_currentRenderContext.lights = RawBuffer<Light*>(totalSupportedLights);
 }
 
 static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
@@ -115,13 +130,12 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 	auto totalTimerStart = std::chrono::high_resolution_clock::now();
     beginShadowpass(scene, context);
 
-	for (const std::shared_ptr<Light>& light : m_currentRenderContext.lights) {
+	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
+	for (const Light* light : m_currentRenderContext.lights) {
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
 		m_currentRenderContext.viewProjection = light->getViewProjMatrix();
 		m_currentRenderContext.viewportTransform = light->getGlobalTransform();
-		std::vector<std::shared_ptr<Mesh>> meshesInFrustum = cullMeshesOutOfView(scene.meshes, m_currentRenderContext.viewProjection);
-		
 		m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->bind();
 		setAtlasViewport(
 			m_currentRenderContext.shadowMapSizes[m_currentRenderContext.currentLightPrio],
@@ -129,31 +143,49 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 			m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->getDepthTexture()->width()
 		);
 
-		for (const std::shared_ptr<Mesh>& mesh : meshesInFrustum) {
-			m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+		std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
+		for (Mesh* mesh : culledMeshBuffer) {
+			if (mesh->getMaterial()->supportsPass(PassType::ShadowPass)) {
+				materialBatches[mesh->getMaterial().get()].push_back(mesh);
+			}
+		}
+
+		auto testTimerStart = std::chrono::high_resolution_clock::now();
+		for (const auto& batch : materialBatches) {
+			batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 			
-			const std::shared_ptr<Material> material = mesh->getMaterial();
-			if (material->supportsPass(PassType::ShadowPass)) {
-				material->bindForPass(PassType::ShadowPass, m_currentRenderContext);
+			for (const Mesh* mesh : batch.second) {
+				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+				batch.first->bindForMeshDraw(PassType::ShadowPass, m_currentRenderContext);
 				drawMesh(*mesh);
 			}
 		}
+		testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 	}
 
 	endShadowpass(scene, context);
 
 	beginMainpass(scene, context);
 
-	std::vector<std::shared_ptr<Mesh>> meshesInCameraFrustum = cullMeshesOutOfView(scene.meshes, m_currentRenderContext.viewProjection);
-	for (const std::shared_ptr<Mesh>& mesh : meshesInCameraFrustum) {
-		m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
+	{
+		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+		
+		for (Mesh* mesh : culledMeshBuffer) {
+			if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
+				materialBatches[mesh->getMaterial().get()].push_back(mesh);
+			}
+		}
+		
+		for (const auto& batch : materialBatches) {
+			batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
 
-		const std::shared_ptr<Material> material = mesh->getMaterial();
-		if (material->supportsPass(PassType::MainPass)) {
-			auto testTimerStart = std::chrono::high_resolution_clock::now();
-			material->bindForPass(PassType::MainPass, m_currentRenderContext);
-			drawMesh(*mesh);
-			testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
+			for (const Mesh* mesh : batch.second) {
+				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+				batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
+				drawMesh(*mesh);
+			}
 		}
 	}
 
@@ -166,8 +198,9 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
     if (std::chrono::duration_cast<std::chrono::seconds>(now - lastLogTime).count() >= 1) {
         std::stringstream msg;
 		msg << "Time: " << testTime.count() * 1000.0 / frameCount << "ms (average per frame)" << std::endl;
-		msg << "Tested part took " << testTime.count() / totalTime.count() * 100.0 << "% of excution time" << std::endl;
-        msg << "Lights processed: " << m_currentRenderContext.lights.size();
+		msg << "Tested part took " << testTime.count() / totalTime.count() * 100.0 << "% of " << totalTime.count() * 1000.0 / frameCount << "ms excution time" << std::endl;
+        msg << "Lights processed: " << m_currentRenderContext.lights.size() << std::endl;
+		msg << "Batches: " << materialBatches.size();
 		lgr::lout.debug(msg.str());
 
         // Reset timers and counters

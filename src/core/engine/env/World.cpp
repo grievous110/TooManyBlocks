@@ -5,13 +5,12 @@
 #include "engine/rendering/ShaderPathsConstants.h"
 #include "engine/worldgen/PerlinNoise.h"
 #include "Logger.h"
+#include "providers/Provider.h"
 #include "World.h"
 #include <glm/glm.hpp>
 #include <memory>
 #include <unordered_set>
 #include <vector>
-
-using namespace std;
 
 std::shared_ptr<Chunk> World::getChunk(const glm::ivec3& location) {
     if (m_loadedChunks.find(location) != m_loadedChunks.end()) {
@@ -50,11 +49,16 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
         
         if (!m_loadedMeshData.empty()) {
             Renderer* renderer = Application::getContext()->renderer;
+            Provider* provider = Application::getContext()->provider;
 
-            shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
-            shared_ptr<Shader> depthShader = renderer->getShaderFromFile(CHUNK_DEPTH_SHADER);
-            shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/blockTexAtlas.png");
-            std::shared_ptr<Material> material = std::make_shared<ChunkMaterial>(shader, depthShader, texture);
+            std::shared_ptr<Material> material = provider->getChachedMaterial("ChunkMaterial");
+            if (!material) {
+                std::shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
+                std::shared_ptr<Shader> depthShader = renderer->getShaderFromFile(CHUNK_DEPTH_SHADER);
+                std::shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/blockTexAtlas.png");
+                material = std::make_shared<ChunkMaterial>(shader, depthShader, texture);
+                provider->putMaterial("ChunkMaterial", material);
+            }
 
             while (!m_loadedMeshData.empty()) {
                 std::tuple<glm::ivec3, std::shared_ptr<Chunk>, std::shared_ptr<RawChunkMeshData>> data = m_loadedMeshData.front();

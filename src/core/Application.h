@@ -6,6 +6,7 @@
 #include "engine/ui/Ui.h"
 
 struct GLFWwindow;
+class Provider;
 class Application;
 class Renderer;
 class GameInstance;
@@ -15,6 +16,7 @@ class ThreadPool;
 struct ApplicationContext {
 	ThreadPool* workerPool;
 	GLFWwindow* window;
+	Provider* provider;
 	Renderer* renderer;
 	GameInstance* instance;
 	UI::Window* currentWindow;

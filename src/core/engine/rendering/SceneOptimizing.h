@@ -1,8 +1,10 @@
 #ifndef SCENEOPTIMIZING_H
 #define SCENEOPTIMIZING_H
 
+#include "datatypes/RawBuffer.h"
 #include "engine/rendering/Mesh.h"
 #include "engine/env/lights/Light.h"
+#include <array>
 #include <glm/glm.hpp>
 
 class Frustum {
@@ -19,8 +21,8 @@ public:
 
 bool isInvalidMeshBounds(const MeshBounds& bounds);
 
-std::vector<std::shared_ptr<Mesh>> cullMeshesOutOfView(const std::vector<std::shared_ptr<Mesh>>& meshes, const glm::mat4& viewProj);
+void cullMeshesOutOfView(const std::vector<std::shared_ptr<Mesh>>& meshes, RawBuffer<Mesh*>& outputBuffer, const glm::mat4& viewProj);
 
-std::vector<std::shared_ptr<Light>> prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, const RenderContext& context);
+void prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context);
 
 #endif
