@@ -6,6 +6,7 @@
 #include "engine/ui/MainMenu.h"
 #include "engine/ui/Ui.h"
 #include "Logger.h"
+#include "providers/Provider.h"
 #include "threading/ThreadPool.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -70,6 +71,7 @@ ApplicationContext* Application::createContext() {
 	ApplicationContext* context = new ApplicationContext;
 	context->workerPool = new ThreadPool(6);
 	context->window = nullptr;
+	context->provider = new Provider;
 	context->renderer = new Renderer;
 	context->instance = new GameInstance;
 	context->currentWindow = nullptr;
@@ -81,6 +83,7 @@ void Application::deleteCurrentContext() {
 	ApplicationContext* context = Application::currentContext;
 	if (context) {
 		delete context->workerPool;
+		delete context->provider;
 		delete context->renderer;
 		delete context->instance;
 		if (context->currentWindow) {

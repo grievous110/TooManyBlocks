@@ -2,6 +2,7 @@
 #define MATERIAL_H
 
 #include "datatypes/Transform.h"
+#include "datatypes/RawBuffer.h"
 #include "engine/env/lights/Light.h"
 #include "engine/rendering/lowlevelapi/FrameBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
@@ -11,7 +12,7 @@
 #include <vector>
 
 struct RenderContext {
-	std::vector<std::shared_ptr<Light>> lights;
+	RawBuffer<Light*> lights;
 	glm::mat4 viewProjection;
 	Transform viewportTransform;
 	Transform meshTransform;
@@ -39,6 +40,7 @@ public:
 
 	virtual bool supportsPass(PassType passType) const = 0;
 	virtual void bindForPass(PassType passType, const RenderContext& context) const = 0;
+	virtual void bindForMeshDraw(PassType passType, const RenderContext& context) const = 0;
 };
 
 #endif

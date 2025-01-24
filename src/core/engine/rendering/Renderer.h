@@ -5,13 +5,13 @@
 #include "compatability/Compatability.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
-#include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/mat/Material.h"
 #include "engine/rendering/Mesh.h"
 #include "engine/rendering/Scene.h"
+#include <array>
+#include <memory>
 #include <string>
 #include <unordered_map>
-#include <memory>
 
 struct APIMetaData {
 	int maxVertexAttribs;
@@ -20,7 +20,10 @@ struct APIMetaData {
 	int maxTextureSize;
 	int max3DTextureSize;
 	int maxUniformBlockSize;
-	int maxCombinedUniformBlocks;
+	int maxVertUniformBlocks;
+	int maxFragUniformBlocks;
+	int maxVertUniformComponents;
+	int maxFragUniformComponents;
 	int maxArrayTextureLayers;
 	int maxFramebufferWidth;
 	int maxFramebufferHeight;
@@ -39,6 +42,7 @@ private:
 
 	APIMetaData m_metaInfo;
 	RenderContext m_currentRenderContext;
+	std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
 
 	void beginShadowpass(const Scene& scene, const ApplicationContext& context);
 	void endShadowpass(const Scene& scene, const ApplicationContext& context);

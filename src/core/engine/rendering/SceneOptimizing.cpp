@@ -5,7 +5,7 @@
 #include <cfloat>
 
 struct ScoredLight {
-    std::shared_ptr<Light> light;
+    Light* light;
     float score;
 };
 
@@ -56,38 +56,35 @@ bool isInvalidMeshBounds(const MeshBounds &bounds) {
     return glm::vec3(FLT_MAX) == bounds.min && glm::vec3(-FLT_MAX) == bounds.max;
 }
 
-std::vector<std::shared_ptr<Mesh>> cullMeshesOutOfView(const std::vector<std::shared_ptr<Mesh>>& meshes, const glm::mat4& viewProj) {
-    std::vector<std::shared_ptr<Mesh>> result;
-    Frustum frustum(viewProj);
+void cullMeshesOutOfView(const std::vector<std::shared_ptr<Mesh>>& meshes, RawBuffer<Mesh*>& outputBuffer, const glm::mat4& viewProj) {
+    const Frustum frustum(viewProj);
 
+    outputBuffer.clear();
 	for (const auto& mesh : meshes) {
         const MeshBounds bounds = mesh->getMeshBounds();
         if (!isInvalidMeshBounds(bounds)) {
             glm::vec3 pos = mesh->getGlobalTransform().getPosition();
             if (frustum.isBoxInside(bounds.min + pos, bounds.max + pos)) {
-                result.push_back(mesh);
+                outputBuffer.push_back(mesh.get());
             }
         }
 	}
-
-    return result;
 }
 
-std::vector<std::shared_ptr<Light>> prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, const RenderContext& context) {
-    // Define the maximum number of shadow maps per priority level
-    std::array<unsigned int, LightPriority::Count> maxShadowMapsPerPriority;
-    for (int i = 0; i < LightPriority::Count; i++) {
-        maxShadowMapsPerPriority[i] = context.shadowMapAtlases[i]->getDepthTexture()->width() / context.shadowMapSizes[i];
-        maxShadowMapsPerPriority[i] *= maxShadowMapsPerPriority[i];
-    }
+void prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context) {
+    const Frustum cameraFrustum(context.viewProjection);
 
     // Calculate scores for lights
     glm::vec3 cameraPosition = context.viewportTransform.getPosition();
-    std::vector<std::pair<std::shared_ptr<Light>, float>> scoredLights;
+    std::vector<std::pair<Light*, float>> scoredLights;
     for (const auto& light : lights) {
+        if (!cameraFrustum.isSphereInside(light->getGlobalTransform().getPosition(), light->getRange())) {
+            // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for directional lights
+            continue;
+        }
         float distance = glm::distance(cameraPosition, light->getGlobalTransform().getPosition());
         float score = (1.0f / (distance + 1.0f)) * light->getRange() * light->getIntensity();
-        scoredLights.emplace_back(light, score);
+        scoredLights.emplace_back(light.get(), score);
     }
 
     // Sort lights by score in descending order
@@ -96,22 +93,17 @@ std::vector<std::shared_ptr<Light>> prioritizeLights(const std::vector<std::shar
     });
 
     // Assign priorities and shadow atlas indices
-    std::vector<std::shared_ptr<Light>> prioritizedLights;
     std::array<unsigned int, LightPriority::Count> currentShadowMapCounts = {0, 0, 0};
 
+    outputBuffer.clear();
     for (const auto& sLight : scoredLights) {
-        bool assigned = false;
-
         for (int prio = LightPriority::High; prio <= LightPriority::Low; prio++) {
             if (currentShadowMapCounts[prio] < maxShadowMapsPerPriority[prio]) {
                 sLight.first->setPriotity(static_cast<LightPriority>(prio));
                 sLight.first->setShadowAtlasIndex(currentShadowMapCounts[prio]++);
-                prioritizedLights.push_back(sLight.first);
-                assigned = true;
+                outputBuffer.push_back(sLight.first);
                 break;
             }
         }
     }
-
-    return prioritizedLights;
 }

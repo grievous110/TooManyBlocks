@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "VertexBuffer.h"
 #include <gl/glew.h>
+#include <sstream>
 
 thread_local unsigned int VertexBuffer::currentlyBoundVBO = 0;
 
@@ -19,7 +20,7 @@ void VertexBuffer::syncBinding() {
 }
 
 VertexBuffer::VertexBuffer(const void *data, int size) : m_size(size) {
-    // Vertex Buffer Object (VBO)
+	// Vertex Buffer Object (VBO)
 	GLCALL(glGenBuffers(1, &m_rendererId));
 	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
 	GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
