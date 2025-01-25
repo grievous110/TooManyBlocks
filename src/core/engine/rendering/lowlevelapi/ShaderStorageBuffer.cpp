@@ -4,7 +4,7 @@
 #include <gl/glew.h>
 #include <stdexcept>
 
-ShaderStorageBuffer::ShaderStorageBuffer(const void* data, int size) : m_size(size) {
+ShaderStorageBuffer::ShaderStorageBuffer(const void* data, size_t size) : m_size(size) {
     GLCALL(glGenBuffers(1, &m_rendererId));
     GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_rendererId));
     GLCALL(glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW));
@@ -24,6 +24,18 @@ ShaderStorageBuffer::~ShaderStorageBuffer() {
 
 ShaderStorageBuffer::ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_size(other.m_size) {
     other.m_size = 0;
+}
+
+void ShaderStorageBuffer::updateData(const void* data, size_t size, size_t offset) const {
+    if (m_rendererId == 0)
+        throw std::runtime_error("Invalid state of ShaderStorageBuffer with id 0");
+
+    if (offset + size > m_size)
+        throw std::runtime_error("SSBO update exceeds buffer size");
+
+    GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_rendererId));
+    GLCALL(glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data));
+    GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 }
 
 void ShaderStorageBuffer::bind(unsigned int bindingPoint) const {

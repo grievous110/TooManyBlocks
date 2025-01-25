@@ -16,9 +16,11 @@ public:
 	VertexBuffer(VertexBuffer&& other) noexcept;
 	virtual ~VertexBuffer();
 
-	inline size_t getByteSize() const { return m_size; };
+	void updateData(const void* data, size_t size, size_t offset) const;
 
 	void bind() const;
+
+	inline size_t getByteSize() const { return m_size; };
 
 	VertexBuffer& operator=(VertexBuffer&& other) noexcept;
 };
