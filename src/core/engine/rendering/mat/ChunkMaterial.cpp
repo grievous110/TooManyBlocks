@@ -17,14 +17,14 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			if (m_textureAtlas) {
 				m_textureAtlas->bind(0);
 				m_shader->setUniform("u_textureAtlas", 0);
-				m_shader->setUniform("u_textureAtlasSize", static_cast<unsigned int>(m_textureAtlas->width()));
+				m_shader->setUniform("u_textureAtlasSize", m_textureAtlas->width());
 				m_shader->setUniform("u_textureSize", 16u);
 			} else {
 				lgr::lout.error("Texture atlas not loaded for ChunkMaterial");
 			}
 
 			// Pass light info
-			int activeLightCount = std::min<int>(context.lights.size(), 10);
+			int activeLightCount = std::min<int>(context.lights.size(), 10); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
 			m_shader->setUniform("u_lightCount", activeLightCount);
 			for (int i = 0; i < activeLightCount; i++) {
 				m_shader->setUniform("u_lightViewProjections[" + std::to_string(i) + "]", context.lights[i]->getViewProjMatrix());

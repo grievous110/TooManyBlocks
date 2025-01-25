@@ -18,7 +18,7 @@ void IndexBuffer::syncBinding() {
 	IndexBuffer::currentlyBoundIBO = static_cast<unsigned int>(binding);
 }
 
-IndexBuffer::IndexBuffer(const unsigned int* data, unsigned int count) : m_count(count) {
+IndexBuffer::IndexBuffer(const unsigned int* data, size_t count) : m_count(count) {
 	// Index Buffer Object (IBO)
 	GLCALL(glGenBuffers(1, &m_rendererId));
 	GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_rendererId));

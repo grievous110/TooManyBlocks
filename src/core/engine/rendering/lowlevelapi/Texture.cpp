@@ -16,10 +16,14 @@ Texture::Texture(const std::string &path) : m_filepath(path),
 {
 
     stbi_set_flip_vertically_on_load(1);
-	m_locabuffer = stbi_load(path.c_str(), &m_width, &m_height, &m_bitsPerPixel, 4);
+	int width;
+	int height;
+	m_locabuffer = stbi_load(path.c_str(), &width, &height, &m_bitsPerPixel, 4);
 	if (!m_locabuffer) {
 		lgr::lout.error("Could not load Texture: " + std::string(path));
 	}
+	m_width = static_cast<unsigned int>(width);
+	m_height = static_cast<unsigned int>(height);
 
 	GLCALL(glGenTextures(1, &m_rendererId));
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
@@ -78,7 +82,6 @@ Texture::~Texture() {
 	}
 	if (m_rendererId != 0) {
 		try {
-			GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 			GLCALL(glDeleteTextures(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during Texture cleanup");
@@ -101,7 +104,6 @@ Texture& Texture::operator=(Texture&& other) noexcept {
 		}
 		if (m_rendererId != 0) {
 			try {
-				GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 				GLCALL(glDeleteTextures(1, &m_rendererId));
 			} catch (const std::exception&) {
 				lgr::lout.error("Error during Texture cleanup");

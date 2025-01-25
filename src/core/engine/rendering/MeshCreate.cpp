@@ -169,7 +169,7 @@ std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData &da
     vao.addBuffer(vbo, layout);
 
     // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), static_cast<unsigned int>(data.indices.size()));
+    IndexBuffer ibo(data.indices.data(), data.indices.size());
     return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
@@ -179,7 +179,7 @@ std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData &data) {
 
 std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData &data) {
     // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), static_cast<int>(data.vertices.size() * sizeof(Vertex)));
+    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
 
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
@@ -192,7 +192,7 @@ std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData &data) {
     vao.addBuffer(vbo, layout);
 
     // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), static_cast<unsigned int>(data.indices.size()));
+    IndexBuffer ibo(data.indices.data(), data.indices.size());
     return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
