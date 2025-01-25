@@ -45,6 +45,18 @@ VertexBuffer::~VertexBuffer() {
 	}
 }
 
+void VertexBuffer::updateData(const void* data, size_t size, size_t offset) const {
+    if (m_rendererId == 0)
+        throw std::runtime_error("Invalid state of VertexBuffer with id 0");
+
+    if (offset + size > m_size)
+        throw std::runtime_error("VBO update exceeds buffer size");
+
+    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
+    GLCALL(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
+    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
+}
+
 void VertexBuffer::bind() const {
 	if (m_rendererId == 0)
 		throw std::runtime_error("Invalid state of VertexBuffer with id 0");

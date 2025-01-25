@@ -14,9 +14,11 @@ public:
 	ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept;
 	virtual ~ShaderStorageBuffer();
 
-	inline size_t getByteSize() const { return m_size; };
+	void updateData(const void* data, size_t size, size_t offset) const;
 
 	void bind(unsigned int bindingPoint) const;
+
+	inline size_t getByteSize() const { return m_size; };
 
 	ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other) noexcept;
 };
