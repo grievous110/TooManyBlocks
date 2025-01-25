@@ -8,8 +8,8 @@ class Texture : public RenderApiObject {
 private:
 	std::string m_filepath;
 	unsigned char* m_locabuffer;
-	int m_width;
-	int m_height;
+	unsigned int m_width;
+	unsigned int m_height;
 	int m_bitsPerPixel;
 
 public:
@@ -22,8 +22,8 @@ public:
 
 	void bind(unsigned int slot = 0) const;
 
-	inline int width() const { return m_width; }
-	inline int height() const { return m_height; }
+	inline unsigned int width() const { return m_width; }
+	inline unsigned int height() const { return m_height; }
 
 	Texture& operator=(Texture&& other) noexcept;
 };

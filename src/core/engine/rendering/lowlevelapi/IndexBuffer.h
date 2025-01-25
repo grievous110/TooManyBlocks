@@ -6,19 +6,19 @@
 class IndexBuffer : public RenderApiObject {
 private:
 	static thread_local unsigned int currentlyBoundIBO;
-	unsigned int m_count;
+	size_t m_count;
 	
 public:
 	static void bindDefault();
 	static void syncBinding();
 
-	IndexBuffer(const unsigned int* data, unsigned int count);
+	IndexBuffer(const unsigned int* data, size_t count);
 	IndexBuffer(IndexBuffer&& other) noexcept;
 	virtual ~IndexBuffer();
 
 	void bind() const;
 
-	inline unsigned int count() const { return m_count; }
+	inline size_t count() const { return m_count; }
 
 	IndexBuffer& operator=(IndexBuffer&& other) noexcept;
 };

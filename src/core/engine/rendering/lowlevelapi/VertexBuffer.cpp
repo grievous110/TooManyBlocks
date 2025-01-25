@@ -19,7 +19,7 @@ void VertexBuffer::syncBinding() {
 	VertexBuffer::currentlyBoundVBO = static_cast<unsigned int>(binding);
 }
 
-VertexBuffer::VertexBuffer(const void *data, int size) : m_size(size) {
+VertexBuffer::VertexBuffer(const void *data, size_t size) : m_size(size) {
 	// Vertex Buffer Object (VBO)
 	GLCALL(glGenBuffers(1, &m_rendererId));
 	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
