@@ -24,6 +24,7 @@ UniformBuffer::UniformBuffer(UniformBuffer&& other) noexcept : RenderApiObject(s
 UniformBuffer::~UniformBuffer() {
 	if (m_rendererId != 0) {
 		try {
+			GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 			GLCALL(glDeleteBuffers(1, &m_rendererId));
 		} catch (const std::exception&) {
 			lgr::lout.error("Error during UniformBuffer cleanup");
@@ -40,7 +41,6 @@ void UniformBuffer::updateData(const void *data, size_t size, size_t offset) con
 
     GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, m_rendererId));
     GLCALL(glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data));
-    GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 }
 
 void UniformBuffer::bind(unsigned int bindingPoint) const {
@@ -54,6 +54,7 @@ UniformBuffer& UniformBuffer::operator=(UniformBuffer&& other) noexcept {
 	if (this != &other) {
 		if (m_rendererId != 0) {
 			try {
+				GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 				GLCALL(glDeleteBuffers(1, &m_rendererId));
 			} catch (const std::exception&) {
 				lgr::lout.error("Error during UniformBuffer cleanup");

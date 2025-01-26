@@ -35,7 +35,6 @@ void ShaderStorageBuffer::updateData(const void* data, size_t size, size_t offse
 
     GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_rendererId));
     GLCALL(glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset, size, data));
-    GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
 }
 
 void ShaderStorageBuffer::bind(unsigned int bindingPoint) const {

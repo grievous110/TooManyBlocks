@@ -1,6 +1,8 @@
 #include "ChunkMaterial.h"
 #include "engine/env/lights/Spotlight.h"
+#include "engine/rendering/GLUtils.h"
 #include "Logger.h"
+#include <gl/glew.h>
 
 bool ChunkMaterial::supportsPass(PassType passType) const {
 	return passType == PassType::MainPass || passType == PassType::ShadowPass;
@@ -24,33 +26,14 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			}
 
 			// Pass light info
-			int activeLightCount = std::min<int>(context.lights.size(), 10); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
+			int activeLightCount = std::min<int>(context.lights.size(), MAX_LIGHTS); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
 			m_shader->setUniform("u_lightCount", activeLightCount);
-			for (int i = 0; i < activeLightCount; i++) {
-				m_shader->setUniform("u_lightViewProjections[" + std::to_string(i) + "]", context.lights[i]->getViewProjMatrix());
-				const std::string lightvar = "u_lights[" + std::to_string(i) + "]";
-				Transform lightTr = context.lights[i]->getGlobalTransform();
-				
-				m_shader->setUniform(lightvar + ".lightType", static_cast<unsigned int>(context.lights[i]->getType()));
-				m_shader->setUniform(lightvar + ".priority", static_cast<unsigned int>(context.lights[i]->getPriotity()));
-				m_shader->setUniform(lightvar + ".shadowMapIndex", static_cast<unsigned int>(context.lights[i]->getShadowAtlasIndex()));
-				m_shader->setUniform(lightvar + ".lightPosition", lightTr.getPosition());
-				m_shader->setUniform(lightvar + ".direction", lightTr.getForward());
-				m_shader->setUniform(lightvar + ".color", context.lights[i]->getColor());
-				m_shader->setUniform(lightvar + ".intensity", context.lights[i]->getIntensity());
-
-				if (context.lights[i]->getType() == LightType::Directional) {
-					// Nothing specific
-				} else if (context.lights[i]->getType() == LightType::Spot) {
-					Spotlight* spotlight = dynamic_cast<Spotlight*>(context.lights[i]);
-					m_shader->setUniform(lightvar + ".direction", lightTr.getForward());
-					m_shader->setUniform(lightvar + ".range", context.lights[i]->getRange());
-					m_shader->setUniform(lightvar + ".fovy", spotlight->getFovy());
-					m_shader->setUniform(lightvar + ".innerCutoffAngle", spotlight->getInnerCutoffAngle());
-				} else if (context.lights[i]->getType() == LightType::Point) {
-					m_shader->setUniform(lightvar + ".range", context.lights[i]->getRange());
-				}
+			context.lightBuff->bind(0);
+			GLCALL(unsigned int blockIndex = glGetUniformBlockIndex(m_shader->rendererId(), "LightsBlock"));
+			if (blockIndex == GL_INVALID_INDEX) {
+				lgr::lout.debug("Error Index!!!");
 			}
+			GLCALL(glUniformBlockBinding(m_shader->rendererId(), blockIndex, 0));
 
 			// Pass depth buffers for shadowmapping
 			for (int prio = 0; prio < LightPriority::Count; prio++) {

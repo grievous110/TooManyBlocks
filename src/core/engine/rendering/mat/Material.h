@@ -6,6 +6,7 @@
 #include "engine/env/lights/Light.h"
 #include "engine/rendering/lowlevelapi/FrameBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
+#include "engine/rendering/lowlevelapi/UniformBuffer.h"
 #include <array>
 #include <glm/glm.hpp>
 #include <memory>
@@ -13,6 +14,7 @@
 
 struct RenderContext {
 	RawBuffer<Light*> lights;
+	std::shared_ptr<UniformBuffer> lightBuff;
 	glm::mat4 viewProjection;
 	Transform viewportTransform;
 	Transform meshTransform;

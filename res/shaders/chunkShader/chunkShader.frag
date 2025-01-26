@@ -1,6 +1,6 @@
-#version 410 core
+#version 330 core
 
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 84
 
 #define DIRECTIONALLIGHT 0u
 #define SPOTLIGHT 1u
@@ -10,19 +10,26 @@ in vec3 position;
 flat in uint texIndex;
 in vec2 uv;
 flat in vec3 normal;
-in vec4 lightSpacePositions[MAX_LIGHTS]; 
+uniform mat4 u_lightViewProjections[MAX_LIGHTS];
 
 struct Light {
     uint lightType;
     uint priority;
     uint shadowMapIndex;
+    float padding1; 
     vec3 lightPosition;
+    float padding2; 
     vec3 direction;
+    float padding3; 
     vec3 color;
     float intensity;
     float range; // Used by point- / spotlight
     float fovy; // Used by spotlicht
     float innerCutoffAngle; // Used by spotlicht
+    float padding4;
+};
+layout(std140) uniform LightsBlock {
+    Light u_lights[MAX_LIGHTS];
 };
 
 uniform sampler2D u_textureAtlas;
@@ -30,7 +37,6 @@ uniform vec3 u_cameraPosition;
 uniform uint u_textureAtlasSize;
 uniform uint u_textureSize;
 
-uniform Light u_lights[MAX_LIGHTS];
 uniform int u_lightCount;
 
 uniform sampler2D u_shadowMapAtlas[3];
@@ -56,7 +62,7 @@ vec4 sampleFromTexAtlas(vec2 uv_coord) {
 }
 
 vec3 calcLightContribution(int lightIndex) {
-    vec4 lightSpacePosition = lightSpacePositions[lightIndex];
+    vec4 lightSpacePosition = u_lightViewProjections[lightIndex] * vec4(position, 1.0);
     
     uint lightType = u_lights[lightIndex].lightType;
     uint priority = u_lights[lightIndex].priority;

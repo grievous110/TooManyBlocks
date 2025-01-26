@@ -4,6 +4,8 @@
 #include <engine/comp/SceneComponent.h>
 #include <glm/glm.hpp>
 
+#define MAX_LIGHTS 84 // TODO: Replace with dynamic stuff
+
 enum LightPriority {
     High = 0,
     Medium,
@@ -15,6 +17,23 @@ enum class LightType : uint8_t {
     Directional,
     Spot,
     Point
+};
+
+struct ShaderLightStruct {
+    unsigned int lightType;
+    unsigned int priority;
+    unsigned int shadowMapIndex;
+    float padding1;
+    glm::vec3 lightPosition;
+    float padding2;
+    glm::vec3 direction;
+    float padding3;  
+    glm::vec3 color;
+    float intensity;
+    float range; // Used by point- / spotlight
+    float fovy; // Used by spotlicht
+    float innerCutoffAngle; // Used by spotlicht
+    float padding4;
 };
 
 class Light : public SceneComponent {
