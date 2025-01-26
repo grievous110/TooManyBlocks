@@ -24,6 +24,29 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_maxShadowMapsPerPriority, m_currentRenderContext);
+	
+	int activeLightCount = std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS);
+	
+	static RawBuffer<ShaderLightStruct> lightSt = RawBuffer<ShaderLightStruct>(MAX_LIGHTS); // TODO: Make non static, put it somewhere else
+	
+	lightSt.clear();
+	for (int i = 0; i < activeLightCount; i++) {
+		Light* currLight = m_currentRenderContext.lights[i];
+		Transform lTr = currLight->getGlobalTransform();
+		lightSt[i].lightType = static_cast<unsigned int>(currLight->getType());
+		lightSt[i].priority = static_cast<unsigned int>(currLight->getPriotity());
+		lightSt[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
+		lightSt[i].lightPosition = lTr.getPosition();
+		lightSt[i].direction = lTr.getForward();
+		lightSt[i].color = currLight->getColor();
+		lightSt[i].intensity = currLight->getIntensity();
+		lightSt[i].range = currLight->getRange();
+		if (Spotlight* lSpot = dynamic_cast<Spotlight*>(currLight)) {
+			lightSt[i].fovy = lSpot->getFovy();
+			lightSt[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
+		}
+	}
+	m_currentRenderContext.lightBuff->updateData(lightSt.data(), activeLightCount * sizeof(ShaderLightStruct));
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -69,6 +92,7 @@ void Renderer::initialize() {
 	GLCALL(glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &m_metaInfo.maxArrayTextureLayers));
 	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, &m_metaInfo.maxFramebufferWidth));
 	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, &m_metaInfo.maxFramebufferHeight));
+	GLCALL(glGetIntegerv(GL_MAX_VARYING_VECTORS, &m_metaInfo.maxVaryingVectors));
 	GLCALL(glGetIntegerv(GL_MAX_SAMPLES, &m_metaInfo.maxMSAASamples));
 	GLCALL(glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &m_metaInfo.maxSSBOBindings));
 	GLCALL(glGetIntegerv(GL_MAX_DRAW_BUFFERS, &m_metaInfo.maxDrawBuffers));
@@ -89,6 +113,7 @@ void Renderer::initialize() {
 	details << "Max 3D texture size: " << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << std::endl;
 	details << "Max array texture layers: " << m_metaInfo.maxArrayTextureLayers << std::endl;
 	details << "Max framebuffer size: " << m_metaInfo.maxFramebufferWidth << "x" << m_metaInfo.maxFramebufferHeight << std::endl;
+	details << "Max varying vectors: " << m_metaInfo.maxVaryingVectors << std::endl;
 	details << "Max MSAA samples: " << m_metaInfo.maxMSAASamples << std::endl;
 	details << "Max SSBO bindings: " << m_metaInfo.maxSSBOBindings << std::endl;
 	details << "Max draw buffers: " << m_metaInfo.maxDrawBuffers << std::endl;
@@ -111,6 +136,7 @@ void Renderer::initialize() {
 		totalSupportedLights += m_maxShadowMapsPerPriority[i];
     }
 	m_currentRenderContext.lights = RawBuffer<Light*>(totalSupportedLights);
+	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(ShaderLightStruct));
 }
 
 static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
@@ -131,7 +157,8 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
     beginShadowpass(scene, context);
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
-	for (const Light* light : m_currentRenderContext.lights) {
+	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS); i++) {
+		const Light* light = m_currentRenderContext.lights[i];
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
 		m_currentRenderContext.viewProjection = light->getViewProjMatrix();

@@ -27,6 +27,7 @@ struct APIMetaData {
 	int maxArrayTextureLayers;
 	int maxFramebufferWidth;
 	int maxFramebufferHeight;
+	int maxVaryingVectors;
 	int maxMSAASamples;
 	int maxSSBOBindings;
 	int maxDrawBuffers;

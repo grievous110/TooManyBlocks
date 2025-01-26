@@ -3,18 +3,13 @@
 layout(location = 0) in uint compressedPosition;
 layout(location = 1) in uint compressedData;
 
-#define MAX_LIGHTS 10
-
 out vec3 position;
 out uint texIndex;
 out vec2 uv;
 out vec3 normal;
-out vec4 lightSpacePositions[MAX_LIGHTS]; 
 
 uniform mat4 u_viewProjection;
 uniform vec3 u_chunkPosition;
-uniform mat4 u_lightViewProjections[MAX_LIGHTS];
-uniform int u_lightCount;
 
 #define POSITION_BITMASK 0x3FFu
 #define X_POSITION_OFFSET 20
@@ -80,9 +75,6 @@ void main() {
     vec3 decodedNormal = decodeNormal(compressedData);
 
     vec3 worldVertexPos = u_chunkPosition + localPosInChunk;
-    for(int i = 0; i < u_lightCount; i++) {
-        lightSpacePositions[i] = u_lightViewProjections[i] * vec4(worldVertexPos, 1.0);
-    }
 
     gl_Position = u_viewProjection * vec4(worldVertexPos, 1.0);
     position = worldVertexPos;

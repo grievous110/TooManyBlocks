@@ -14,7 +14,7 @@ public:
 	ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept;
 	virtual ~ShaderStorageBuffer();
 
-	void updateData(const void* data, size_t size, size_t offset) const;
+	void updateData(const void* data, size_t size, size_t offset = 0) const;
 
 	void bind(unsigned int bindingPoint) const;
 

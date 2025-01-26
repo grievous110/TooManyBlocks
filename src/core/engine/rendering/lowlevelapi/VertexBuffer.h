@@ -16,7 +16,7 @@ public:
 	VertexBuffer(VertexBuffer&& other) noexcept;
 	virtual ~VertexBuffer();
 
-	void updateData(const void* data, size_t size, size_t offset) const;
+	void updateData(const void* data, size_t size, size_t offset = 0) const;
 
 	void bind() const;
 
