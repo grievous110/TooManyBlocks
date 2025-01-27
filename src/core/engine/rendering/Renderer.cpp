@@ -27,26 +27,28 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 	
 	int activeLightCount = std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS);
 	
-	static RawBuffer<ShaderLightStruct> lightSt = RawBuffer<ShaderLightStruct>(MAX_LIGHTS); // TODO: Make non static, put it somewhere else
-	
-	lightSt.clear();
+	lightBuffer.clear();
+	lightViewProjectionBuffer.clear();
 	for (int i = 0; i < activeLightCount; i++) {
 		Light* currLight = m_currentRenderContext.lights[i];
 		Transform lTr = currLight->getGlobalTransform();
-		lightSt[i].lightType = static_cast<unsigned int>(currLight->getType());
-		lightSt[i].priority = static_cast<unsigned int>(currLight->getPriotity());
-		lightSt[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
-		lightSt[i].lightPosition = lTr.getPosition();
-		lightSt[i].direction = lTr.getForward();
-		lightSt[i].color = currLight->getColor();
-		lightSt[i].intensity = currLight->getIntensity();
-		lightSt[i].range = currLight->getRange();
+		lightBuffer[i].lightType = static_cast<unsigned int>(currLight->getType());
+		lightBuffer[i].priority = static_cast<unsigned int>(currLight->getPriotity());
+		lightBuffer[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
+		lightBuffer[i].lightPosition = lTr.getPosition();
+		lightBuffer[i].direction = lTr.getForward();
+		lightBuffer[i].color = currLight->getColor();
+		lightBuffer[i].intensity = currLight->getIntensity();
+		lightBuffer[i].range = currLight->getRange();
 		if (Spotlight* lSpot = dynamic_cast<Spotlight*>(currLight)) {
-			lightSt[i].fovy = lSpot->getFovy();
-			lightSt[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
+			lightBuffer[i].fovy = lSpot->getFovy();
+			lightBuffer[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
 		}
+
+		lightViewProjectionBuffer[i] = currLight->getViewProjMatrix();
 	}
-	m_currentRenderContext.lightBuff->updateData(lightSt.data(), activeLightCount * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightBuff->updateData(lightBuffer.data(), activeLightCount * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightViewProjectionBuff->updateData(lightViewProjectionBuffer.data(), activeLightCount * sizeof(glm::mat4));
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -137,6 +139,10 @@ void Renderer::initialize() {
     }
 	m_currentRenderContext.lights = RawBuffer<Light*>(totalSupportedLights);
 	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(glm::mat4));
+	
+	lightBuffer = RawBuffer<ShaderLightStruct>(MAX_LIGHTS);
+	lightViewProjectionBuffer = RawBuffer<glm::mat4>(MAX_LIGHTS);
 }
 
 static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {

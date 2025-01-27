@@ -2,6 +2,7 @@
 #define SHADER_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/UniformBuffer.h"
 #include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
@@ -11,8 +12,10 @@ private:
 	static thread_local unsigned int currentlyBoundShader;
 	std::string m_shaderPath;
 	std::unordered_map<std::string, int> m_uniformLocationCache;
+	std::unordered_map<std::string, unsigned int> m_uniformBlockIndexCache;
 
 	int getUniformLocation(const std::string& name);
+	unsigned int getUniformBlockIndex(const std::string& name);
 
 public:
 	static void bindDefault();
@@ -23,6 +26,8 @@ public:
 	virtual ~Shader();
 
 	void bind() const;
+
+	void setAndBindUBO(const std::string name, const UniformBuffer& ubo, unsigned int bindingPoint);
 
 	void setUniform(const std::string& name, int value);
 	void setUniform(const std::string& name, unsigned int value);
@@ -36,13 +41,13 @@ public:
 	void setUniform(const std::string& name, const glm::mat3& matrix);
 	void setUniform(const std::string& name, const glm::mat4& matrix);
 	void setUniform(const std::string& name, bool value);
-	void setUniform(const std::string& name, const glm::vec2* vectors, int count);
-	void setUniform(const std::string& name, const glm::vec3* vectors, int count);
-	void setUniform(const std::string& name, const glm::vec4* vectors, int count);
-	void setUniform(const std::string& name, const glm::mat4* matrices, int count);
-	void setUniform(const std::string& name, const int* values, int count);
-	void setUniform(const std::string& name, const unsigned int* values, int count);
-	void setUniform(const std::string& name, const float* values, int count);
+	void setUniform(const std::string& name, const glm::vec2* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::vec3* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::vec4* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::mat4* matrices, size_t count);
+	void setUniform(const std::string& name, const int* values, size_t count);
+	void setUniform(const std::string& name, const unsigned int* values, size_t count);
+	void setUniform(const std::string& name, const float* values, size_t count);
 
 	Shader& operator=(Shader&& other) noexcept;
 };

@@ -10,7 +10,6 @@ in vec3 position;
 flat in uint texIndex;
 in vec2 uv;
 flat in vec3 normal;
-uniform mat4 u_lightViewProjections[MAX_LIGHTS];
 
 struct Light {
     uint lightType;
@@ -28,8 +27,13 @@ struct Light {
     float innerCutoffAngle; // Used by spotlicht
     float padding4;
 };
+
 layout(std140) uniform LightsBlock {
     Light u_lights[MAX_LIGHTS];
+};
+
+layout(std140) uniform LightViewProjBlock {
+    mat4 u_lightViewProjections[MAX_LIGHTS];
 };
 
 uniform sampler2D u_textureAtlas;

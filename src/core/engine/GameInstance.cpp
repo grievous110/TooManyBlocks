@@ -43,7 +43,7 @@ void GameInstance::initialize() {
 
 	std::uniform_real_distribution<float> positionDist(-50.0f, 50.0f);
     std::uniform_real_distribution<float> lookAtDist(-50.0f, 50.0f);
-	for (int i = 0; i < 100; ++i) {
+	for (int i = 0; i < 25; ++i) {
         auto light = std::make_shared<Spotlight>(glm::vec3(1.0f), 1.0f, 45.0f, 50.0f);
         light->setInnerCutoffAngle(25.0f);
 

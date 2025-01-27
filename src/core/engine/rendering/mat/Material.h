@@ -15,6 +15,7 @@
 struct RenderContext {
 	RawBuffer<Light*> lights;
 	std::shared_ptr<UniformBuffer> lightBuff;
+	std::shared_ptr<UniformBuffer> lightViewProjectionBuff;
 	glm::mat4 viewProjection;
 	Transform viewportTransform;
 	Transform meshTransform;

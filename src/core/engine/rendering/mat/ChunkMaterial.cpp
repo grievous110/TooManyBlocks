@@ -28,12 +28,8 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			// Pass light info
 			int activeLightCount = std::min<int>(context.lights.size(), MAX_LIGHTS); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
 			m_shader->setUniform("u_lightCount", activeLightCount);
-			context.lightBuff->bind(0);
-			GLCALL(unsigned int blockIndex = glGetUniformBlockIndex(m_shader->rendererId(), "LightsBlock"));
-			if (blockIndex == GL_INVALID_INDEX) {
-				lgr::lout.debug("Error Index!!!");
-			}
-			GLCALL(glUniformBlockBinding(m_shader->rendererId(), blockIndex, 0));
+			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff, 0);
+			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff, 1);
 
 			// Pass depth buffers for shadowmapping
 			for (int prio = 0; prio < LightPriority::Count; prio++) {

@@ -81,8 +81,9 @@ unsigned int createShader(const std::string& vertexShader, const std::string& fr
 }
 
 int Shader::getUniformLocation(const std::string& name) {
-    if (m_uniformLocationCache.find(name) != m_uniformLocationCache.end()) {
-        return m_uniformLocationCache[name];
+    auto it = m_uniformLocationCache.find(name);
+    if (it != m_uniformLocationCache.end()) {
+        return it->second;
     }
 
     GLCALL(int location = glGetUniformLocation(m_rendererId, name.c_str()));
@@ -92,6 +93,21 @@ int Shader::getUniformLocation(const std::string& name) {
 
     m_uniformLocationCache[name] = location;
     return location;
+}
+
+unsigned int Shader::getUniformBlockIndex(const std::string& name) {
+    auto it = m_uniformBlockIndexCache.find(name);
+    if (it != m_uniformBlockIndexCache.end()) {
+        return it->second;
+    }
+
+    GLCALL(unsigned int blockIndex = glGetUniformBlockIndex(m_rendererId, name.c_str()));
+    if (blockIndex == GL_INVALID_INDEX) {
+        lgr::lout.warn("Warning: Index of '" + std::string(name) + "' uniform buffer was not invalid!");
+    }
+
+    m_uniformBlockIndexCache[name] = blockIndex;
+    return blockIndex;
 }
 
 void Shader::bindDefault() {
@@ -138,6 +154,12 @@ void Shader::bind() const {
         GLCALL(glUseProgram(m_rendererId));
         Shader::currentlyBoundShader = m_rendererId;
     }
+}
+
+void Shader::setAndBindUBO(const std::string name, const UniformBuffer &ubo, unsigned int bindingPoint) {
+    bind();
+    ubo.bind(bindingPoint);
+    GLCALL(glUniformBlockBinding(m_rendererId, getUniformBlockIndex(name), bindingPoint));
 }
 
 void Shader::setUniform(const std::string& name, int value) {
@@ -200,37 +222,37 @@ void Shader::setUniform(const std::string& name, bool value) {
     GLCALL(glUniform1i(getUniformLocation(name), static_cast<int>(value)));
 }
 
-void Shader::setUniform(const std::string& name, const glm::vec2* vectors, int count) {
+void Shader::setUniform(const std::string& name, const glm::vec2* vectors, size_t count) {
     bind();
     GLCALL(glUniform2fv(getUniformLocation(name), count, &vectors[0][0]));
 }
 
-void Shader::setUniform(const std::string& name, const glm::vec3* vectors, int count) {
+void Shader::setUniform(const std::string& name, const glm::vec3* vectors, size_t count) {
     bind();
     GLCALL(glUniform3fv(getUniformLocation(name), count, &vectors[0][0]));
 }
 
-void Shader::setUniform(const std::string& name, const glm::vec4* vectors, int count) {
+void Shader::setUniform(const std::string& name, const glm::vec4* vectors, size_t count) {
     bind();
     GLCALL(glUniform4fv(getUniformLocation(name), count, &vectors[0][0]));
 }
 
-void Shader::setUniform(const std::string& name, const glm::mat4* matrices, int count) {
+void Shader::setUniform(const std::string& name, const glm::mat4* matrices, size_t count) {
     bind();
     GLCALL(glUniformMatrix4fv(getUniformLocation(name), count, GL_FALSE, &matrices[0][0][0]));
 }
 
-void Shader::setUniform(const std::string& name, const int* values, int count) {
+void Shader::setUniform(const std::string& name, const int* values, size_t count) {
     bind();
     GLCALL(glUniform1iv(getUniformLocation(name), count, values));
 }
 
-void Shader::setUniform(const std::string& name, const unsigned int* values, int count) {
+void Shader::setUniform(const std::string& name, const unsigned int* values, size_t count) {
     bind();
     GLCALL(glUniform1uiv(getUniformLocation(name), count, values));
 }
 
-void Shader::setUniform(const std::string& name, const float* values, int count) {
+void Shader::setUniform(const std::string& name, const float* values, size_t count) {
     bind();
     GLCALL(glUniform1fv(getUniformLocation(name), count, values));
 }
