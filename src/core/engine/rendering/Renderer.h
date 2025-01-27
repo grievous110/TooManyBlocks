@@ -43,7 +43,10 @@ private:
 
 	APIMetaData m_metaInfo;
 	RenderContext m_currentRenderContext;
+	
 	std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
+	RawBuffer<ShaderLightStruct> lightBuffer;
+	RawBuffer<glm::mat4> lightViewProjectionBuffer;
 
 	void beginShadowpass(const Scene& scene, const ApplicationContext& context);
 	void endShadowpass(const Scene& scene, const ApplicationContext& context);
