@@ -2,6 +2,7 @@
 #define SHADERSTORAGEBUFFER_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include <stddef.h>
 
 class ShaderStorageBuffer : public RenderApiObject {
 private:

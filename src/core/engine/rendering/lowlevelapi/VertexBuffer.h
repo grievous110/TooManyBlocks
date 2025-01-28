@@ -2,6 +2,7 @@
 #define VERTEXBUFFER_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include <stddef.h>
 
 class VertexBuffer : public RenderApiObject {
 private:

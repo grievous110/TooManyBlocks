@@ -2,6 +2,7 @@
 #define UNIFORMBUFFER_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include <stddef.h>
 
 class UniformBuffer : public RenderApiObject {
 private:
