@@ -103,7 +103,7 @@ unsigned int Shader::getUniformBlockIndex(const std::string& name) {
 
     GLCALL(unsigned int blockIndex = glGetUniformBlockIndex(m_rendererId, name.c_str()));
     if (blockIndex == GL_INVALID_INDEX) {
-        lgr::lout.warn("Warning: Index of '" + std::string(name) + "' uniform buffer was not invalid!");
+        lgr::lout.warn("Warning: Index of '" + std::string(name) + "' uniform buffer was invalid!");
     }
 
     m_uniformBlockIndexCache[name] = blockIndex;
