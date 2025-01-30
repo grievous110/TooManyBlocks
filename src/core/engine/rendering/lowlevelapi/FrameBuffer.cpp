@@ -18,7 +18,7 @@ void FrameBuffer::syncBinding() {
     FrameBuffer::currentlyBoundFBO = static_cast<unsigned int>(binding);
 }
 
-FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTexture(new Texture(width, height, true)) {
+FrameBuffer::FrameBuffer(unsigned int width, unsigned int height) : m_depthTexture(new Texture(TextureType::Depth, width, height)) {
     GLCALL(glGenFramebuffers(1, &m_rendererId));
     GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, m_rendererId));
 

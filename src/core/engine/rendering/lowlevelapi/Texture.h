@@ -4,26 +4,36 @@
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include <string>
 
+enum class TextureType {
+    Color,
+    Depth,
+    Float,
+    Integer,
+};
+
 class Texture : public RenderApiObject {
 private:
-	std::string m_filepath;
-	unsigned char* m_locabuffer;
+	TextureType m_type;
 	unsigned int m_width;
 	unsigned int m_height;
-	int m_bitsPerPixel;
+	int m_channels;
 
 public:
 	static void bindDefault();
 
 	Texture(const std::string& path);
-	Texture(unsigned int width, unsigned int height, bool isDepth);
+	Texture(TextureType type, unsigned int width, unsigned int height, int channels = 4, const void* data = nullptr);
 	Texture(Texture&& other) noexcept;
 	virtual ~Texture();
 
+	void updateData(int xOffset, int yOffset, unsigned int width, unsigned int height, const void* data) const;
+
 	void bind(unsigned int slot = 0) const;
 
+	inline TextureType type() const { return m_type; }
 	inline unsigned int width() const { return m_width; }
 	inline unsigned int height() const { return m_height; }
+	inline int channels() const { return m_channels; }
 
 	Texture& operator=(Texture&& other) noexcept;
 };
