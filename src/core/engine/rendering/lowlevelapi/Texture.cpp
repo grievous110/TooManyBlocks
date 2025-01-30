@@ -28,7 +28,7 @@ static TextureFormat getTextureFormat(TextureType type, int channels) {
             }
         case TextureType::Integer:
             switch (channels) {
-                case 1: return {GL_R32I, GL_RED_INTEGER, GL_INT}		// 32-bit int single channel
+                case 1: return {GL_R32I, GL_RED_INTEGER, GL_INT};		// 32-bit int single channel
                 case 2: return {GL_RG32I, GL_RG_INTEGER, GL_INT}; 		// 32-bit int two channels
                 case 3: return {GL_RGB32I, GL_RGB_INTEGER, GL_INT}; 	// 32-bit int three channels
                 default: return {GL_RGBA32I, GL_RGBA_INTEGER, GL_INT};	// Default: 32-bit int four channels
