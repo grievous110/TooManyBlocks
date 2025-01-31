@@ -47,8 +47,6 @@ uniform sampler2D u_shadowMapAtlas[3];
 uniform uint u_shadowMapAtlasSizes[3];
 uniform uint u_shadowMapSizes[3];
 
-layout(location = 0) out vec4 frag_color;
-
 vec4 sampleFromTexAtlas(vec2 uv_coord) {
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
@@ -169,5 +167,5 @@ void main() {
         color *= 1.0 - fade;
     }
 
-   frag_color = vec4(color, 1.0);
+   gl_FragColor = vec4(color, 1.0);
 }
