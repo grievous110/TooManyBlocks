@@ -23,7 +23,7 @@ std::string bitString(const T& value) {
     return stream.str();
 }
 
-inline unsigned int createMask(unsigned int numBits) {
+constexpr unsigned int createMask(unsigned int numBits) {
     if (numBits >= sizeof(unsigned int) * CHAR_BIT) {
         return UINT_MAX; // All bits set
     }

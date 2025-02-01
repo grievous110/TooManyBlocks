@@ -161,24 +161,24 @@ glm::mat4 Transform::getModelMatrix() const {
 
 Transform Transform::lerp(const Transform& other, float t) const {
     Transform result;
-    result.setPosition(glm::mix(this->getPosition(), other.getPosition(), t));
-    result.setScale(glm::mix(this->getScale(), other.getScale(), t));
-    result.setRotation(glm::slerp(this->getRotationQuat(), other.getRotationQuat(), t)); // Spherical linear interpolation for quaternions
+    result.setPosition(glm::mix(getPosition(), other.getPosition(), t));
+    result.setRotation(glm::slerp(getRotationQuat(), other.getRotationQuat(), t)); // Spherical linear interpolation for quaternions
+    result.setScale(glm::mix(getScale(), other.getScale(), t));
     return result;
 }
 
 Transform Transform::operator*(const Transform& other) const {
     Transform result;
-    result.setPosition(this->getPosition() + other.getPosition());
-    result.setRotation(this->getRotationQuat() * other.getRotationQuat());
-    result.setScale(this->getScale() * other.getScale());
+    result.setPosition(getPosition() + getRotationQuat() * other.getPosition() * getScale());
+    result.setRotation(getRotationQuat() * other.getRotationQuat());
+    result.setScale(getScale() * other.getScale());
     return result;
 }
 
 Transform& Transform::operator*=(const Transform& other) {
-    this->translate(other.getPosition());
-    this->rotate(other.getRotationQuat());
-    this->setScale(this->getScale() * other.getScale());
+    setPosition(getPosition() + getRotationQuat() * other.getPosition() * getScale());
+    rotate(other.getRotationQuat());
+    setScale(getScale() * other.getScale());
     return *this;
 }
 
