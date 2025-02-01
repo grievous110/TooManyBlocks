@@ -28,7 +28,34 @@ GameInstance::~GameInstance() {
 		delete m_world;
 }
 
+bool matricesEqual(const glm::mat4& m1, const glm::mat4& m2, float epsilon = 1e-6f) {
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            if (std::abs(m1[i][j] - m2[i][j]) > epsilon) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
 void GameInstance::initialize() {
+	Transform transformA(glm::vec3(1.0f, 2.0f, 3.0f), glm::quat(glm::vec3(0.1f, 0.2f, 0.3f)), glm::vec3(2.0f, 2.0f, 2.0f));
+    Transform transformB(glm::vec3(4.0f, 5.0f, 6.0f), glm::quat(glm::vec3(0.4f, 0.5f, 0.6f)), glm::vec3(1.0f, 1.0f, 1.0f));
+	glm::mat4 matrixA = transformA.getModelMatrix();
+    glm::mat4 matrixB = transformB.getModelMatrix();
+    glm::mat4 combinedMatrix = matrixA * matrixB;
+
+    // Calculate combined transform using the * operator
+    Transform combinedTransform = transformA * transformB;
+    glm::mat4 combinedMatrixFromOperator = combinedTransform.getModelMatrix();
+
+    // Compare the two results
+    if (matricesEqual(combinedMatrix, combinedMatrixFromOperator)) {
+        std::cout << "Test Passed: Model matrix multiplication and operator* yield the same result.\n";
+    } else {
+        std::cout << "Test Failed: Model matrix multiplication and operator* do not yield the same result.\n";
+    }
+
 	// Random seed
 	std::random_device rd;
     std::mt19937 generator(rd());
