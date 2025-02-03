@@ -9,6 +9,7 @@
 class PlayerController : public Controller, public KeyObserver, public MouseObserver {
 private:
     std::unordered_map<int, bool> keyStates;
+    float m_cameraPitch = 0.0f;
     
 public:
     PlayerController();

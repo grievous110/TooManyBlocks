@@ -1,10 +1,10 @@
 #include "Application.h"
+#include "datatypes/DatatypeDefs.h"
 #include "datatypes/Transform.h"
-#include "engine/controllers/PlayerController.h"
 #include "engine/entity/Player.h"
 #include "engine/rendering/Camera.h"
-#include "GLFW/glfw3.h"
 #include "PlayerController.h"
+#include <GLFW/glfw3.h>
 
 PlayerController::PlayerController() {
     Application::getContext()->io->attach(static_cast<KeyObserver*>(this));
@@ -28,10 +28,12 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
             float pitchDelta = static_cast<float>(-data.delta.y) * 0.25f;
             float yawDelta = static_cast<float>(-data.delta.x)  * 0.25f;
 
-            glm::vec3 eulerAngles = tr.getRotationEuler();
-            eulerAngles.x = glm::clamp(eulerAngles.x + pitchDelta, -89.0f, 89.0f);
-            eulerAngles.y += yawDelta;
-            tr.setRotation(eulerAngles);
+            float newPitch = glm::clamp(m_cameraPitch + pitchDelta, -89.0f, 89.0f);
+            float allowedPitchDelta = newPitch - m_cameraPitch;
+            m_cameraPitch += allowedPitchDelta;
+            
+            tr.rotate(yawDelta, WorldUp);
+            tr.rotate(allowedPitchDelta, tr.getRight());
         }
 	}
 }
