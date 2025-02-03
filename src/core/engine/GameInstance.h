@@ -13,14 +13,14 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
-#include <unordered_map>
 
 class GameInstance : public Updatable {
 public:
 	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
-	std::shared_ptr<Mesh> m_mesh;
+	std::shared_ptr<Mesh> m_mesh1;
+	std::shared_ptr<Mesh> m_mesh2;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
 	bool isInitialized;
 	

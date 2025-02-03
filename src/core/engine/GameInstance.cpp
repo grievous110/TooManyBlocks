@@ -1,61 +1,32 @@
 #include "Application.h"
-#include "engine/GameInstance.h"
-#include "engine/rendering/Renderer.h"
+#include "engine/controllers/PlayerController.h"
+#include "engine/env/lights/Spotlight.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/MeshCreate.h"
+#include "engine/rendering/Renderer.h"
 #include "engine/rendering/ShaderPathsConstants.h"
-#include "rendering/Mesh.h"
-#include "engine/controllers/PlayerController.h"
-#include "engine/env/lights/Spotlight.h"
+#include "GameInstance.h"
 #include "Logger.h"
+#include "rendering/Mesh.h"
 #include <GLFW/glfw3.h>
-#include <glm/gtc/matrix_transform.hpp>
-#include <imgui/imgui.h>
 #include <random>
-#include <iostream>
 #include <vector>
 
 using namespace std;
 
-GameInstance::GameInstance() 
-	: m_playerController(nullptr), m_player(nullptr), m_world(nullptr), m_mesh(nullptr), isInitialized(false) {}
+GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), isInitialized(false) {}
 
 GameInstance::~GameInstance() {
+	if (m_playerController)
+		delete m_playerController;
 	if (m_player)
 		delete m_player;
 	if (m_world)
 		delete m_world;
 }
 
-bool matricesEqual(const glm::mat4& m1, const glm::mat4& m2, float epsilon = 1e-6f) {
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            if (std::abs(m1[i][j] - m2[i][j]) > epsilon) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 void GameInstance::initialize() {
-	Transform transformA(glm::vec3(1.0f, 2.0f, 3.0f), glm::quat(glm::vec3(0.1f, 0.2f, 0.3f)), glm::vec3(2.0f, 2.0f, 2.0f));
-    Transform transformB(glm::vec3(4.0f, 5.0f, 6.0f), glm::quat(glm::vec3(0.4f, 0.5f, 0.6f)), glm::vec3(1.0f, 1.0f, 1.0f));
-	glm::mat4 matrixA = transformA.getModelMatrix();
-    glm::mat4 matrixB = transformB.getModelMatrix();
-    glm::mat4 combinedMatrix = matrixA * matrixB;
-
-    // Calculate combined transform using the * operator
-    Transform combinedTransform = transformA * transformB;
-    glm::mat4 combinedMatrixFromOperator = combinedTransform.getModelMatrix();
-
-    // Compare the two results
-    if (matricesEqual(combinedMatrix, combinedMatrixFromOperator)) {
-        std::cout << "Test Passed: Model matrix multiplication and operator* yield the same result.\n";
-    } else {
-        std::cout << "Test Failed: Model matrix multiplication and operator* do not yield the same result.\n";
-    }
-
 	// Random seed
 	std::random_device rd;
     std::mt19937 generator(rd());
@@ -86,13 +57,20 @@ void GameInstance::initialize() {
         m_lights.push_back(light);
     }
 
-	m_mesh = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
 	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
 	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
-	std::shared_ptr<Material> m_testMaterial = make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
-	m_mesh->assignMaterial(m_testMaterial);
-	m_mesh->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+	std::shared_ptr<Material> testMaterial1 = make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
+	std::shared_ptr<Material> testMaterial2 = make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
+	m_mesh1 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
+	m_mesh1->assignMaterial(testMaterial1);
+	m_mesh2 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
+	m_mesh2->assignMaterial(testMaterial2);
 
+	m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+	m_mesh1->getLocalTransform().setScale(0.5f);
+	m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
+	m_mesh2->getLocalTransform().translate(m_mesh1->getLocalTransform().getUp() * 3.0f);
+	
 	// Capture and hide the mouse cursor
 	glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	isInitialized = true;
@@ -109,7 +87,8 @@ Scene GameInstance::craftScene() {
 			scene.meshes.push_back(val.second->mesh);
 		}
 	}
-	scene.meshes.push_back(m_mesh);
+	scene.meshes.push_back(m_mesh1);
+	scene.meshes.push_back(m_mesh2);
 	return scene;
 }
 
@@ -118,6 +97,7 @@ void GameInstance::update(float msDelta) {
 	for (const auto& light : m_lights) {
         light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * (msDelta / 1000.0f), 0.0f));
     }
-	
+	Transform& mehs1Tr = m_mesh1->getLocalTransform();
+	mehs1Tr.rotate(msDelta / 100.0f, WorldUp);
 	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
 }
