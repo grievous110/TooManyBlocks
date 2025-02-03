@@ -4,14 +4,14 @@
 #include "datatypes/Transform.h"
 #include <vector>
 
-enum class InheritanceMode {
+enum class AttachRule {
     Full,
-    PositionAndScale,
-    RotationAndScale,
-    PositionAndRotation,
-    OnlyPosition,
-    OnlyRotation,
-    OnlyScale,
+    PosAndScale,
+    PosAndRot,
+	RotAndScale,
+    PosOnly,
+	RotOnly,
+	ScaleOnly,
     None
 };
 
@@ -20,17 +20,17 @@ private:
 	SceneComponent* parent;
 	std::vector<SceneComponent*> children;
 	Transform m_transform;
-	InheritanceMode m_mode;
+	AttachRule m_attachRule;
 
 public:
-	SceneComponent() : parent(nullptr), m_mode(InheritanceMode::Full) {};
+	SceneComponent() : parent(nullptr), m_attachRule(AttachRule::None) {};
 	virtual ~SceneComponent();
 
-	void attachChild(SceneComponent* child);
+	void attachChild(SceneComponent* child, AttachRule rule = AttachRule::Full);
 	void detachChild(SceneComponent* child);
+	void detachAll();
 
-	inline void setInheritanceMode(InheritanceMode mode) { m_mode = mode; };
-
+	inline AttachRule getAttachRule() const { return m_attachRule; }
 	inline Transform& getLocalTransform() { return m_transform; }
 	Transform getGlobalTransform() const;
 };
