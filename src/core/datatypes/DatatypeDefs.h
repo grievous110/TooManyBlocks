@@ -2,6 +2,11 @@
 #define DATATYPEDEFS_H
 
 #include <cstdint>
+#include <glm/vec3.hpp>
+
+constexpr glm::vec3 WorldUp = glm::vec3(0, 1, 0);
+constexpr glm::vec3 WorldForward = glm::vec3(0, 0, -1);
+constexpr glm::vec3 WorldRight = glm::vec3(1, 0, 0);
 
 enum Axis {
     X = 0,
