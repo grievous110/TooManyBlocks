@@ -7,50 +7,50 @@
 class Transform {
 private:
     glm::vec3 m_position;
-    glm::vec3 m_eulerAngles;
-    glm::quat m_rotationQuat;
-    glm::vec3 m_scale;
+    glm::quat m_rotation;
+    float m_scale; // Uniform scaling to avoid skew
 
     mutable bool m_dirty; // Tracks whether the model matrix needs recalculation
     mutable glm::mat4 m_modelMatrix;
 
     void recalculateModelMatrix() const;
-    void updateEulerFromQuat();
-    void updateQuatFromEuler();
-    void normalizeEuler();
-    float normalizeAngle(float degrees);
 
 public:
-    Transform();
-    Transform(const glm::vec3& position, const glm::vec3& rotation = glm::vec3(0.0f), const glm::vec3& scale = glm::vec3(1.0f));
-    Transform(const glm::vec3& position, const glm::quat& rotation = glm::quat(1.0f, glm::vec3(0.0f, 0.0f, 0.0f)), const glm::vec3& scale = glm::vec3(1.0f));
+    static Transform fromMatrix(const glm::mat4& matrix);
 
-    void rotate(const float& angle, const glm::vec3& axis);
+    Transform();
+    Transform(const glm::vec3& position, const glm::vec3& eulerAngles = glm::vec3(0.0f), float scale = 1.0f);
+    Transform(const glm::vec3& position, const glm::quat& rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f), float scale = 1.0f);
+
+    void rotate(float angle, const glm::vec3& axis);
     void rotate(const glm::vec3& eulerAngles);
     void rotate(const glm::quat& quaternion);
     void translate(const glm::vec3& offset);
-    void scale(float uniformScale);
+    void scale(float factor);
     void lookAt(const glm::vec3& target, const glm::vec3& up = glm::vec3(0.0f, 1.0f, 0.0f));
     void reset();
 
     void setPosition(const glm::vec3& position);
     void setRotation(const glm::quat& rotation);
     void setRotation(const glm::vec3& eulerAngles);
-    void setScale(const glm::vec3& scale);
+    void setScale(float scale);
 
     inline glm::vec3 getPosition() const { return m_position; }
-    inline glm::quat getRotationQuat() const { return m_rotationQuat; }
-    inline glm::vec3 getRotationEuler() const { return m_eulerAngles; }
-    inline glm::vec3 getScale() const { return m_scale; }
+    inline glm::quat getRotationQuat() const { return m_rotation; }
+    inline glm::vec3 getRotationEuler() const { return glm::degrees(glm::eulerAngles(m_rotation)); };
+    inline float getScale() const { return m_scale; }
     glm::vec3 getForward() const;
     glm::vec3 getRight() const;
     glm::vec3 getUp() const;
     Transform getInverse() const;
+    bool isEqual(const Transform& other, float epsilon = 1e-5f) const;
 
     glm::mat4 getModelMatrix() const;
 
-    Transform lerp(const Transform& other, float t) const;
+    Transform interpolate(const Transform& other, float a) const;
 
+    Transform operator+(const Transform& other) const;
+    Transform& operator+=(const Transform& other);
     Transform operator*(const Transform& other) const;
     Transform& operator*=(const Transform& other);
     bool operator==(const Transform& other) const;
