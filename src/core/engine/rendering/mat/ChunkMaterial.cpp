@@ -36,9 +36,9 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 				std::shared_ptr<FrameBuffer> frameBuff = context.shadowMapAtlases[prio];
 				if (frameBuff) {
 					const std::string strPrio = std::to_string(prio);
-					frameBuff->getDepthTexture()->bind(prio + 1);	
+					frameBuff->getAttachedDepthTexture()->bind(prio + 1);
 					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 1);
-					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", static_cast<unsigned int>(frameBuff->getDepthTexture()->width()));
+					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", static_cast<unsigned int>(frameBuff->getAttachedDepthTexture()->width()));
 					m_shader->setUniform("u_shadowMapSizes[" + strPrio + "]", context.shadowMapSizes[prio]);
 				} else {
 					lgr::lout.error("Shadow map atlas not loaded for ChunkMaterial");
