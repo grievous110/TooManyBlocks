@@ -124,16 +124,19 @@ void Renderer::initialize() {
 	lgr::lout.info(details.str());
 
 	// Create buffers for shadowmapping
-	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>(SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION);
+	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>();
+	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::High] = HIGHPRIO_SHADOWMAP_SIZE;
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium] = std::make_shared<FrameBuffer>(SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION);
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium] = std::make_shared<FrameBuffer>();
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Medium] = MEDIUMPRIO_SHADOWMAP_SIZE;
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Low] = std::make_shared<FrameBuffer>(SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION);
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Low] = std::make_shared<FrameBuffer>();
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
 	size_t totalSupportedLights = 0;
     for (int i = 0; i < LightPriority::Count; i++) {
-        m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
+        m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
         m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
 		totalSupportedLights += m_maxShadowMapsPerPriority[i];
     }
@@ -173,7 +176,7 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 		setAtlasViewport(
 			m_currentRenderContext.shadowMapSizes[m_currentRenderContext.currentLightPrio],
 			m_currentRenderContext.lightShadowAtlasIndex,
-			m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->getDepthTexture()->width()
+			m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->getAttachedDepthTexture()->width()
 		);
 
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
