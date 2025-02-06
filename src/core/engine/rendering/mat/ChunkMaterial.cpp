@@ -30,9 +30,9 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff, 0);
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff, 1);
 
-			std::shared_ptr<Texture> sDepthTex = context.screenDepthBuffer->getAttachedTexture();
-			sDepthTex->bind(2);
-			m_shader->setUniform("u_screenDepthBuffer", 2);
+			std::shared_ptr<Texture> sDepthTex = context.screenDepthBuffer->getAttachedDepthTexture();
+			sDepthTex->bind(1);
+			m_shader->setUniform("u_screenDepthBuffer", 1);
 			m_shader->setUniform("u_screenWidth", sDepthTex->width());
 			m_shader->setUniform("u_screenHeight", sDepthTex->height());
 
@@ -41,8 +41,8 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 				std::shared_ptr<FrameBuffer> frameBuff = context.shadowMapAtlases[prio];
 				if (frameBuff) {
 					const std::string strPrio = std::to_string(prio);
-					frameBuff->getAttachedDepthTexture()->bind(prio + 1);
-					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 1);
+					frameBuff->getAttachedDepthTexture()->bind(prio + 2);
+					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 2);
 					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", static_cast<unsigned int>(frameBuff->getAttachedDepthTexture()->width()));
 					m_shader->setUniform("u_shadowMapSizes[" + strPrio + "]", context.shadowMapSizes[prio]);
 				} else {
