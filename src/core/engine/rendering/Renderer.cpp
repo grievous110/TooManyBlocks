@@ -171,7 +171,8 @@ void Renderer::initialize() {
 	FrameBuffer::bindDefault();
 	int display_w, display_h;
 	glfwGetFramebufferSize(Application::getContext()->window, &display_w, &display_h);
-	m_currentRenderContext.screenDepthBuffer = std::make_shared<FrameBuffer>(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
+	m_currentRenderContext.screenDepthBuffer = std::make_shared<FrameBuffer>();
+	m_currentRenderContext.screenDepthBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
 
 	m_totalSupportedLights = 0;
     for (int i = 0; i < LightPriority::Count; i++) {
