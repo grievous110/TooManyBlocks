@@ -62,7 +62,7 @@ void Renderer::beginSSAOpass(const Scene& scene, const ApplicationContext& conte
 	FrameBuffer::bindDefault();
 	int display_w, display_h;
 	glfwGetFramebufferSize(context.window, &display_w, &display_h);
-	std::shared_ptr<Texture> screenDBuff = m_currentRenderContext.screenDepthBuffer->getAttachedTexture();
+	std::shared_ptr<Texture> screenDBuff = m_currentRenderContext.screenDepthBuffer->getAttachedDepthTexture();
 	if (screenDBuff->width() != display_w || screenDBuff->height() != display_h) {
 		m_currentRenderContext.screenDepthBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
 	}
