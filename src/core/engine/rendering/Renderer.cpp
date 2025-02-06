@@ -25,7 +25,7 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_maxShadowMapsPerPriority, m_currentRenderContext);
 	
-	int activeLightCount = std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS);
+	int activeLightCount = m_currentRenderContext.lights.size();
 	
 	lightBuffer.clear();
 	lightViewProjectionBuffer.clear();
@@ -52,6 +52,40 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
+
+}
+
+void Renderer::beginSSAOpass(const Scene& scene, const ApplicationContext& context) {
+	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+
+	FrameBuffer::bindDefault();
+	int display_w, display_h;
+	glfwGetFramebufferSize(context.window, &display_w, &display_h);
+	std::shared_ptr<Texture> screenDBuff = m_currentRenderContext.screenDepthBuffer->getAttachedTexture();
+	if (screenDBuff->width() != display_w || screenDBuff->height() != display_h) {
+		m_currentRenderContext.screenDepthBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
+	}
+	m_currentRenderContext.screenDepthBuffer->bind();
+	GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
+
+	// Random sampling kernel
+	for (int i = 0; i < 64; ++i) {
+		glm::vec3 sample(
+			(float)rand() / RAND_MAX * 2.0f - 1.0f,
+			(float)rand() / RAND_MAX * 2.0f - 1.0f,
+			(float)rand() / RAND_MAX
+		);
+		sample = glm::normalize(sample);
+		sample *= (float)rand() / RAND_MAX;
+		float scale = (float)i / 64.0f;
+		scale = glm::mix(0.1f, 1.0f, scale * scale); // Focus samples closer to the fragment
+		sample *= scale;
+		m_currentRenderContext.ssaoKernel[i] = sample;
+	}
+}
+
+void Renderer::endSSAOpass(const Scene& scene, const ApplicationContext& context) {
 
 }
 
@@ -134,18 +168,23 @@ void Renderer::initialize() {
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
-	size_t totalSupportedLights = 0;
+	FrameBuffer::bindDefault();
+	int display_w, display_h;
+	glfwGetFramebufferSize(Application::getContext()->window, &display_w, &display_h);
+	m_currentRenderContext.screenDepthBuffer = std::make_shared<FrameBuffer>(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
+
+	m_totalSupportedLights = 0;
     for (int i = 0; i < LightPriority::Count; i++) {
         m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
         m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
-		totalSupportedLights += m_maxShadowMapsPerPriority[i];
+		m_totalSupportedLights += m_maxShadowMapsPerPriority[i];
     }
-	m_currentRenderContext.lights = RawBuffer<Light*>(totalSupportedLights);
-	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(ShaderLightStruct));
-	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(glm::mat4));
+	m_currentRenderContext.lights = RawBuffer<Light*>(m_totalSupportedLights);
+	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
 	
-	lightBuffer = RawBuffer<ShaderLightStruct>(MAX_LIGHTS);
-	lightViewProjectionBuffer = RawBuffer<glm::mat4>(MAX_LIGHTS);
+	lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
+	lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
 }
 
 static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
@@ -166,7 +205,7 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
     beginShadowpass(scene, context);
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
-	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS); i++) {
+	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), m_totalSupportedLights); i++) {
 		const Light* light = m_currentRenderContext.lights[i];
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
@@ -202,17 +241,31 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 
 	endShadowpass(scene, context);
 
-	beginMainpass(scene, context);
 
 	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
 	{
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		
 		for (Mesh* mesh : culledMeshBuffer) {
 			if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
 				materialBatches[mesh->getMaterial().get()].push_back(mesh);
 			}
 		}
+		
+		beginSSAOpass(scene, context);
+		
+		for (const auto& batch : materialBatches) {
+			batch.first->bindForPass(PassType::ScreenSpaceAmbientOcclusion, m_currentRenderContext);
+
+			for (const Mesh* mesh : batch.second) {
+				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+				batch.first->bindForMeshDraw(PassType::ScreenSpaceAmbientOcclusion, m_currentRenderContext);
+				drawMesh(*mesh);
+			}
+		}
+
+		endSSAOpass(scene, context);
+		
+		beginMainpass(scene, context);
 		
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
