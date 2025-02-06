@@ -5,7 +5,7 @@
 #include <gl/glew.h>
 
 bool ChunkMaterial::supportsPass(PassType passType) const {
-	return passType == PassType::MainPass || passType == PassType::ShadowPass;
+	return passType == PassType::MainPass || passType == PassType::ScreenSpaceAmbientOcclusion || passType == PassType::ShadowPass;
 }
 
 void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context) const {
@@ -26,10 +26,15 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			}
 
 			// Pass light info
-			int activeLightCount = std::min<int>(context.lights.size(), MAX_LIGHTS); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
-			m_shader->setUniform("u_lightCount", activeLightCount);
+			m_shader->setUniform("u_lightCount", static_cast<int>(context.lights.size()));
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff, 0);
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff, 1);
+
+			std::shared_ptr<Texture> sDepthTex = context.screenDepthBuffer->getAttachedTexture();
+			sDepthTex->bind(2);
+			m_shader->setUniform("u_screenDepthBuffer", 2);
+			m_shader->setUniform("u_screenWidth", sDepthTex->width());
+			m_shader->setUniform("u_screenHeight", sDepthTex->height());
 
 			// Pass depth buffers for shadowmapping
 			for (int prio = 0; prio < LightPriority::Count; prio++) {
@@ -45,7 +50,7 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 				}
 			}
 		}
-	} else if (passType == PassType::ShadowPass) {
+	}  else if (passType == PassType::ScreenSpaceAmbientOcclusion || passType == PassType::ShadowPass) {
 		if (m_depthShader) {
 			m_depthShader->bind();
 			m_depthShader->setUniform("u_lightViewProjection", context.viewProjection);
@@ -63,7 +68,7 @@ void ChunkMaterial::bindForMeshDraw(PassType passType, const RenderContext &cont
 		} else {
 			lgr::lout.error("Main shader not loaded for ChunkMaterial");
 		}
-	} else if (passType == PassType::ShadowPass) {
+	} else if (passType == PassType::ScreenSpaceAmbientOcclusion || passType == PassType::ShadowPass) {
 		if (m_depthShader) {
 			m_depthShader->bind();
 			m_depthShader->setUniform("u_chunkPosition", context.meshTransform.getPosition());

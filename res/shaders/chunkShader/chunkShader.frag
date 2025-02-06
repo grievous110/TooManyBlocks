@@ -43,6 +43,10 @@ uniform uint u_textureSize;
 
 uniform int u_lightCount;
 
+uniform sampler2D u_screenDepthBuffer;
+uniform uint u_screenWidth;
+uniform uint u_screenHeight;
+
 uniform sampler2D u_shadowMapAtlas[3];
 uniform uint u_shadowMapAtlasSizes[3];
 uniform uint u_shadowMapSizes[3];

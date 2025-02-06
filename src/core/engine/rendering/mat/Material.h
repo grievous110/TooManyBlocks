@@ -24,10 +24,14 @@ struct RenderContext {
 	unsigned int lightShadowAtlasIndex;
 	std::array<unsigned int, LightPriority::Count> shadowMapSizes;
 	std::array<std::shared_ptr<FrameBuffer>, LightPriority::Count> shadowMapAtlases;
+
+	std::shared_ptr<FrameBuffer> screenDepthBuffer;
+	std::array<glm::vec3, 64> ssaoKernel;
 };
 
 enum PassType {
 	ShadowPass,
+	ScreenSpaceAmbientOcclusion,
 	MainPass
 };
 
