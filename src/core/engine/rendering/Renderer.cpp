@@ -146,6 +146,7 @@ void Renderer::initialize() {
 	
 	lightBuffer = RawBuffer<ShaderLightStruct>(MAX_LIGHTS);
 	lightViewProjectionBuffer = RawBuffer<glm::mat4>(MAX_LIGHTS);
+	FrameBuffer::bindDefault();
 }
 
 static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
