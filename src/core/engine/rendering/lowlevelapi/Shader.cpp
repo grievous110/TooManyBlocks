@@ -1,6 +1,7 @@
 #include "engine/rendering/GLUtils.h"
 #include "Logger.h"
 #include "Shader.h"
+#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <gl/glew.h>
 #include <sstream>
@@ -205,6 +206,21 @@ void Shader::setUniform(const std::string& name, const glm::ivec3& vector) {
 void Shader::setUniform(const std::string& name, const glm::ivec4& vector) {
     bind();
     GLCALL(glUniform4i(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec2& vector) {
+    bind();
+    GLCALL(glUniform2ui(getUniformLocation(name), vector.x, vector.y));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec3& vector) {
+    bind();
+    GLCALL(glUniform3ui(getUniformLocation(name), vector.x, vector.y, vector.z));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec4& vector) {
+    bind();
+    GLCALL(glUniform4ui(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat3& matrix) {
