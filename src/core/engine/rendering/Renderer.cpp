@@ -1,7 +1,11 @@
+#include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/SceneOptimizing.h"
+#include "engine/rendering/ShaderPathsConstants.h"
+#include "engine/rendering/lowlevelapi/VertexArray.h"
+#include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "Logger.h"
 #include "Renderer.h"
 #include <chrono>
@@ -114,49 +118,6 @@ void Renderer::initialize() {
 	GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));	// Blending
 	GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
-	// Query meta info
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &m_metaInfo.maxVertexAttribs));
-	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxTextureImageUnits));
-	GLCALL(glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxCombinedTextureImageUnits));
-	GLCALL(glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &m_metaInfo.maxUniformBlockSize));
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &m_metaInfo.maxVertUniformBlocks));
-	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS, &m_metaInfo.maxFragUniformBlocks));
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &m_metaInfo.maxVertUniformComponents));
-	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS , &m_metaInfo.maxFragUniformComponents));
-	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_metaInfo.maxTextureSize));
-	GLCALL(glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_metaInfo.max3DTextureSize));
-	GLCALL(glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &m_metaInfo.maxArrayTextureLayers));
-	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, &m_metaInfo.maxFramebufferWidth));
-	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, &m_metaInfo.maxFramebufferHeight));
-	GLCALL(glGetIntegerv(GL_MAX_VARYING_VECTORS, &m_metaInfo.maxVaryingVectors));
-	GLCALL(glGetIntegerv(GL_MAX_SAMPLES, &m_metaInfo.maxMSAASamples));
-	GLCALL(glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &m_metaInfo.maxSSBOBindings));
-	GLCALL(glGetIntegerv(GL_MAX_DRAW_BUFFERS, &m_metaInfo.maxDrawBuffers));
-	GLCALL(glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &m_metaInfo.maxElementsIndices));
-	GLCALL(glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &m_metaInfo.maxElementsVertices));
-
-	std::stringstream details;
-	details << "OpenGL API MetaInfo:" << std::endl;
-	details << "Max vertex attributes: " << m_metaInfo.maxVertexAttribs << std::endl;
-	details << "Max texture image units: " << m_metaInfo.maxTextureImageUnits << std::endl;
-	details << "Max combined texture image units: " << m_metaInfo.maxCombinedTextureImageUnits << std::endl;
-	details << "Max uniform block size: " << m_metaInfo.maxUniformBlockSize << " bytes" << std::endl;
-	details << "Max vertex uniform blocks: " << m_metaInfo.maxVertUniformBlocks << std::endl;
-	details << "Max fragment uniform blocks: " << m_metaInfo.maxFragUniformBlocks << std::endl;
-	details << "Max vertex uniform components: " << m_metaInfo.maxVertUniformComponents << std::endl;
-	details << "Max fragment uniform components: " << m_metaInfo.maxFragUniformComponents << std::endl;
-	details << "Max texture size: " << m_metaInfo.maxTextureSize << "x" << m_metaInfo.maxTextureSize << std::endl;
-	details << "Max 3D texture size: " << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << std::endl;
-	details << "Max array texture layers: " << m_metaInfo.maxArrayTextureLayers << std::endl;
-	details << "Max framebuffer size: " << m_metaInfo.maxFramebufferWidth << "x" << m_metaInfo.maxFramebufferHeight << std::endl;
-	details << "Max varying vectors: " << m_metaInfo.maxVaryingVectors << std::endl;
-	details << "Max MSAA samples: " << m_metaInfo.maxMSAASamples << std::endl;
-	details << "Max SSBO bindings: " << m_metaInfo.maxSSBOBindings << std::endl;
-	details << "Max draw buffers: " << m_metaInfo.maxDrawBuffers << std::endl;
-	details << "Max elements indices: " << m_metaInfo.maxElementsIndices << std::endl;
-	details << "Max elements vertices: " << m_metaInfo.maxElementsVertices << std::endl;
-	lgr::lout.info(details.str());
-
 	// Create buffers for shadowmapping
 	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>();
 	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
@@ -168,12 +129,6 @@ void Renderer::initialize() {
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
-	FrameBuffer::bindDefault();
-	int display_w, display_h;
-	glfwGetFramebufferSize(Application::getContext()->window, &display_w, &display_h);
-	m_currentRenderContext.screenDepthBuffer = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.screenDepthBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
-
 	m_totalSupportedLights = 0;
     for (int i = 0; i < LightPriority::Count; i++) {
         m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
@@ -183,7 +138,6 @@ void Renderer::initialize() {
 	m_currentRenderContext.lights = RawBuffer<Light*>(m_totalSupportedLights);
 	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
 	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
-	
 	lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
 	lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
 	FrameBuffer::bindDefault();
@@ -204,6 +158,10 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 	static int frameCount = 0;
 
 	auto totalTimerStart = std::chrono::high_resolution_clock::now();
+
+	// Update screen resolution
+	m_currentRenderContext.currentScreenResolution = glm::uvec2(context.screenWidth, context.screenHeight);
+
     beginShadowpass(scene, context);
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
