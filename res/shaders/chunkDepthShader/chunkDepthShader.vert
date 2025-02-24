@@ -1,8 +1,8 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) in uint compressedPosition;
 
-uniform mat4 u_lightViewProjection;
+uniform mat4 u_viewProjection;
 uniform vec3 u_chunkPosition;
 
 #define POSITION_BITMASK 0x3FFu
@@ -25,5 +25,5 @@ void main() {
 	vec3 localPosInChunk = decodePosition(compressedPosition);
 	vec3 worldVertexPos = u_chunkPosition + localPosInChunk;
 
-	gl_Position = u_lightViewProjection * vec4(worldVertexPos, 1.0);
+	gl_Position = u_viewProjection * vec4(worldVertexPos, 1.0);
 }
