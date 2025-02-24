@@ -63,8 +63,6 @@ Texture::Texture(const std::string& path) : m_type(TextureType::Color), m_width(
 	GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 	GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
 
-	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
-
 	if (buffer) {
 		stbi_image_free(buffer);
 	} else {
@@ -83,8 +81,6 @@ Texture::Texture(TextureType type, unsigned int width, unsigned int height, int 
 	GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
 	GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
 	GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
-
-	GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
 }
 
 Texture::Texture(Texture&& other) noexcept : RenderApiObject(std::move(other)), m_type(other.m_type), m_width(other.m_width), m_height(other.m_height), m_channels(other.m_channels) {
