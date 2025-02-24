@@ -1,10 +1,10 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include "Application.h"
 #include "compatability/Compatability.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/SSAOProcessor.h"
 #include "engine/rendering/mat/Material.h"
 #include "engine/rendering/Mesh.h"
 #include "engine/rendering/Scene.h"
@@ -13,27 +13,7 @@
 #include <string>
 #include <unordered_map>
 
-struct APIMetaData {
-	int maxVertexAttribs;
-	int maxTextureImageUnits;
-	int maxCombinedTextureImageUnits;
-	int maxTextureSize;
-	int max3DTextureSize;
-	int maxUniformBlockSize;
-	int maxVertUniformBlocks;
-	int maxFragUniformBlocks;
-	int maxVertUniformComponents;
-	int maxFragUniformComponents;
-	int maxArrayTextureLayers;
-	int maxFramebufferWidth;
-	int maxFramebufferHeight;
-	int maxVaryingVectors;
-	int maxMSAASamples;
-	int maxSSBOBindings;
-	int maxDrawBuffers;
-	int maxElementsIndices;
-	int maxElementsVertices;
-};
+struct ApplicationContext;
 
 class Renderer {
 private:
@@ -41,7 +21,6 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<Texture>> m_textureCache;
 	std::unordered_map<std::string, std::pair<std::shared_ptr<MeshRenderData>, MeshBounds>> m_meshCache;
 
-	APIMetaData m_metaInfo;
 	RenderContext m_currentRenderContext;
 	
 	size_t m_totalSupportedLights;
@@ -68,8 +47,6 @@ public:
 	std::shared_ptr<Texture> getTextureFromFile(const std::string& texturePath);
 
 	std::shared_ptr<Mesh> getMeshFromFile(const std::string& meshPath);
-
-	inline const APIMetaData& getAPIMetaInfo() const { return m_metaInfo; }
 };
 
 #endif

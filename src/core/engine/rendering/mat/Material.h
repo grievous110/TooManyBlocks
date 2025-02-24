@@ -13,10 +13,13 @@
 #include <vector>
 
 struct RenderContext {
+	glm::uvec2 currentScreenResolution;
 	RawBuffer<Light*> lights;
 	std::shared_ptr<UniformBuffer> lightBuff;
 	std::shared_ptr<UniformBuffer> lightViewProjectionBuff;
 	glm::mat4 viewProjection;
+	glm::mat4 projection;
+	glm::mat4 view;
 	Transform viewportTransform;
 	Transform meshTransform;
 
@@ -25,13 +28,12 @@ struct RenderContext {
 	std::array<unsigned int, LightPriority::Count> shadowMapSizes;
 	std::array<std::shared_ptr<FrameBuffer>, LightPriority::Count> shadowMapAtlases;
 
-	std::shared_ptr<FrameBuffer> screenDepthBuffer;
-	std::array<glm::vec3, 64> ssaoKernel;
+	std::weak_ptr<Texture> ssaoOutput;
 };
 
 enum PassType {
 	ShadowPass,
-	ScreenSpaceAmbientOcclusion,
+	AmbientOcclusion,
 	MainPass
 };
 
