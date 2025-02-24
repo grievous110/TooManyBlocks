@@ -1,28 +1,19 @@
-#version 330 core
+#version 430 core
 
 layout(location = 0) in uint compressedPosition;
 layout(location = 1) in uint compressedData;
 
 out vec3 position;
-out uint texIndex;
-out vec2 uv;
 out vec3 normal;
 
-uniform mat4 u_viewProjection;
+uniform mat4 u_view;
+uniform mat4 u_projection;
 uniform vec3 u_chunkPosition;
 
 #define POSITION_BITMASK 0x3FFu
 #define X_POSITION_OFFSET 20
 #define Y_POSITION_OFFSET 10
 #define Z_POSITION_OFFSET 0
-
-#define TEXINDEX_BITMASK 0xFFu
-#define TEXINDEX_OFFSET 16
-
-#define X_UV_BITMASK 0x3FFu
-#define Y_UV_BITMASK 0x3Fu
-#define X_UV_OFFSET 10
-#define Y_UV_OFFSET 4
 
 #define NORMAL_BITMASK 0x07u
 #define NORMAL_OFFSET 0
@@ -45,16 +36,6 @@ vec3 decodePosition(uint compressedPosition) {
     return vec3(pos);
 }
 
-uint decodeTexIndex(uint compressedData) {
-    return GET_BITS(compressedData, TEXINDEX_BITMASK, TEXINDEX_OFFSET);
-}
-
-vec2 decodeUV(uint compressedData) {
-    float uvX = float(GET_BITS(compressedData, X_UV_BITMASK, X_UV_OFFSET));
-    float uvY = float(GET_BITS(compressedData, Y_UV_BITMASK, Y_UV_OFFSET));
-    return vec2(uvX, uvY);
-}
-
 vec3 decodeNormal(uint compressedData) {
     uint normalCode = GET_BITS(compressedData, NORMAL_BITMASK, NORMAL_OFFSET);
     switch (normalCode) {
@@ -70,15 +51,11 @@ vec3 decodeNormal(uint compressedData) {
 
 void main() {
     vec3 localPosInChunk = decodePosition(compressedPosition);
-    uint decodedTexIndex = decodeTexIndex(compressedData);
-    vec2 decodedUV = decodeUV(compressedData);
     vec3 decodedNormal = decodeNormal(compressedData);
 
     vec3 worldVertexPos = u_chunkPosition + localPosInChunk;
 
-    gl_Position = u_viewProjection * vec4(worldVertexPos, 1.0);
-    position = worldVertexPos;
-    texIndex = decodedTexIndex;
-    uv = decodedUV;
-    normal = decodedNormal;
+    gl_Position = u_projection * u_view * vec4(worldVertexPos, 1.0);
+    position = vec3(u_view * vec4(worldVertexPos, 1.0));
+    normal = transpose(inverse(mat3(u_view))) * decodedNormal;
 }
