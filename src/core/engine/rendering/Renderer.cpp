@@ -9,7 +9,7 @@
 #include "Logger.h"
 #include "Renderer.h"
 #include <chrono>
-#include <GLFW/glfw3.h>
+#include <gl/glew.h>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -19,8 +19,30 @@
 #define MEDIUMPRIO_SHADOWMAP_SIZE 1024
 #define LOWPRIO_SHADOWMAP_SIZE 512
 
-void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& context) {
-	for (int i = 0; i < LightPriority::Count; i++) {
+static constexpr float fullScreenQuadCCW[] = {
+	// Position   // UV-Koordinaten
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	-1.0f, -1.0f,  0.0f, 0.0f,  // Unten-Links
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+};
+
+static constexpr float fullScreenQuadCW[] = {
+	// Position   // UV-Koordinaten
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	-1.0f, -1.0f,  0.0f, 0.0f,  // Unten-Links
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+};
+
+void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& context) {
+    for (int i = 0; i < LightPriority::Count; i++) {
 		m_currentRenderContext.shadowMapAtlases[i]->bind();
 		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
 	}
@@ -59,47 +81,28 @@ void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& conte
 
 }
 
-void Renderer::beginSSAOpass(const Scene& scene, const ApplicationContext& context) {
+void Renderer::beginAmbientOcclusionPass(const Scene& scene, const ApplicationContext& context) {
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+	m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-
-	FrameBuffer::bindDefault();
-	int display_w, display_h;
-	glfwGetFramebufferSize(context.window, &display_w, &display_h);
-	std::shared_ptr<Texture> screenDBuff = m_currentRenderContext.screenDepthBuffer->getAttachedDepthTexture();
-	if (screenDBuff->width() != display_w || screenDBuff->height() != display_h) {
-		m_currentRenderContext.screenDepthBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, display_w, display_h));
-	}
-	m_currentRenderContext.screenDepthBuffer->bind();
-	GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
-
-	// Random sampling kernel
-	for (int i = 0; i < 64; ++i) {
-		glm::vec3 sample(
-			(float)rand() / RAND_MAX * 2.0f - 1.0f,
-			(float)rand() / RAND_MAX * 2.0f - 1.0f,
-			(float)rand() / RAND_MAX
-		);
-		sample = glm::normalize(sample);
-		sample *= (float)rand() / RAND_MAX;
-		float scale = (float)i / 64.0f;
-		scale = glm::mix(0.1f, 1.0f, scale * scale); // Focus samples closer to the fragment
-		sample *= scale;
-		m_currentRenderContext.ssaoKernel[i] = sample;
-	}
+	// Disable blending cause rendering to textures that do not have 4 channels (alpha) will will be discarded. Blending expects a valid alpha component
+	GLCALL(glDisable(GL_BLEND));
 }
 
-void Renderer::endSSAOpass(const Scene& scene, const ApplicationContext& context) {
-
+void Renderer::endAmbientOcclusionPass(const Scene &scene, const ApplicationContext &context) {
+	m_currentRenderContext.ssaoOutput = m_ssaoProcessor.getOcclusionOutput();
+	GLCALL(glEnable(GL_BLEND));
 }
 
-void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
-	FrameBuffer::bindDefault();
+void Renderer::beginMainpass(const Scene &scene, const ApplicationContext &context) {
+    FrameBuffer::bindDefault();
 	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-	int display_w, display_h;
-	glfwGetFramebufferSize(context.window, &display_w, &display_h);
-	GLCALL(glViewport(0, 0, display_w, display_h));
+	glm::uvec2 screenRes = m_currentRenderContext.currentScreenResolution;
+	GLCALL(glViewport(0, 0, screenRes.x, screenRes.y));
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+	m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
@@ -140,6 +143,18 @@ void Renderer::initialize() {
 	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
 	lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
 	lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
+	
+	// Create vertex array / buffer for fullscreen quad
+	m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
+	m_fullScreenQuad_vao = std::make_unique<VertexArray>();
+	VertexBufferLayout layout;
+	layout.push(GL_FLOAT, sizeof(float), 2); // Position
+	layout.push(GL_FLOAT, sizeof(float), 2); // Screen UV
+	m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo, layout);
+
+	// Initialize SSAO renderer
+	m_ssaoProcessor.initialize();
+
 	FrameBuffer::bindDefault();
 }
 
@@ -165,6 +180,7 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
     beginShadowpass(scene, context);
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
+	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
 	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), m_totalSupportedLights); i++) {
 		const Light* light = m_currentRenderContext.lights[i];
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
@@ -179,7 +195,7 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 		);
 
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
+		materialBatches.clear();
 		for (Mesh* mesh : culledMeshBuffer) {
 			if (mesh->getMaterial()->supportsPass(PassType::ShadowPass)) {
 				materialBatches[mesh->getMaterial().get()].push_back(mesh);
@@ -201,43 +217,59 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 
 	endShadowpass(scene, context);
 
+	beginAmbientOcclusionPass(scene, context);
 
-	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
-	{
-		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		for (Mesh* mesh : culledMeshBuffer) {
-			if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
-				materialBatches[mesh->getMaterial().get()].push_back(mesh);
-			}
-		}
-		
-		beginSSAOpass(scene, context);
-		
-		for (const auto& batch : materialBatches) {
-			batch.first->bindForPass(PassType::ScreenSpaceAmbientOcclusion, m_currentRenderContext);
-
-			for (const Mesh* mesh : batch.second) {
-				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-				batch.first->bindForMeshDraw(PassType::ScreenSpaceAmbientOcclusion, m_currentRenderContext);
-				drawMesh(*mesh);
-			}
-		}
-
-		endSSAOpass(scene, context);
-		
-		beginMainpass(scene, context);
-		
-		for (const auto& batch : materialBatches) {
-			batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
-
-			for (const Mesh* mesh : batch.second) {
-				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-				batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
-				drawMesh(*mesh);
-			}
+	cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+	materialBatches.clear();
+	for (Mesh* mesh : culledMeshBuffer) {
+		if (mesh->getMaterial()->supportsPass(PassType::AmbientOcclusion)) {
+			materialBatches[mesh->getMaterial().get()].push_back(mesh);
 		}
 	}
 
+	if (!materialBatches.empty()) {		
+		m_ssaoProcessor.prepareSSAOGBufferPass(context);
+
+		for (const auto& batch : materialBatches) {
+			batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
+	
+			for (const Mesh* mesh : batch.second) {
+				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+				batch.first->bindForMeshDraw(PassType::AmbientOcclusion, m_currentRenderContext);
+				drawMesh(*mesh);
+			}
+		}
+	
+		m_ssaoProcessor.prepareSSAOPass(context);
+		drawFullscreenQuad();
+	
+		m_ssaoProcessor.prepareSSAOBlurPass(context);
+		drawFullscreenQuad();
+	}
+
+	endAmbientOcclusionPass(scene, context);
+	
+	beginMainpass(scene, context);
+	
+	// No culling since main pass uses same view
+	//cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+	materialBatches.clear();
+	for (Mesh* mesh : culledMeshBuffer) {
+		if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
+			materialBatches[mesh->getMaterial().get()].push_back(mesh);
+		}
+	}
+	
+	for (const auto& batch : materialBatches) {
+		batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
+		
+		for (const Mesh* mesh : batch.second) {
+			m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+			batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
+			drawMesh(*mesh);
+		}
+	}
+	
 	endMainpass(scene, context);
 	totalTime += std::chrono::high_resolution_clock::now() - totalTimerStart;
 
@@ -266,6 +298,11 @@ void Renderer::drawMesh(const Mesh& mesh) {
 	rData->ibo.bind();
 
 	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo.count(), GL_UNSIGNED_INT, nullptr));
+}
+
+void Renderer::drawFullscreenQuad() {
+	m_fullScreenQuad_vao->bind();
+	GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
 }
 
 std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPath) {
