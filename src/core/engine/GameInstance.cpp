@@ -13,8 +13,6 @@
 #include <random>
 #include <vector>
 
-using namespace std;
-
 GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), isInitialized(false) {}
 
 GameInstance::~GameInstance() {
@@ -57,10 +55,10 @@ void GameInstance::initialize() {
         m_lights.push_back(light);
     }
 
-	shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
-	shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
-	std::shared_ptr<Material> testMaterial1 = make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
-	std::shared_ptr<Material> testMaterial2 = make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
+	std::shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
+	std::shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
+	std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
+	std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
 	m_mesh1 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
 	m_mesh1->assignMaterial(testMaterial1);
 	m_mesh2 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
