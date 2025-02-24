@@ -2,6 +2,7 @@
 #include "FrameBuffer.h"
 #include "Logger.h"
 #include <gl/glew.h>
+#include <vector>
 
 thread_local unsigned int FrameBuffer::currentlyBoundFBO = 0;
 
