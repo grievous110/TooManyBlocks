@@ -21,7 +21,12 @@ void PlayerController::notify(KeyEvent event, KeyEventData data) {
 }
 
 void PlayerController::notify(MousEvent event, MouseEventData data) {
-    if (event == MousEvent::Move) {
+    static bool oldAltState = false;
+    if (oldAltState != keyStates[GLFW_KEY_LEFT_ALT]) {
+        glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, keyStates[GLFW_KEY_LEFT_ALT] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        oldAltState = keyStates[GLFW_KEY_LEFT_ALT];
+    }
+    if (event == MousEvent::Move && !keyStates[GLFW_KEY_LEFT_ALT]) {
 		if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
             Transform& tr = pl->m_camera->getLocalTransform();
 
