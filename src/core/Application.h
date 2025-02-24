@@ -14,6 +14,9 @@ class AppIO;
 class ThreadPool;
 
 struct ApplicationContext {
+	unsigned int screenWidth;
+	unsigned int screenHeight;
+	
 	ThreadPool* workerPool;
 	GLFWwindow* window;
 	Provider* provider;

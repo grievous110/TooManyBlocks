@@ -60,6 +60,12 @@ static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 	Application::getContext()->io->notifyObservers(event, data);
 }
 
+static void windowResizeCallback(GLFWwindow* window, int width, int height) {
+	ApplicationContext* context = Application::getContext();
+	context->screenWidth = static_cast<unsigned int>(width);
+	context->screenHeight = static_cast<unsigned int>(height);
+}
+
 void Application::setCurrentContext(ApplicationContext* context) {
 	if (Application::currentContext) {
 		Application::deleteCurrentContext();
@@ -109,7 +115,7 @@ void Application::run() {
 			throw runtime_error("Error initializing glew!");
 
 		// Specifiy OpenGl Version to use
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 		// Core does not auto create vertex array objects, compatibitly does
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -134,6 +140,7 @@ void Application::run() {
 		glfwSetMouseButtonCallback(context->window, mouseKeyCallback);
 		glfwSetScrollCallback(context->window, mouseScrollCallback);
 		glfwSetCursorPosCallback(context->window, cursorPositionCallback);
+		glfwSetFramebufferSizeCallback(context->window, windowResizeCallback);
 
 		// Sync with refresh rate
 		glfwSwapInterval(1);
@@ -181,6 +188,8 @@ void Application::run() {
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::navigateToWindow(*context, "MainMenu");
 
+		FrameBuffer::bindDefault();
+		glfwGetFramebufferSize(context->window, reinterpret_cast<int*>(&context->screenWidth), reinterpret_cast<int*>(&context->screenHeight));
 		// Loop until the user closes the window
 		try {
 			context->renderer->initialize();
@@ -190,23 +199,19 @@ void Application::run() {
 				double currentTime = glfwGetTime();
 				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
 				previousTime = currentTime;
-
-				ImGui_ImplOpenGL3_NewFrame();
-				ImGui_ImplGlfw_NewFrame();
-				ImGui::NewFrame();
-				ImGui::PushFont(font1);
-
+				
 				if (context->instance->isInitialized) {
 					context->instance->update(msframeTime);
 					Scene scene = context->instance->craftScene();
 					context->renderer->renderScene(scene, *context);
 				}
-
-				context->currentWindow->render(*context);
 				
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
+				ImGui::NewFrame();
+				ImGui::PushFont(font1);
+				context->currentWindow->render(*context);				
 				ImGui::PopFont();
-
-				// Rendering
 				ImGui::Render();
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -223,7 +228,7 @@ void Application::run() {
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
-	Application::deleteCurrentContext();	
+	Application::deleteCurrentContext();
 	// Dont use GLCALL because gl context is removed when reaching this
 	glfwTerminate();
 }
