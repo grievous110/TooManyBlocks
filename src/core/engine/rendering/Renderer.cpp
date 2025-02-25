@@ -41,6 +41,23 @@ static constexpr float fullScreenQuadCW[] = {
 	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
 };
 
+static inline void batchByMaterialForPass(std::unordered_map<Material*, std::vector<Mesh*>>& materialBatches, const RawBuffer<Mesh*>& meshBuff, PassType type) {
+	materialBatches.clear();
+	for (Mesh* mesh : meshBuff) {
+		if (mesh->getMaterial()->supportsPass(type)) {
+			materialBatches[mesh->getMaterial().get()].push_back(mesh);
+		}
+	}
+}
+
+static inline void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
+	int tilesPerRow = atlasBufferSize / tileSize;
+    int x = (index % tilesPerRow) * tileSize;
+    int y = (index / tilesPerRow) * tileSize;
+
+    GLCALL(glViewport(x, y, tileSize, tileSize));
+}
+
 void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& context) {
     for (int i = 0; i < LightPriority::Count; i++) {
 		m_currentRenderContext.shadowMapAtlases[i]->bind();
@@ -158,14 +175,6 @@ void Renderer::initialize() {
 	FrameBuffer::bindDefault();
 }
 
-static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
-	int tilesPerRow = atlasBufferSize / tileSize;
-    int x = (index % tilesPerRow) * tileSize;
-    int y = (index / tilesPerRow) * tileSize;
-
-    GLCALL(glViewport(x, y, tileSize, tileSize));
-}
-
 void Renderer::renderScene(const Scene &scene, const ApplicationContext &context) {
 	static auto lastLogTime = std::chrono::high_resolution_clock::now();
     static std::chrono::duration<double> totalTime(0);
@@ -195,14 +204,8 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 		);
 
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		materialBatches.clear();
-		for (Mesh* mesh : culledMeshBuffer) {
-			if (mesh->getMaterial()->supportsPass(PassType::ShadowPass)) {
-				materialBatches[mesh->getMaterial().get()].push_back(mesh);
-			}
-		}
+		batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::ShadowPass);
 
-		auto testTimerStart = std::chrono::high_resolution_clock::now();
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 			
@@ -212,53 +215,44 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 				drawMesh(*mesh);
 			}
 		}
-		testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 	}
-
+	
 	endShadowpass(scene, context);
-
+	
+	auto testTimerStart = std::chrono::high_resolution_clock::now();
 	beginAmbientOcclusionPass(scene, context);
-
+	
 	cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-	materialBatches.clear();
-	for (Mesh* mesh : culledMeshBuffer) {
-		if (mesh->getMaterial()->supportsPass(PassType::AmbientOcclusion)) {
-			materialBatches[mesh->getMaterial().get()].push_back(mesh);
-		}
-	}
-
+	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::AmbientOcclusion);
+	
 	if (!materialBatches.empty()) {		
 		m_ssaoProcessor.prepareSSAOGBufferPass(context);
-
+		
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
-	
+			
 			for (const Mesh* mesh : batch.second) {
 				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
 				batch.first->bindForMeshDraw(PassType::AmbientOcclusion, m_currentRenderContext);
 				drawMesh(*mesh);
 			}
 		}
-	
+		
 		m_ssaoProcessor.prepareSSAOPass(context);
 		drawFullscreenQuad();
-	
+		
 		m_ssaoProcessor.prepareSSAOBlurPass(context);
 		drawFullscreenQuad();
 	}
-
+	
 	endAmbientOcclusionPass(scene, context);
+	testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 	
 	beginMainpass(scene, context);
 	
 	// No culling since main pass uses same view
 	//cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-	materialBatches.clear();
-	for (Mesh* mesh : culledMeshBuffer) {
-		if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
-			materialBatches[mesh->getMaterial().get()].push_back(mesh);
-		}
-	}
+	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::MainPass);
 	
 	for (const auto& batch : materialBatches) {
 		batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
