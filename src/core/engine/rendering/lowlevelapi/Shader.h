@@ -27,11 +27,15 @@ public:
 
 	void bind() const;
 
-	void setAndBindUBO(const std::string name, const UniformBuffer& ubo, unsigned int bindingPoint);
+	void setAndBindUBO(const std::string& name, const UniformBuffer& ubo, unsigned int bindingPoint);
 
+	void setUniform(const std::string& name, bool value);
 	void setUniform(const std::string& name, int value);
 	void setUniform(const std::string& name, unsigned int value);
 	void setUniform(const std::string& name, float value);
+	void setUniform(const std::string& name, const glm::bvec2& vector);
+	void setUniform(const std::string& name, const glm::bvec3& vector);
+	void setUniform(const std::string& name, const glm::bvec4& vector);
 	void setUniform(const std::string& name, const glm::vec2& vector);
 	void setUniform(const std::string& name, const glm::vec3& vector);
 	void setUniform(const std::string& name, const glm::vec4& vector);
@@ -41,16 +45,25 @@ public:
 	void setUniform(const std::string& name, const glm::uvec2& vector);
 	void setUniform(const std::string& name, const glm::uvec3& vector);
 	void setUniform(const std::string& name, const glm::uvec4& vector);
+	void setUniform(const std::string& name, const glm::mat2& matrix);
 	void setUniform(const std::string& name, const glm::mat3& matrix);
 	void setUniform(const std::string& name, const glm::mat4& matrix);
-	void setUniform(const std::string& name, bool value);
-	void setUniform(const std::string& name, const glm::vec2* vectors, size_t count);
-	void setUniform(const std::string& name, const glm::vec3* vectors, size_t count);
-	void setUniform(const std::string& name, const glm::vec4* vectors, size_t count);
-	void setUniform(const std::string& name, const glm::mat4* matrices, size_t count);
+	// No bool vec arrays cause the would have to be converted to int array (to have int pointer, wich opengl expects)
 	void setUniform(const std::string& name, const int* values, size_t count);
 	void setUniform(const std::string& name, const unsigned int* values, size_t count);
 	void setUniform(const std::string& name, const float* values, size_t count);
+	void setUniform(const std::string& name, const glm::vec2* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::vec3* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::vec4* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::ivec2* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::ivec3* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::ivec4* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::uvec2* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::uvec3* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::uvec4* vectors, size_t count);
+	void setUniform(const std::string& name, const glm::mat2* matrices, size_t count);
+	void setUniform(const std::string& name, const glm::mat3* matrices, size_t count);
+	void setUniform(const std::string& name, const glm::mat4* matrices, size_t count);
 
 	Shader& operator=(Shader&& other) noexcept;
 };
