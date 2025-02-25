@@ -17,10 +17,6 @@ struct ApplicationContext;
 
 class Renderer {
 private:
-	std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaderCache;
-	std::unordered_map<std::string, std::shared_ptr<Texture>> m_textureCache;
-	std::unordered_map<std::string, std::pair<std::shared_ptr<MeshRenderData>, MeshBounds>> m_meshCache;
-
 	std::unique_ptr<VertexArray> m_fullScreenQuad_vao;
 	std::unique_ptr<VertexBuffer> m_fullScreenQuad_vbo;
 
@@ -47,12 +43,6 @@ public:
 	void drawMesh(const Mesh& mesh);
 
 	void drawFullscreenQuad();
-
-	std::shared_ptr<Shader> getShaderFromFile(const std::string& shaderPath);
-
-	std::shared_ptr<Texture> getTextureFromFile(const std::string& texturePath);
-
-	std::shared_ptr<Mesh> getMeshFromFile(const std::string& meshPath);
 };
 
 #endif
