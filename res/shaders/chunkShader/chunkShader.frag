@@ -161,8 +161,7 @@ void main() {
 
     vec2 screenUV = gl_FragCoord.xy / vec2(u_screenResolution);
     float occlusion = texture(u_ssaoTexture, screenUV).r;  // SSAO value [0, 1]
-    //color = (0.15 * color) + (0.85 * clamp(lightContrib * color, 0.0, 1.0));
-    color = vec3(occlusion);
+    color = ((0.15 * color) + (0.85 * clamp(lightContrib * color, 0.0, 1.0))) * occlusion;
     
     // Gradual fade to black for distant elements
     float dist = length(u_cameraPosition - position);
