@@ -1,11 +1,15 @@
+#include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/SceneOptimizing.h"
+#include "engine/rendering/ShaderPathsConstants.h"
+#include "engine/rendering/lowlevelapi/VertexArray.h"
+#include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "Logger.h"
 #include "Renderer.h"
 #include <chrono>
-#include <GLFW/glfw3.h>
+#include <gl/glew.h>
 #include <memory>
 #include <sstream>
 #include <vector>
@@ -15,8 +19,47 @@
 #define MEDIUMPRIO_SHADOWMAP_SIZE 1024
 #define LOWPRIO_SHADOWMAP_SIZE 512
 
-void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& context) {
-	for (int i = 0; i < LightPriority::Count; i++) {
+static constexpr float fullScreenQuadCCW[] = {
+	// Position   // UV-Koordinaten
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	-1.0f, -1.0f,  0.0f, 0.0f,  // Unten-Links
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+};
+
+static constexpr float fullScreenQuadCW[] = {
+	// Position   // UV-Koordinaten
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	-1.0f, -1.0f,  0.0f, 0.0f,  // Unten-Links
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+
+	 1.0f, -1.0f,  1.0f, 0.0f,  // Unten-Rechts
+	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
+	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+};
+
+static inline void batchByMaterialForPass(std::unordered_map<Material*, std::vector<Mesh*>>& materialBatches, const RawBuffer<Mesh*>& meshBuff, PassType type) {
+	materialBatches.clear();
+	for (Mesh* mesh : meshBuff) {
+		if (mesh->getMaterial()->supportsPass(type)) {
+			materialBatches[mesh->getMaterial().get()].push_back(mesh);
+		}
+	}
+}
+
+static inline void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
+	int tilesPerRow = atlasBufferSize / tileSize;
+    int x = (index % tilesPerRow) * tileSize;
+    int y = (index / tilesPerRow) * tileSize;
+
+    GLCALL(glViewport(x, y, tileSize, tileSize));
+}
+
+void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& context) {
+    for (int i = 0; i < LightPriority::Count; i++) {
 		m_currentRenderContext.shadowMapAtlases[i]->bind();
 		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
 	}
@@ -25,7 +68,7 @@ void Renderer::beginShadowpass(const Scene& scene, const ApplicationContext& con
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_maxShadowMapsPerPriority, m_currentRenderContext);
 	
-	int activeLightCount = std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS);
+	int activeLightCount = m_currentRenderContext.lights.size();
 	
 	lightBuffer.clear();
 	lightViewProjectionBuffer.clear();
@@ -55,13 +98,28 @@ void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& conte
 
 }
 
-void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
-	FrameBuffer::bindDefault();
-	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-	int display_w, display_h;
-	glfwGetFramebufferSize(context.window, &display_w, &display_h);
-	GLCALL(glViewport(0, 0, display_w, display_h));
+void Renderer::beginAmbientOcclusionPass(const Scene& scene, const ApplicationContext& context) {
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+	m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
+	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+	// Disable blending cause rendering to textures that do not have 4 channels (alpha) will will be discarded. Blending expects a valid alpha component
+	GLCALL(glDisable(GL_BLEND));
+}
+
+void Renderer::endAmbientOcclusionPass(const Scene &scene, const ApplicationContext &context) {
+	m_currentRenderContext.ssaoOutput = m_ssaoProcessor.getOcclusionOutput();
+	GLCALL(glEnable(GL_BLEND));
+}
+
+void Renderer::beginMainpass(const Scene &scene, const ApplicationContext &context) {
+    FrameBuffer::bindDefault();
+	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+	glm::uvec2 screenRes = m_currentRenderContext.currentScreenResolution;
+	GLCALL(glViewport(0, 0, screenRes.x, screenRes.y));
+	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+	m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+	m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
@@ -80,49 +138,6 @@ void Renderer::initialize() {
 	GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));	// Blending
 	GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
-	// Query meta info
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &m_metaInfo.maxVertexAttribs));
-	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxTextureImageUnits));
-	GLCALL(glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &m_metaInfo.maxCombinedTextureImageUnits));
-	GLCALL(glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE, &m_metaInfo.maxUniformBlockSize));
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_BLOCKS, &m_metaInfo.maxVertUniformBlocks));
-	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_BLOCKS, &m_metaInfo.maxFragUniformBlocks));
-	GLCALL(glGetIntegerv(GL_MAX_VERTEX_UNIFORM_COMPONENTS, &m_metaInfo.maxVertUniformComponents));
-	GLCALL(glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS , &m_metaInfo.maxFragUniformComponents));
-	GLCALL(glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_metaInfo.maxTextureSize));
-	GLCALL(glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_metaInfo.max3DTextureSize));
-	GLCALL(glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &m_metaInfo.maxArrayTextureLayers));
-	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_WIDTH, &m_metaInfo.maxFramebufferWidth));
-	GLCALL(glGetIntegerv(GL_MAX_FRAMEBUFFER_HEIGHT, &m_metaInfo.maxFramebufferHeight));
-	GLCALL(glGetIntegerv(GL_MAX_VARYING_VECTORS, &m_metaInfo.maxVaryingVectors));
-	GLCALL(glGetIntegerv(GL_MAX_SAMPLES, &m_metaInfo.maxMSAASamples));
-	GLCALL(glGetIntegerv(GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS, &m_metaInfo.maxSSBOBindings));
-	GLCALL(glGetIntegerv(GL_MAX_DRAW_BUFFERS, &m_metaInfo.maxDrawBuffers));
-	GLCALL(glGetIntegerv(GL_MAX_ELEMENTS_INDICES, &m_metaInfo.maxElementsIndices));
-	GLCALL(glGetIntegerv(GL_MAX_ELEMENTS_VERTICES, &m_metaInfo.maxElementsVertices));
-
-	std::stringstream details;
-	details << "OpenGL API MetaInfo:" << std::endl;
-	details << "Max vertex attributes: " << m_metaInfo.maxVertexAttribs << std::endl;
-	details << "Max texture image units: " << m_metaInfo.maxTextureImageUnits << std::endl;
-	details << "Max combined texture image units: " << m_metaInfo.maxCombinedTextureImageUnits << std::endl;
-	details << "Max uniform block size: " << m_metaInfo.maxUniformBlockSize << " bytes" << std::endl;
-	details << "Max vertex uniform blocks: " << m_metaInfo.maxVertUniformBlocks << std::endl;
-	details << "Max fragment uniform blocks: " << m_metaInfo.maxFragUniformBlocks << std::endl;
-	details << "Max vertex uniform components: " << m_metaInfo.maxVertUniformComponents << std::endl;
-	details << "Max fragment uniform components: " << m_metaInfo.maxFragUniformComponents << std::endl;
-	details << "Max texture size: " << m_metaInfo.maxTextureSize << "x" << m_metaInfo.maxTextureSize << std::endl;
-	details << "Max 3D texture size: " << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << "x" << m_metaInfo.max3DTextureSize << std::endl;
-	details << "Max array texture layers: " << m_metaInfo.maxArrayTextureLayers << std::endl;
-	details << "Max framebuffer size: " << m_metaInfo.maxFramebufferWidth << "x" << m_metaInfo.maxFramebufferHeight << std::endl;
-	details << "Max varying vectors: " << m_metaInfo.maxVaryingVectors << std::endl;
-	details << "Max MSAA samples: " << m_metaInfo.maxMSAASamples << std::endl;
-	details << "Max SSBO bindings: " << m_metaInfo.maxSSBOBindings << std::endl;
-	details << "Max draw buffers: " << m_metaInfo.maxDrawBuffers << std::endl;
-	details << "Max elements indices: " << m_metaInfo.maxElementsIndices << std::endl;
-	details << "Max elements vertices: " << m_metaInfo.maxElementsVertices << std::endl;
-	lgr::lout.info(details.str());
-
 	// Create buffers for shadowmapping
 	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>();
 	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
@@ -134,27 +149,30 @@ void Renderer::initialize() {
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
-	size_t totalSupportedLights = 0;
+	m_totalSupportedLights = 0;
     for (int i = 0; i < LightPriority::Count; i++) {
         m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
         m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
-		totalSupportedLights += m_maxShadowMapsPerPriority[i];
+		m_totalSupportedLights += m_maxShadowMapsPerPriority[i];
     }
-	m_currentRenderContext.lights = RawBuffer<Light*>(totalSupportedLights);
-	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(ShaderLightStruct));
-	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, MAX_LIGHTS * sizeof(glm::mat4));
+	m_currentRenderContext.lights = RawBuffer<Light*>(m_totalSupportedLights);
+	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
+	lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
+	lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
 	
-	lightBuffer = RawBuffer<ShaderLightStruct>(MAX_LIGHTS);
-	lightViewProjectionBuffer = RawBuffer<glm::mat4>(MAX_LIGHTS);
+	// Create vertex array / buffer for fullscreen quad
+	m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
+	m_fullScreenQuad_vao = std::make_unique<VertexArray>();
+	VertexBufferLayout layout;
+	layout.push(GL_FLOAT, sizeof(float), 2); // Position
+	layout.push(GL_FLOAT, sizeof(float), 2); // Screen UV
+	m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo, layout);
+
+	// Initialize SSAO renderer
+	m_ssaoProcessor.initialize();
+
 	FrameBuffer::bindDefault();
-}
-
-static void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
-	int tilesPerRow = atlasBufferSize / tileSize;
-    int x = (index % tilesPerRow) * tileSize;
-    int y = (index / tilesPerRow) * tileSize;
-
-    GLCALL(glViewport(x, y, tileSize, tileSize));
 }
 
 void Renderer::renderScene(const Scene &scene, const ApplicationContext &context) {
@@ -164,10 +182,15 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 	static int frameCount = 0;
 
 	auto totalTimerStart = std::chrono::high_resolution_clock::now();
+
+	// Update screen resolution
+	m_currentRenderContext.currentScreenResolution = glm::uvec2(context.screenWidth, context.screenHeight);
+
     beginShadowpass(scene, context);
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
-	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), MAX_LIGHTS); i++) {
+	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
+	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), m_totalSupportedLights); i++) {
 		const Light* light = m_currentRenderContext.lights[i];
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
@@ -181,14 +204,8 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 		);
 
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
-		for (Mesh* mesh : culledMeshBuffer) {
-			if (mesh->getMaterial()->supportsPass(PassType::ShadowPass)) {
-				materialBatches[mesh->getMaterial().get()].push_back(mesh);
-			}
-		}
+		batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::ShadowPass);
 
-		auto testTimerStart = std::chrono::high_resolution_clock::now();
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 			
@@ -198,34 +215,55 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 				drawMesh(*mesh);
 			}
 		}
-		testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 	}
-
+	
 	endShadowpass(scene, context);
-
-	beginMainpass(scene, context);
-
-	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
-	{
-		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		
-		for (Mesh* mesh : culledMeshBuffer) {
-			if (mesh->getMaterial()->supportsPass(PassType::MainPass)) {
-				materialBatches[mesh->getMaterial().get()].push_back(mesh);
-			}
-		}
+	
+	auto testTimerStart = std::chrono::high_resolution_clock::now();
+	beginAmbientOcclusionPass(scene, context);
+	
+	cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::AmbientOcclusion);
+	
+	if (!materialBatches.empty()) {		
+		m_ssaoProcessor.prepareSSAOGBufferPass(context);
 		
 		for (const auto& batch : materialBatches) {
-			batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
-
+			batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
+			
 			for (const Mesh* mesh : batch.second) {
 				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-				batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
+				batch.first->bindForMeshDraw(PassType::AmbientOcclusion, m_currentRenderContext);
 				drawMesh(*mesh);
 			}
 		}
+		
+		m_ssaoProcessor.prepareSSAOPass(context);
+		drawFullscreenQuad();
+		
+		m_ssaoProcessor.prepareSSAOBlurPass(context);
+		drawFullscreenQuad();
 	}
-
+	
+	endAmbientOcclusionPass(scene, context);
+	testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
+	
+	beginMainpass(scene, context);
+	
+	// No culling since main pass uses same view
+	//cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
+	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::MainPass);
+	
+	for (const auto& batch : materialBatches) {
+		batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
+		
+		for (const Mesh* mesh : batch.second) {
+			m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
+			batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
+			drawMesh(*mesh);
+		}
+	}
+	
 	endMainpass(scene, context);
 	totalTime += std::chrono::high_resolution_clock::now() - totalTimerStart;
 
@@ -254,6 +292,11 @@ void Renderer::drawMesh(const Mesh& mesh) {
 	rData->ibo.bind();
 
 	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo.count(), GL_UNSIGNED_INT, nullptr));
+}
+
+void Renderer::drawFullscreenQuad() {
+	m_fullScreenQuad_vao->bind();
+	GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
 }
 
 std::shared_ptr<Shader> Renderer::getShaderFromFile(const std::string& shaderPath) {
