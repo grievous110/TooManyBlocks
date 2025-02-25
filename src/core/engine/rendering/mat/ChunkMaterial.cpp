@@ -5,7 +5,7 @@
 #include <gl/glew.h>
 
 bool ChunkMaterial::supportsPass(PassType passType) const {
-	return passType == PassType::MainPass || passType == PassType::ShadowPass;
+	return passType == PassType::ShadowPass || passType == PassType::AmbientOcclusion || passType == PassType::MainPass;
 }
 
 void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context) const {
@@ -26,31 +26,43 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 			}
 
 			// Pass light info
-			int activeLightCount = std::min<int>(context.lights.size(), MAX_LIGHTS); // !!! Debug cap !!! TODO: Remove when uniforms buffers are integrated
-			m_shader->setUniform("u_lightCount", activeLightCount);
+			m_shader->setUniform("u_lightCount", static_cast<int>(context.lights.size()));
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff, 0);
 			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff, 1);
+
+			std::shared_ptr<Texture> ssaoTexture = context.ssaoOutput.lock();
+			ssaoTexture->bind(1);
+			m_shader->setUniform("u_ssaoTexture", 1);
+			m_shader->setUniform("u_screenResolution", context.currentScreenResolution);
 
 			// Pass depth buffers for shadowmapping
 			for (int prio = 0; prio < LightPriority::Count; prio++) {
 				std::shared_ptr<FrameBuffer> frameBuff = context.shadowMapAtlases[prio];
 				if (frameBuff) {
 					const std::string strPrio = std::to_string(prio);
-					frameBuff->getAttachedDepthTexture()->bind(prio + 1);
-					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 1);
-					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", static_cast<unsigned int>(frameBuff->getAttachedDepthTexture()->width()));
+					frameBuff->getAttachedDepthTexture()->bind(prio + 2);
+					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 2);
+					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", frameBuff->getAttachedDepthTexture()->width());
 					m_shader->setUniform("u_shadowMapSizes[" + strPrio + "]", context.shadowMapSizes[prio]);
 				} else {
 					lgr::lout.error("Shadow map atlas not loaded for ChunkMaterial");
 				}
 			}
 		}
-	} else if (passType == PassType::ShadowPass) {
+	}  else if (passType == PassType::ShadowPass) {
 		if (m_depthShader) {
 			m_depthShader->bind();
-			m_depthShader->setUniform("u_lightViewProjection", context.viewProjection);
+			m_depthShader->setUniform("u_viewProjection", context.viewProjection);
 		} else {
 			lgr::lout.error("Depth shader not loaded for ChunkMaterial");
+		}
+	} else if (passType == PassType::AmbientOcclusion) {
+		if (m_ssaoGBuffShader) {
+			m_ssaoGBuffShader->bind();
+			m_ssaoGBuffShader->setUniform("u_view", context.view);
+			m_ssaoGBuffShader->setUniform("u_projection", context.projection);
+		} else {
+			lgr::lout.error("SSAO shader not loaded for ChunkMaterial");
 		}
 	}
 }
@@ -69,6 +81,13 @@ void ChunkMaterial::bindForMeshDraw(PassType passType, const RenderContext &cont
 			m_depthShader->setUniform("u_chunkPosition", context.meshTransform.getPosition());
 		} else {
 			lgr::lout.error("Depth shader not loaded for ChunkMaterial");
+		}
+	} else if (passType == PassType::AmbientOcclusion) {
+		if (m_ssaoGBuffShader) {
+			m_ssaoGBuffShader->bind();
+			m_ssaoGBuffShader->setUniform("u_chunkPosition", context.meshTransform.getPosition());
+		} else {
+			lgr::lout.error("SSAO shader not loaded for ChunkMaterial");
 		}
 	}
 }

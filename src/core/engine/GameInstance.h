@@ -2,13 +2,13 @@
 #define GAMEINSTANCE_H
 
 #include "engine/entity/Player.h"
-#include "engine/env/World.h"
-#include "engine/rendering/Camera.h"
-#include "engine/rendering/Scene.h"
-#include "engine/rendering/lowlevelapi/Shader.h"
-#include "rendering/lowlevelapi/Texture.h"
 #include "engine/env/lights/Light.h"
 #include "engine/env/lights/Spotlight.h"
+#include "engine/env/World.h"
+#include "engine/rendering/Camera.h"
+#include "engine/rendering/lowlevelapi/Shader.h"
+#include "engine/rendering/Scene.h"
+#include "rendering/lowlevelapi/Texture.h"
 #include "Updatable.h"
 #include <glm/glm.hpp>
 #include <memory>
