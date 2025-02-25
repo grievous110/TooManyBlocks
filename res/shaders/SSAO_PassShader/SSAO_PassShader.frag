@@ -2,9 +2,9 @@
 
 #define SSAO_SAMPLE_COUNT 64u
 
-layout(location = 0) out float ssaoOcclusionValue;
+layout(location = 0) out float ssaoValue;
 
-in vec2 TexCoords;
+in vec2 screenUV;
 
 uniform sampler2D u_positionTexture;
 uniform sampler2D u_normalTexture;
@@ -15,13 +15,13 @@ uniform vec3 u_kernelSamples[SSAO_SAMPLE_COUNT];
 
 uniform mat4 u_projection;
 
-const float radius = 0.5;
+const float radius = 0.8;
 const float bias = 0.025;
 
 void main() {
-    vec3 fragPos = texture(u_positionTexture, TexCoords).xyz;
-    vec3 normal = texture(u_normalTexture, TexCoords).xyz;
-    vec3 randomVec = vec3(texture(u_noiseTexture, TexCoords * (vec2(u_screenResolution) / u_noiseTextureScale)).xy, 0.0);
+    vec3 fragPos = texture(u_positionTexture, screenUV).xyz;
+    vec3 normal = texture(u_normalTexture, screenUV).xyz;
+    vec3 randomVec = vec3(texture(u_noiseTexture, screenUV * (vec2(u_screenResolution) / u_noiseTextureScale)).xy, 0.0);
 
     vec3 tagent = normalize(randomVec - normal * dot(randomVec, normal) + 0.0001);
     vec3 biTangent = cross(normal, tagent);
@@ -44,5 +44,5 @@ void main() {
         occlusion += (occluderPos.z >= samplePos.z + bias ? 1.0 : 0.0) * rangeCheck;
     }
 
-    ssaoOcclusionValue = 1.0 - (occlusion / float(SSAO_SAMPLE_COUNT));  // Output the occlusion factor
+    ssaoValue = 1.0 - (occlusion / float(SSAO_SAMPLE_COUNT));  // Output the occlusion factor
 }
