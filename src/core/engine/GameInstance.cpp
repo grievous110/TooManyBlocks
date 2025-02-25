@@ -4,10 +4,10 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/MeshCreate.h"
-#include "engine/rendering/Renderer.h"
 #include "engine/rendering/ShaderPathsConstants.h"
 #include "GameInstance.h"
 #include "Logger.h"
+#include "providers/Provider.h"
 #include "rendering/Mesh.h"
 #include <GLFW/glfw3.h>
 #include <random>
@@ -35,7 +35,7 @@ void GameInstance::initialize() {
 	m_world = new World(seed);
 	m_playerController->possess(m_player);
 
-	Renderer* renderer = Application::getContext()->renderer;
+	Provider* provider = Application::getContext()->provider;
 
 	std::uniform_real_distribution<float> positionDist(-50.0f, 50.0f);
     std::uniform_real_distribution<float> lookAtDist(-50.0f, 50.0f);
@@ -55,13 +55,13 @@ void GameInstance::initialize() {
         m_lights.push_back(light);
     }
 
-	std::shared_ptr<Shader> shader = renderer->getShaderFromFile(SIMPLE_SHADER);
-	std::shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/testTexture.png");	
+	std::shared_ptr<Shader> shader = provider->getShaderFromFile(SIMPLE_SHADER);
+	std::shared_ptr<Texture> texture = provider->getTextureFromFile("res/textures/testTexture.png");	
 	std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
 	std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
-	m_mesh1 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
+	m_mesh1 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
 	m_mesh1->assignMaterial(testMaterial1);
-	m_mesh2 = renderer->getMeshFromFile("res/models/testUnitBlock.obj");
+	m_mesh2 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
 	m_mesh2->assignMaterial(testMaterial2);
 
 	m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));

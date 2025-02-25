@@ -2,7 +2,6 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/Mesh.h"
 #include "engine/rendering/MeshCreate.h"
-#include "engine/rendering/Renderer.h"
 #include "engine/rendering/ShaderPathsConstants.h"
 #include "engine/worldgen/PerlinNoise.h"
 #include "Logger.h"
@@ -49,15 +48,14 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
         std::lock_guard<std::mutex> lock(m_chunkMeshDataMtx);
         
         if (!m_loadedMeshData.empty()) {
-            Renderer* renderer = Application::getContext()->renderer;
             Provider* provider = Application::getContext()->provider;
 
             std::shared_ptr<Material> material = provider->getChachedMaterial("ChunkMaterial");
             if (!material) {
-                std::shared_ptr<Shader> shader = renderer->getShaderFromFile(CHUNK_SHADER);
-                std::shared_ptr<Shader> depthShader = renderer->getShaderFromFile(CHUNK_DEPTH_SHADER);
-                std::shared_ptr<Shader> ssaoGBuffShader = renderer->getShaderFromFile(CHUNK_SSAO_GBUFFER_SHADER);
-                std::shared_ptr<Texture> texture = renderer->getTextureFromFile("res/textures/blockTexAtlas.png");
+                std::shared_ptr<Shader> shader = provider->getShaderFromFile(CHUNK_SHADER);
+                std::shared_ptr<Shader> depthShader = provider->getShaderFromFile(CHUNK_DEPTH_SHADER);
+                std::shared_ptr<Shader> ssaoGBuffShader = provider->getShaderFromFile(CHUNK_SSAO_GBUFFER_SHADER);
+                std::shared_ptr<Texture> texture = provider->getTextureFromFile("res/textures/blockTexAtlas.png");
                 material = std::make_shared<ChunkMaterial>(shader, depthShader, ssaoGBuffShader, texture);
                 provider->putMaterial("ChunkMaterial", material);
             }
