@@ -157,10 +157,15 @@ void Shader::bind() const {
     }
 }
 
-void Shader::setAndBindUBO(const std::string name, const UniformBuffer &ubo, unsigned int bindingPoint) {
+void Shader::setAndBindUBO(const std::string& name, const UniformBuffer &ubo, unsigned int bindingPoint) {
     bind();
     ubo.bind(bindingPoint);
     GLCALL(glUniformBlockBinding(m_rendererId, getUniformBlockIndex(name), bindingPoint));
+}
+
+void Shader::setUniform(const std::string& name, bool value) {
+    bind();
+    GLCALL(glUniform1i(getUniformLocation(name), value));
 }
 
 void Shader::setUniform(const std::string& name, int value) {
@@ -176,6 +181,21 @@ void Shader::setUniform(const std::string& name, unsigned int value) {
 void Shader::setUniform(const std::string& name, float value) {
     bind();
     GLCALL(glUniform1f(getUniformLocation(name), value));
+}
+
+void Shader::setUniform(const std::string& name, const glm::bvec2& vector) {
+    bind();
+    GLCALL(glUniform2i(getUniformLocation(name), vector.x, vector.y));
+}
+
+void Shader::setUniform(const std::string& name, const glm::bvec3& vector) {
+    bind();
+    GLCALL(glUniform3i(getUniformLocation(name), vector.x, vector.y, vector.z));
+}
+
+void Shader::setUniform(const std::string& name, const glm::bvec4& vector) {
+    bind();
+    GLCALL(glUniform4i(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec2& vector) {
@@ -223,39 +243,19 @@ void Shader::setUniform(const std::string& name, const glm::uvec4& vector) {
     GLCALL(glUniform4ui(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
+void Shader::setUniform(const std::string& name, const glm::mat2& matrix) {
+    bind();
+    GLCALL(glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
+}
+
 void Shader::setUniform(const std::string& name, const glm::mat3& matrix) {
     bind();
-    GLCALL(glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
+    GLCALL(glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat4& matrix) {
     bind();
-    GLCALL(glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &matrix[0][0]));
-}
-
-void Shader::setUniform(const std::string& name, bool value) {
-    bind();
-    GLCALL(glUniform1i(getUniformLocation(name), static_cast<int>(value)));
-}
-
-void Shader::setUniform(const std::string& name, const glm::vec2* vectors, size_t count) {
-    bind();
-    GLCALL(glUniform2fv(getUniformLocation(name), count, &vectors[0][0]));
-}
-
-void Shader::setUniform(const std::string& name, const glm::vec3* vectors, size_t count) {
-    bind();
-    GLCALL(glUniform3fv(getUniformLocation(name), count, &vectors[0][0]));
-}
-
-void Shader::setUniform(const std::string& name, const glm::vec4* vectors, size_t count) {
-    bind();
-    GLCALL(glUniform4fv(getUniformLocation(name), count, &vectors[0][0]));
-}
-
-void Shader::setUniform(const std::string& name, const glm::mat4* matrices, size_t count) {
-    bind();
-    GLCALL(glUniformMatrix4fv(getUniformLocation(name), count, GL_FALSE, &matrices[0][0][0]));
+    GLCALL(glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
 }
 
 void Shader::setUniform(const std::string& name, const int* values, size_t count) {
@@ -271,6 +271,66 @@ void Shader::setUniform(const std::string& name, const unsigned int* values, siz
 void Shader::setUniform(const std::string& name, const float* values, size_t count) {
     bind();
     GLCALL(glUniform1fv(getUniformLocation(name), count, values));
+}
+
+void Shader::setUniform(const std::string& name, const glm::vec2* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform2fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::vec3* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform3fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::vec4* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform4fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::ivec2* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform2iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::ivec3* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform3iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::ivec4* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform4iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec2* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform2uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec3* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform3uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::uvec4* vectors, size_t count) {
+    bind();
+    GLCALL(glUniform4uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::mat2* matrices, size_t count) {
+    bind();
+    GLCALL(glUniformMatrix2fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::mat3* matrices, size_t count) {
+    bind();
+    GLCALL(glUniformMatrix3fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
+}
+
+void Shader::setUniform(const std::string& name, const glm::mat4* matrices, size_t count) {
+    bind();
+    GLCALL(glUniformMatrix4fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
 }
 
 Shader& Shader::operator=(Shader&& other) noexcept {
