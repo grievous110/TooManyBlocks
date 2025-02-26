@@ -4,7 +4,9 @@
 #include "engine/controllers/Controller.h"
 
 class AIController : public Controller {
-
+    public:
+        AIController() = default;
+        virtual ~AIController() = default;
 };
 
 #endif

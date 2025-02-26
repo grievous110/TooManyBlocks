@@ -4,13 +4,21 @@
 #include <array>
 #include <cfloat>
 
+enum Planes {
+    Near,
+    Far,
+    Left,
+    Right,
+    Top,
+    Bottom
+};
+
 struct ScoredLight {
-    Light* light;
+    Light* valPtr;
     float score;
 };
 
 Frustum::Frustum(const glm::mat4& viewProjMatrix) {
-    enum Planes { Near, Far, Left, Right, Top, Bottom };
     // Extract planes from the combined projection-view viewProjMatrix
     planes[Left]   = glm::vec4(viewProjMatrix[0][3] + viewProjMatrix[0][0], viewProjMatrix[1][3] + viewProjMatrix[1][0], viewProjMatrix[2][3] + viewProjMatrix[2][0], viewProjMatrix[3][3] + viewProjMatrix[3][0]);
     planes[Right]  = glm::vec4(viewProjMatrix[0][3] - viewProjMatrix[0][0], viewProjMatrix[1][3] - viewProjMatrix[1][0], viewProjMatrix[2][3] - viewProjMatrix[2][0], viewProjMatrix[3][3] - viewProjMatrix[3][0]);
@@ -52,7 +60,7 @@ bool Frustum::isSphereInside(const glm::vec3& center, float radius) const {
     return true;
 }
 
-bool isInvalidMeshBounds(const MeshBounds &bounds) {
+bool isInvalidMeshBounds(const MeshBounds& bounds) {
     return glm::vec3(FLT_MAX) == bounds.min && glm::vec3(-FLT_MAX) == bounds.max;
 }
 
@@ -76,20 +84,20 @@ void prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, RawBuff
 
     // Calculate scores for lights
     glm::vec3 cameraPosition = context.viewportTransform.getPosition();
-    std::vector<std::pair<Light*, float>> scoredLights;
+    std::vector<ScoredLight> scoredLights;
     for (const auto& light : lights) {
         if (!cameraFrustum.isSphereInside(light->getGlobalTransform().getPosition(), light->getRange())) {
             // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for directional lights
             continue;
         }
         float distance = glm::distance(cameraPosition, light->getGlobalTransform().getPosition());
-        float score = (1.0f / (distance + 1.0f)) * light->getRange() * light->getIntensity();
-        scoredLights.emplace_back(light.get(), score);
+        float score = (1.0f / (distance + 1.0f)) * light->getRange();
+        scoredLights.push_back({ light.get(), score });
     }
 
     // Sort lights by score in descending order
-    std::sort(scoredLights.begin(), scoredLights.end(), [](const auto& a, const auto& b) {
-        return a.second > b.second;
+    std::sort(scoredLights.begin(), scoredLights.end(), [](const ScoredLight& a, const ScoredLight& b) {
+        return a.score > b.score;
     });
 
     // Assign priorities and shadow atlas indices
@@ -99,9 +107,9 @@ void prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, RawBuff
     for (const auto& sLight : scoredLights) {
         for (int prio = LightPriority::High; prio <= LightPriority::Low; prio++) {
             if (currentShadowMapCounts[prio] < maxShadowMapsPerPriority[prio]) {
-                sLight.first->setPriotity(static_cast<LightPriority>(prio));
-                sLight.first->setShadowAtlasIndex(currentShadowMapCounts[prio]++);
-                outputBuffer.push_back(sLight.first);
+                sLight.valPtr->setPriotity(static_cast<LightPriority>(prio));
+                sLight.valPtr->setShadowAtlasIndex(currentShadowMapCounts[prio]++);
+                outputBuffer.push_back(sLight.valPtr);
                 break;
             }
         }

@@ -7,7 +7,7 @@
 #include <memory>
 
 class Player : public Entity {
-public:
+private:
 	std::shared_ptr<Camera> m_camera;
 
 public:

@@ -11,11 +11,11 @@
 
 class ThreadPool {
 private:
-	bool terminate;
-	std::mutex mtx;
-	std::condition_variable cond_var;
-	std::vector<std::thread> threads;
-	std::queue<std::function<void()>> jobs;
+	bool m_terminateFlag;
+	std::mutex m_mtx;
+	std::condition_variable m_cvar;
+	std::vector<std::thread> m_threads;
+	std::queue<std::function<void()>> m_jobs;
 
 	void loop();
 
@@ -23,7 +23,7 @@ public:
 	ThreadPool(size_t numThreads);
 	~ThreadPool();
 
-	size_t threadCount() const;
+	inline size_t threadCount() const { return m_threads.size(); };
 
 	void pushJob(std::function<void()> job);
 };

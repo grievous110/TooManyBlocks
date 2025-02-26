@@ -22,7 +22,7 @@ public:
 	std::shared_ptr<Mesh> m_mesh1;
 	std::shared_ptr<Mesh> m_mesh2;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
-	bool isInitialized;
+	bool m_isInitialized;
 	
 public:
 	GameInstance();

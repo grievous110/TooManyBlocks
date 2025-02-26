@@ -14,8 +14,6 @@
 #include <imgui/imgui_impl_opengl3.h>
 #include <sstream>
 
-using namespace std;
-
 ApplicationContext* Application::currentContext = nullptr;
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -112,7 +110,7 @@ ApplicationContext* Application::getContext() {
 void Application::run() {
 	{
 		if (!glfwInit())
-			throw runtime_error("Error initializing glew!");
+			throw std::runtime_error("Error initializing glew!");
 
 		// Specifiy OpenGl Version to use
 		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -123,13 +121,16 @@ void Application::run() {
 
 		// Create current context
 		ApplicationContext* context = Application::createContext();
+		// Set initial screen dimensions
+		context->screenWidth = 960;
+		context->screenHeight = 540;
 		Application::setCurrentContext(context);
 
 		// Create a windowed mode window and its OpenGL context
-		context->window = glfwCreateWindow(960, 540, "TooManyBlocks", NULL, NULL);
+		context->window = glfwCreateWindow(context->screenWidth, context->screenHeight, "TooManyBlocks", NULL, NULL);
 		if (!context->window) {
 			glfwTerminate();
-			throw runtime_error("Could not create window!");
+			throw std::runtime_error("Could not create window!");
 		}
 
 		// Make the window's context current
@@ -149,12 +150,12 @@ void Application::run() {
 			throw std::runtime_error("Error Glew ok");
 		}
 
-		// Check Antialisasing
-		std::stringstream detailsBuf;
-
+		// Graphic api details
+		std::ostringstream detailsBuf;		
 		detailsBuf << "Open GL Version: " << glGetString(GL_VERSION) << std::endl;
 		detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << std::endl;
-
+		
+		// Check Antialisasing
 		int samples;
 		GLCALL(glGetIntegerv(GL_SAMPLES, &samples));
 		detailsBuf << "Antialiasing: MSAA " << samples << std::endl;
@@ -181,15 +182,12 @@ void Application::run() {
 		}
 
 		io.Fonts->Build();
-
 		ImGui_ImplOpenGL3_CreateFontsTexture();
 		
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::navigateToWindow(*context, "MainMenu");
 
-		FrameBuffer::bindDefault();
-		glfwGetFramebufferSize(context->window, reinterpret_cast<int*>(&context->screenWidth), reinterpret_cast<int*>(&context->screenHeight));
 		// Loop until the user closes the window
 		try {
 			context->renderer->initialize();
@@ -200,7 +198,7 @@ void Application::run() {
 				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
 				previousTime = currentTime;
 				
-				if (context->instance->isInitialized) {
+				if (context->instance->m_isInitialized) {
 					context->instance->update(msframeTime);
 					Scene scene = context->instance->craftScene();
 					context->renderer->renderScene(scene, *context);

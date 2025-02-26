@@ -56,6 +56,7 @@ void main() {
     vec3 worldVertexPos = u_chunkPosition + localPosInChunk;
 
     gl_Position = u_projection * u_view * vec4(worldVertexPos, 1.0);
-    position = vec3(u_view * vec4(worldVertexPos, 1.0));
-    normal = transpose(inverse(mat3(u_view))) * decodedNormal;
+
+    position = vec3(u_view * vec4(worldVertexPos, 1.0)); // Output position in viewspace
+    normal = transpose(inverse(mat3(u_view))) * decodedNormal; // Output normal in viewspace
 }

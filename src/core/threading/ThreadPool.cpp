@@ -4,47 +4,48 @@ void ThreadPool::loop() {
     while (true) {
         std::function<void()> job;
         {
-            std::unique_lock<std::mutex> lock(mtx);
-            cond_var.wait(lock, [this] {
-                return !jobs.empty() || terminate;
+            std::unique_lock<std::mutex> lock(m_mtx);
+            // Wait for a job arriving or terminate flag beeing set
+            m_cvar.wait(lock, [this] {
+                return !m_jobs.empty() || m_terminateFlag;
                 });
-            if (terminate) {
-                return;
+            if (m_terminateFlag) {
+                return; // Exit if ThreadPool is terminating
             }
-            job = jobs.front();
-            jobs.pop();
+            // Get first job in queue
+            job = m_jobs.front();
+            m_jobs.pop();
         }
+        // Execute job + Release lock
         job();
     }
 }
 
-ThreadPool::ThreadPool(size_t numThreads) : terminate(false) {
+ThreadPool::ThreadPool(size_t numThreads) : m_terminateFlag(false) {
     const unsigned int maxThreads = std::thread::hardware_concurrency();
     for (unsigned int i = 0; i < numThreads && i < maxThreads; i++) {
-        threads.push_back(std::thread(&ThreadPool::loop, this));
+        m_threads.push_back(std::thread(&ThreadPool::loop, this));
     }
 }
 
 ThreadPool::~ThreadPool() {
     {
-        std::lock_guard<std::mutex> lock(mtx);
-        terminate = true;
+        std::lock_guard<std::mutex> lock(m_mtx);
+        m_terminateFlag = true;
     }
-    cond_var.notify_all();
-    for (std::thread& activeThread : threads) {
+    // Wake up all threads if after setting terminate flag
+    m_cvar.notify_all();
+    // Wait for all threads to finish and exit
+    for (std::thread& activeThread : m_threads) {
         activeThread.join();
     }
-    threads.clear();
-}
-
-size_t ThreadPool::threadCount() const {
-    return threads.size();
+    m_threads.clear();
 }
 
 void ThreadPool::pushJob(std::function<void()> job) {
     {
-        std::lock_guard<std::mutex> lock(mtx);
-        jobs.push(job);
+        std::lock_guard<std::mutex> lock(m_mtx);
+        m_jobs.push(job);
     }
-    cond_var.notify_one();
+    m_cvar.notify_one();
 }

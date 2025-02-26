@@ -15,7 +15,7 @@ BlockToTextureMap::BlockToTextureMap() {
     ADD_MAPPING(DIRT, ALL_FACES(2U));
 }
 
-const uint16_t BlockToTextureMap::getTexIndex(uint16_t blockType, AxisDirection dir) const {
+uint16_t BlockToTextureMap::getTexIndex(uint16_t blockType, AxisDirection dir) const {
     auto it = map.find(blockType);
     if (it == map.end()) {
         throw std::out_of_range("No texture index mapping for this block type");
