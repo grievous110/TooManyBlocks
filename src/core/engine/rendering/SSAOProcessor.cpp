@@ -21,14 +21,13 @@ void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
 }
 
 void SSAOProcessor::createBuffers() {
-    FrameBuffer::syncBinding();
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 0);
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 1);
-    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight));
+    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
-    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1), 0);
+    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
 
-    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1), 0);
+    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
 }
 
 SSAOProcessor::~SSAOProcessor() {
@@ -47,7 +46,7 @@ void SSAOProcessor::initialize() {
         m_ssaoBufferHeight = context->screenHeight;
         createBuffers();
 
-        // Random samples kernel
+        // Random samples kernel in tagent space
         m_ssaoSamples = new glm::vec3[SSAO_SAMPLE_COUNT];
         for (int i = 0; i < SSAO_SAMPLE_COUNT; i++) {
             // Create random sample in hemisphere
@@ -74,11 +73,7 @@ void SSAOProcessor::initialize() {
             noiseData[i * 2 + 0] = cos(angle);
             noiseData[i * 2 + 1] = sin(angle);
         }
-        m_ssaoNoiseTexture = std::make_unique<Texture>(TextureType::Float, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData);
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-        GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
+        m_ssaoNoiseTexture = std::make_unique<Texture>(TextureType::Float, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest, TextureWrap::Repeat);
         delete[] noiseData;
 
         m_ssaoPassShader = std::make_unique<Shader>(SSAO_PASS_SHADER);
