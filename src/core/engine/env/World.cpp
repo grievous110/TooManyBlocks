@@ -45,12 +45,13 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
 
     // Step 1: Process data from queues
     {
-        std::lock_guard<std::mutex> lock(m_chunkMeshDataMtx);
+        std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
         
         if (!m_loadedMeshData.empty()) {
             Provider* provider = Application::getContext()->provider;
 
             std::shared_ptr<Material> material = provider->getChachedMaterial("ChunkMaterial");
+            // Check if material has been cached and create it if not
             if (!material) {
                 std::shared_ptr<Shader> shader = provider->getShaderFromFile(CHUNK_SHADER);
                 std::shared_ptr<Shader> depthShader = provider->getShaderFromFile(CHUNK_DEPTH_SHADER);
@@ -121,7 +122,7 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
                     std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(*newChunk, texMap);
 
                     {
-                        std::lock_guard<std::mutex> lock(m_chunkMeshDataMtx);
+                        std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
                         m_loadedMeshData.push(std::make_tuple(chunkPos, newChunk, meshData));
                     }
                 }

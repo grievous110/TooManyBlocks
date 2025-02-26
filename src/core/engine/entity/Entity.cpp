@@ -3,6 +3,9 @@
 Entity::Entity() : m_movement(new MovementComponent(this)) {}
 
 Entity::~Entity() {
+	if (m_controller) {
+		m_controller->unpossess();
+	}
 	delete m_movement;
 }
 

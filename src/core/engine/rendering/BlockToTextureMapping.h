@@ -14,7 +14,7 @@ private:
 public:
     BlockToTextureMap();
 
-    const uint16_t getTexIndex(uint16_t blockType, AxisDirection dir) const;
+    uint16_t getTexIndex(uint16_t blockType, AxisDirection dir) const;
 };
 
 #endif

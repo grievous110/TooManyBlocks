@@ -13,7 +13,7 @@
 #include <random>
 #include <vector>
 
-GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), isInitialized(false) {}
+GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), m_isInitialized(false) {}
 
 GameInstance::~GameInstance() {
 	if (m_playerController)
@@ -71,7 +71,7 @@ void GameInstance::initialize() {
 	
 	// Capture and hide the mouse cursor
 	glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	isInitialized = true;
+	m_isInitialized = true;
 }
 
 Scene GameInstance::craftScene() {

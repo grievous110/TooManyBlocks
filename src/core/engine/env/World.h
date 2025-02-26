@@ -18,7 +18,7 @@ private:
 	ThreadPool workerPool;
 	std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>, coord_hash> m_loadedChunks;
 	std::queue<std::tuple<glm::ivec3, std::shared_ptr<Chunk>, std::shared_ptr<RawChunkMeshData>>> m_loadedMeshData;
-	std::mutex m_chunkMeshDataMtx;
+	std::mutex m_chunkGenQueueMtx;
 	
 public:
 	const BlockToTextureMap texMap;

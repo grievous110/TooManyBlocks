@@ -25,8 +25,8 @@ private:
 	
 	size_t m_totalSupportedLights;
 	std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
-	RawBuffer<ShaderLightStruct> lightBuffer;
-	RawBuffer<glm::mat4> lightViewProjectionBuffer;
+	RawBuffer<ShaderLightStruct> m_lightBuffer;
+	RawBuffer<glm::mat4> m_lightViewProjectionBuffer;
 
 	void beginShadowpass(const Scene& scene, const ApplicationContext& context);
 	void endShadowpass(const Scene& scene, const ApplicationContext& context);

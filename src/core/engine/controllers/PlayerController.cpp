@@ -28,7 +28,7 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
     }
     if (event == MousEvent::Move && !keyStates[GLFW_KEY_LEFT_ALT]) {
 		if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
-            Transform& tr = pl->m_camera->getLocalTransform();
+            Transform& tr = pl->getCamera()->getLocalTransform();
 
             float pitchDelta = static_cast<float>(-data.delta.y) * 0.25f;
             float yawDelta = static_cast<float>(-data.delta.x)  * 0.25f;

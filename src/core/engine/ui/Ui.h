@@ -17,6 +17,7 @@ namespace UI {
 
 	template<typename T>
 	void registerWindow(const std::string& windowName) {
+		// Register creator function in singelton factory
 		getWindowFactory()[windowName] = []() {
 			return new T;
 		};

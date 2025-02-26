@@ -78,7 +78,7 @@ struct CompactChunkVertex {
             case AxisDirection::NegativeY: return glm::vec3(0.0f, -1.0f, 0.0f);
             case AxisDirection::PositiveZ: return glm::vec3(0.0f, 0.0f, 1.0f);
             case AxisDirection::NegativeZ: return glm::vec3(0.0f, 0.0f, -1.0f);
-            default: return glm::vec3(0.0f);
+            default: return glm::vec3(0.0f, 0.0f, -1.0f);
         }
     }
 

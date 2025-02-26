@@ -70,28 +70,28 @@ void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& con
 	
 	int activeLightCount = m_currentRenderContext.lights.size();
 	
-	lightBuffer.clear();
-	lightViewProjectionBuffer.clear();
+	m_lightBuffer.clear();
+	m_lightViewProjectionBuffer.clear();
 	for (int i = 0; i < activeLightCount; i++) {
 		Light* currLight = m_currentRenderContext.lights[i];
 		Transform lTr = currLight->getGlobalTransform();
-		lightBuffer[i].lightType = static_cast<unsigned int>(currLight->getType());
-		lightBuffer[i].priority = static_cast<unsigned int>(currLight->getPriotity());
-		lightBuffer[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
-		lightBuffer[i].lightPosition = lTr.getPosition();
-		lightBuffer[i].direction = lTr.getForward();
-		lightBuffer[i].color = currLight->getColor();
-		lightBuffer[i].intensity = currLight->getIntensity();
-		lightBuffer[i].range = currLight->getRange();
+		m_lightBuffer[i].lightType = static_cast<unsigned int>(currLight->getType());
+		m_lightBuffer[i].priority = static_cast<unsigned int>(currLight->getPriotity());
+		m_lightBuffer[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
+		m_lightBuffer[i].lightPosition = lTr.getPosition();
+		m_lightBuffer[i].direction = lTr.getForward();
+		m_lightBuffer[i].color = currLight->getColor();
+		m_lightBuffer[i].intensity = currLight->getIntensity();
+		m_lightBuffer[i].range = currLight->getRange();
 		if (Spotlight* lSpot = dynamic_cast<Spotlight*>(currLight)) {
-			lightBuffer[i].fovy = lSpot->getFovy();
-			lightBuffer[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
+			m_lightBuffer[i].fovy = lSpot->getFovy();
+			m_lightBuffer[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
 		}
 
-		lightViewProjectionBuffer[i] = currLight->getViewProjMatrix();
+		m_lightViewProjectionBuffer[i] = currLight->getViewProjMatrix();
 	}
-	m_currentRenderContext.lightBuff->updateData(lightBuffer.data(), activeLightCount * sizeof(ShaderLightStruct));
-	m_currentRenderContext.lightViewProjectionBuff->updateData(lightViewProjectionBuffer.data(), activeLightCount * sizeof(glm::mat4));
+	m_currentRenderContext.lightBuff->updateData(m_lightBuffer.data(), activeLightCount * sizeof(ShaderLightStruct));
+	m_currentRenderContext.lightViewProjectionBuff->updateData(m_lightViewProjectionBuffer.data(), activeLightCount * sizeof(glm::mat4));
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -140,13 +140,13 @@ void Renderer::initialize() {
 
 	// Create buffers for shadowmapping
 	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
+	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 	m_currentRenderContext.shadowMapSizes[LightPriority::High] = HIGHPRIO_SHADOWMAP_SIZE;
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Medium] = MEDIUMPRIO_SHADOWMAP_SIZE;
 	m_currentRenderContext.shadowMapAtlases[LightPriority::Low] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION));
+	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
 	m_totalSupportedLights = 0;
@@ -158,8 +158,8 @@ void Renderer::initialize() {
 	m_currentRenderContext.lights = RawBuffer<Light*>(m_totalSupportedLights);
 	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
 	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
-	lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
-	lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
+	m_lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
+	m_lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
 	
 	// Create vertex array / buffer for fullscreen quad
 	m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
