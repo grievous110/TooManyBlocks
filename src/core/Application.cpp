@@ -2,6 +2,7 @@
 #include "engine/GameInstance.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/Renderer.h"
+#include "engine/ui/fonts/FontUtil.h"
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
 #include "engine/ui/Ui.h"
@@ -79,6 +80,7 @@ ApplicationContext* Application::createContext() {
 	context->renderer = new Renderer;
 	context->instance = new GameInstance;
 	context->currentWindow = nullptr;
+	context->fontPool = new FontPool;
 	context->io = new AppIO;
 	return context;
 }
@@ -93,6 +95,7 @@ void Application::deleteCurrentContext() {
 		if (context->currentWindow) {
 			delete context->currentWindow;
 		}
+		delete context->fontPool;
 		delete context->io;
 
 		// Keep as last deletion!!!
@@ -172,19 +175,9 @@ void Application::run() {
 		//io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 		ImGui::StyleColorsDark();
 		
-		float fontSize1 = 32.0f;
-		float fontSize2 = 24.0f;
-		ImFont* font1 = io.Fonts->AddFontFromFileTTF("res/fonts/ProggyClean.ttf", fontSize1);
-		ImFont* font2 = io.Fonts->AddFontFromFileTTF("res/fonts/ProggyClean.ttf", fontSize2);
+		context->fontPool->loadFontSizes("res/fonts/ProggyClean.ttf", {16.0f, 32.0f, 48.0f, 64.0f});
 
-		if (!font1 || !font2) {
-			lgr::lout.error("Failed to load font!");
-		}
-
-		io.Fonts->Build();
-		ImGui_ImplOpenGL3_CreateFontsTexture();
-		
-		UI::registerWindow<UI::MainMenu>("MainMenu");
+ 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::navigateToWindow(*context, "MainMenu");
 
@@ -207,9 +200,7 @@ void Application::run() {
 				ImGui_ImplOpenGL3_NewFrame();
 				ImGui_ImplGlfw_NewFrame();
 				ImGui::NewFrame();
-				ImGui::PushFont(font1);
-				context->currentWindow->render(*context);				
-				ImGui::PopFont();
+				context->currentWindow->render(*context);
 				ImGui::Render();
 				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

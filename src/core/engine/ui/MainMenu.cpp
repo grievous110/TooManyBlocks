@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
+#include "engine/ui/fonts/FontUtil.h"
 #include "MainMenu.h"
 #include <imgui/imgui.h>
 
@@ -20,9 +21,12 @@ namespace UI {
 		ImGui::SetNextWindowSize(displaySize);
 
 		ImGui::Begin("Main Menu", NULL, window_flags);
-		if (ImGui::Button("Start Game")) {
-			context.instance->initialize();
-			navigateToWindow(context, "GameOverlay");
+		{
+			ScopedFont font(context.fontPool->getFont(55));
+			if (ImGui::Button("Start Game")) {
+				context.instance->initialize();
+				navigateToWindow(context, "GameOverlay");
+			}
 		}
 		ImGui::End();
 	}

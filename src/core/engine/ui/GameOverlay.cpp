@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "datatypes/Transform.h"
 #include "engine/entity/Entity.h"
+#include "engine/ui/fonts/FontUtil.h"
 #include "GameOverlay.h"
 #include <glm/vec3.hpp>
 #include <imgui/imgui.h>
@@ -18,18 +19,20 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGuiWindowFlags_NoTitleBar;
 
     ImGui::Begin("Debug Info", nullptr, window_flags);
+    {
+        ScopedFont font(context.fontPool->getFont(30));
 
-    Transform& cameraTransform = context.instance->m_player->getCamera()->getLocalTransform();
-    glm::vec3 camRotation = cameraTransform.getRotationEuler();
-    glm::vec3 camForward = cameraTransform.getForward();
-    glm::vec3 playerPos = context.instance->m_player->getTransform().getPosition();
-    glm::vec3 velocity = context.instance->m_player->getVelocity();
+        Transform& cameraTransform = context.instance->m_player->getCamera()->getLocalTransform();
+        glm::vec3 camRotation = cameraTransform.getRotationEuler();
+        glm::vec3 camForward = cameraTransform.getForward();
+        glm::vec3 playerPos = context.instance->m_player->getTransform().getPosition();
+        glm::vec3 velocity = context.instance->m_player->getVelocity();
 
-    ImGui::Text("Application average: %.1f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-    ImGui::Text("Player Position: x=%.1f, y=%.1f, z=%.1f", playerPos.x, playerPos.y, playerPos.z);
-    ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
-    ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
-    ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
-
+        ImGui::Text("Application average: %.1f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
+        ImGui::Text("Player Position: x=%.1f, y=%.1f, z=%.1f", playerPos.x, playerPos.y, playerPos.z);
+        ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
+        ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
+        ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
+    }
     ImGui::End();
 }

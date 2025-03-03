@@ -10,6 +10,7 @@ class Provider;
 class Application;
 class Renderer;
 class GameInstance;
+class FontPool;
 class AppIO;
 class ThreadPool;
 
@@ -23,6 +24,7 @@ struct ApplicationContext {
 	Renderer* renderer;
 	GameInstance* instance;
 	UI::Window* currentWindow;
+	FontPool* fontPool;
 	AppIO* io;
 };
 
