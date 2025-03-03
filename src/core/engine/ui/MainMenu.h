@@ -5,8 +5,6 @@
 
 namespace UI {
 	class MainMenu : public Window {
-	private:
-
 	public:
 		void render(ApplicationContext& context) override;
 	};

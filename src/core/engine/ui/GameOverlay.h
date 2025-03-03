@@ -6,6 +6,7 @@
 
 namespace UI {
 	class GameOverlay : public Window {
+	public:
 		void render(ApplicationContext& context) override;
 	};
 }
