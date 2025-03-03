@@ -5,11 +5,11 @@ layout(location = 0) out float ssaoValueBlurred;
 in vec2 screenUV;
 
 uniform sampler2D u_ssaoTexture;
-uniform uvec2 u_resolution;
+uniform uvec2 u_ssaoPassResolution;
 
 void main() {
     // Box blur
-    vec2 texelSize = 1.0 / vec2(u_resolution);
+    vec2 texelSize = 1.0 / vec2(u_ssaoPassResolution);
     float result = 0.0;
 
     for (int x = -2; x < 2; x++) {
