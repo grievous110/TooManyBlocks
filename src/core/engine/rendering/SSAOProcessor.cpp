@@ -13,21 +13,23 @@ static constexpr float PI = 3.14159265f;
 static constexpr size_t NOISE_TEXTURE_SIZE = 4U;
 
 void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
-    if (m_ssaoBufferWidth != context.screenWidth || m_ssaoBufferHeight != context.screenHeight) {
-        m_ssaoBufferWidth = context.screenWidth;
-        m_ssaoBufferHeight = context.screenHeight;
+    unsigned int halfWidth = std::max<unsigned int>(context.screenWidth / 2, 2);
+    unsigned int halfHeight = std::max<unsigned int>(context.screenHeight / 2, 2);
+    if (m_ssaoBufferWidth != halfWidth || m_ssaoBufferHeight != halfHeight) {
+        m_ssaoBufferWidth = halfWidth;
+        m_ssaoBufferHeight = halfHeight;
         createBuffers();
     }
 }
 
 void SSAOProcessor::createBuffers() {
-    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 0);
-    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 1);
+    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 0);
+    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 1);
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
-    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
+    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
 
-    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
+    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
 }
 
 SSAOProcessor::~SSAOProcessor() {
@@ -41,10 +43,7 @@ void SSAOProcessor::initialize() {
         m_ssaoGBuffer = std::make_unique<FrameBuffer>();
 		m_ssaoPassBuffer = std::make_unique<FrameBuffer>();
 		m_ssaoBlurBuffer = std::make_unique<FrameBuffer>();
-        ApplicationContext* context = Application::getContext();
-        m_ssaoBufferWidth = context->screenWidth;
-        m_ssaoBufferHeight = context->screenHeight;
-        createBuffers();
+        validateBuffers(*Application::getContext());
 
         // Random samples kernel in tagent space
         m_ssaoSamples = new glm::vec3[SSAO_SAMPLE_COUNT];
@@ -73,7 +72,7 @@ void SSAOProcessor::initialize() {
             noiseData[i * 2 + 0] = cos(angle);
             noiseData[i * 2 + 1] = sin(angle);
         }
-        m_ssaoNoiseTexture = std::make_unique<Texture>(TextureType::Float, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest, TextureWrap::Repeat);
+        m_ssaoNoiseTexture = std::make_unique<Texture>(TextureType::Float16, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest, TextureWrap::Repeat);
         delete[] noiseData;
 
         m_ssaoPassShader = std::make_unique<Shader>(SSAO_PASS_SHADER);
@@ -105,7 +104,7 @@ void SSAOProcessor::prepareSSAOPass(const ApplicationContext& context) {
 	m_ssaoPassShader->setUniform("u_noiseTexture", 2);
 
 	m_ssaoPassShader->setUniform("u_noiseTextureScale", static_cast<float>(m_ssaoNoiseTexture->width()));
-	m_ssaoPassShader->setUniform("u_screenResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
+	m_ssaoPassShader->setUniform("u_ssaoPassResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
 	m_ssaoPassShader->setUniform("u_kernelSamples", m_ssaoSamples, SSAO_SAMPLE_COUNT);
 	m_ssaoPassShader->setUniform("u_projection", context.instance->m_player->getCamera()->getProjectionMatrix());
 }
@@ -117,10 +116,10 @@ void SSAOProcessor::prepareSSAOBlurPass(const ApplicationContext& context) {
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
 
 	m_ssaoBlurShader->bind();
-	m_ssaoPassBuffer->getAttachedTextures().at(0)->bind(0);
+    m_ssaoPassBuffer->getAttachedTextures().at(0)->bind(0);
 	m_ssaoBlurShader->setUniform("u_ssaoTexture", 0);
 
-	m_ssaoBlurShader->setUniform("u_resolution",  glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
+	m_ssaoBlurShader->setUniform("u_ssaoPassResolution",  glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
 }
 
 std::weak_ptr<Texture> SSAOProcessor::getOcclusionOutput() const {

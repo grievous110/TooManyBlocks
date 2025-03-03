@@ -1,6 +1,6 @@
 #version 430 core
 
-#define SSAO_SAMPLE_COUNT 64u
+#define SSAO_SAMPLE_COUNT 32u
 
 layout(location = 0) out float ssaoValue;
 
@@ -10,20 +10,20 @@ uniform sampler2D u_positionTexture;
 uniform sampler2D u_normalTexture;
 uniform sampler2D u_noiseTexture;
 uniform float u_noiseTextureScale;
-uniform uvec2 u_screenResolution;
+uniform uvec2 u_ssaoPassResolution;
 uniform vec3 u_kernelSamples[SSAO_SAMPLE_COUNT];
 
 uniform mat4 u_projection;
 
 const float radius = 0.8;
-const float bias = 0.025;
+const float bias = 0.1;
 
 void main() {
     // Get position and normal (Both are in view space)
     vec3 fragPos = texture(u_positionTexture, screenUV).xyz;
     vec3 normal = texture(u_normalTexture, screenUV).xyz;
 
-    vec2 noiseScale = vec2(u_screenResolution) / u_noiseTextureScale;
+    vec2 noiseScale = vec2(u_ssaoPassResolution) / u_noiseTextureScale;
     vec3 randomNoiseVec = vec3(texture(u_noiseTexture, screenUV * noiseScale).xy, 0.0);
 
     // Create TBN matrix: Converts tagent space to view space

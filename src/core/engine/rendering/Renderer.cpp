@@ -271,10 +271,12 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 	frameCount++;
     auto now = std::chrono::high_resolution_clock::now();
     if (std::chrono::duration_cast<std::chrono::seconds>(now - lastLogTime).count() >= 1) {
-        std::stringstream msg;
-		msg << "Time: " << testTime.count() * 1000.0 / frameCount << "ms (average per frame)" << std::endl;
+        std::ostringstream msg;
+		msg << "Rendering pipeline monitor:" << std::endl;
+		msg << "Tested time: " << testTime.count() * 1000.0 / frameCount << "ms (average per frame)" << std::endl;
 		msg << "Tested part took " << testTime.count() / totalTime.count() * 100.0 << "% of " << totalTime.count() * 1000.0 / frameCount << "ms excution time" << std::endl;
         msg << "Lights processed: " << m_currentRenderContext.lights.size() << std::endl;
+        msg << "Objects drawn: " << culledMeshBuffer.size() << std::endl;
 		msg << "Batches: " << materialBatches.size();
 		lgr::lout.debug(msg.str());
 

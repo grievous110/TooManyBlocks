@@ -9,7 +9,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
-#define SSAO_SAMPLE_COUNT 64
+#define SSAO_SAMPLE_COUNT 32
 
 struct ApplicationContext;
 
