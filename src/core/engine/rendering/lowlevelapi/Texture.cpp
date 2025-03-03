@@ -12,31 +12,73 @@ struct TextureFormat {
 
 static constexpr TextureFormat toOpenGLTexFormat(TextureType type, int channels) {
     switch (type) {
-        case TextureType::Color:
+        case TextureType::Color: // Normalized
             switch (channels) {
-                case 1: return {GL_R8, GL_RED, GL_UNSIGNED_BYTE};   	// 8-bit single channel
-                case 2: return {GL_RG8, GL_RG, GL_UNSIGNED_BYTE};   	// 8-bit two channels
-                case 3: return {GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE}; 	// 8-bit three channels
-                default: return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}; 	// Default: 8-bit four channels
+                case 1: return {GL_R8, GL_RED, GL_UNSIGNED_BYTE};
+                case 2: return {GL_RG8, GL_RG, GL_UNSIGNED_BYTE};
+                case 3: return {GL_RGB8, GL_RGB, GL_UNSIGNED_BYTE};
+                default: return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE};
             }
-        case TextureType::Float:
+        case TextureType::Float32:
             switch (channels) {
-                case 1: return {GL_R32F, GL_RED, GL_FLOAT};  		// 32-bit float single channel
-                case 2: return {GL_RG32F, GL_RG, GL_FLOAT};  		// 32-bit float two channels
-                case 3: return {GL_RGB32F, GL_RGB, GL_FLOAT}; 		// 32-bit float three channels
-				default: return {GL_RGBA32F, GL_RGBA, GL_FLOAT};	// Default: 32-bit float four channels
+                case 1: return {GL_R32F, GL_RED, GL_FLOAT};
+                case 2: return {GL_RG32F, GL_RG, GL_FLOAT};
+                case 3: return {GL_RGB32F, GL_RGB, GL_FLOAT};
+                default: return {GL_RGBA32F, GL_RGBA, GL_FLOAT};
             }
-        case TextureType::Integer:
+        case TextureType::Float16:
             switch (channels) {
-                case 1: return {GL_R32I, GL_RED_INTEGER, GL_INT};		// 32-bit int single channel
-                case 2: return {GL_RG32I, GL_RG_INTEGER, GL_INT}; 		// 32-bit int two channels
-                case 3: return {GL_RGB32I, GL_RGB_INTEGER, GL_INT}; 	// 32-bit int three channels
-                default: return {GL_RGBA32I, GL_RGBA_INTEGER, GL_INT};	// Default: 32-bit int four channels
+                case 1: return {GL_R16F, GL_RED, GL_HALF_FLOAT};
+                case 2: return {GL_RG16F, GL_RG, GL_HALF_FLOAT};
+                case 3: return {GL_RGB16F, GL_RGB, GL_HALF_FLOAT};
+                default: return {GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT};
+            }
+        case TextureType::UInt8:
+            switch (channels) {
+                case 1: return {GL_R8UI, GL_RED_INTEGER, GL_UNSIGNED_BYTE};
+                case 2: return {GL_RG8UI, GL_RG_INTEGER, GL_UNSIGNED_BYTE};
+                case 3: return {GL_RGB8UI, GL_RGB_INTEGER, GL_UNSIGNED_BYTE};
+                default: return {GL_RGBA8UI, GL_RGBA_INTEGER, GL_UNSIGNED_BYTE};
+            }
+        case TextureType::UInt16:
+            switch (channels) {
+                case 1: return {GL_R16UI, GL_RED_INTEGER, GL_UNSIGNED_SHORT};
+                case 2: return {GL_RG16UI, GL_RG_INTEGER, GL_UNSIGNED_SHORT};
+                case 3: return {GL_RGB16UI, GL_RGB_INTEGER, GL_UNSIGNED_SHORT};
+                default: return {GL_RGBA16UI, GL_RGBA_INTEGER, GL_UNSIGNED_SHORT};
+            }
+        case TextureType::UInt32:
+            switch (channels) {
+                case 1: return {GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT};
+                case 2: return {GL_RG32UI, GL_RG_INTEGER, GL_UNSIGNED_INT};
+                case 3: return {GL_RGB32UI, GL_RGB_INTEGER, GL_UNSIGNED_INT};
+                default: return {GL_RGBA32UI, GL_RGBA_INTEGER, GL_UNSIGNED_INT};
+            }
+        case TextureType::Int8:
+            switch (channels) {
+                case 1: return {GL_R8I, GL_RED_INTEGER, GL_BYTE};
+                case 2: return {GL_RG8I, GL_RG_INTEGER, GL_BYTE};
+                case 3: return {GL_RGB8I, GL_RGB_INTEGER, GL_BYTE};
+                default: return {GL_RGBA8I, GL_RGBA_INTEGER, GL_BYTE};
+            }
+        case TextureType::Int16:
+            switch (channels) {
+                case 1: return {GL_R16I, GL_RED_INTEGER, GL_SHORT};
+                case 2: return {GL_RG16I, GL_RG_INTEGER, GL_SHORT};
+                case 3: return {GL_RGB16I, GL_RGB_INTEGER, GL_SHORT};
+                default: return {GL_RGBA16I, GL_RGBA_INTEGER, GL_SHORT};
+            }
+        case TextureType::Int32:
+            switch (channels) {
+                case 1: return {GL_R32I, GL_RED_INTEGER, GL_INT};
+                case 2: return {GL_RG32I, GL_RG_INTEGER, GL_INT};
+                case 3: return {GL_RGB32I, GL_RGB_INTEGER, GL_INT};
+                default: return {GL_RGBA32I, GL_RGBA_INTEGER, GL_INT};
             }
         case TextureType::Depth:
-            return {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT}; // Only one channel with depth textures
+            return {GL_DEPTH_COMPONENT32F, GL_DEPTH_COMPONENT, GL_FLOAT};
         default:
-            return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE};
+            return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE}; // Default case
     }
 }
 
