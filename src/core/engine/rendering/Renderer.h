@@ -2,12 +2,13 @@
 #define RENDERER_H
 
 #include "compatability/Compatability.h"
+#include "engine/rendering/LightProcessor.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
-#include "engine/rendering/SSAOProcessor.h"
 #include "engine/rendering/mat/Material.h"
 #include "engine/rendering/Mesh.h"
 #include "engine/rendering/Scene.h"
+#include "engine/rendering/SSAOProcessor.h"
 #include <array>
 #include <memory>
 #include <string>
@@ -21,12 +22,8 @@ private:
 	std::unique_ptr<VertexBuffer> m_fullScreenQuad_vbo;
 
 	RenderContext m_currentRenderContext;
+	LightProcessor m_lightProcessor;
 	SSAOProcessor m_ssaoProcessor;
-	
-	size_t m_totalSupportedLights;
-	std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
-	RawBuffer<ShaderLightStruct> m_lightBuffer;
-	RawBuffer<glm::mat4> m_lightViewProjectionBuffer;
 
 	void beginShadowpass(const Scene& scene, const ApplicationContext& context);
 	void endShadowpass(const Scene& scene, const ApplicationContext& context);
