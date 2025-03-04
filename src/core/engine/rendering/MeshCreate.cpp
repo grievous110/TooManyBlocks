@@ -463,7 +463,7 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
                     std::string indexStr;
                     unsigned int vIdx = 0, vtIdx = 0, vnIdx = 0;
 
-                    // Parse indices v/vt/vn
+                    // Parse indices v/vt/vn (Vertex / UV /Normal)
                     std::getline(vs, indexStr, '/'); vIdx = std::stoi(indexStr) - 1;
                     std::getline(vs, indexStr, '/'); vtIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
                     std::getline(vs, indexStr, '/'); vnIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
@@ -488,7 +488,7 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
                 // Triangulate the face (convert to triangles)
                 if (faceIndices.size() >= 3) {
                     for (size_t i = 1; i < faceIndices.size() - 1; i++) {
-                        currentMesh.indices.push_back(faceIndices[0]);
+                        currentMesh.indices.push_back(faceIndices[0]); // Base vertex
                         if (flipWinding) {
                             currentMesh.indices.push_back(faceIndices[i + 1]);
                             currentMesh.indices.push_back(faceIndices[i]);
@@ -497,6 +497,8 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
                             currentMesh.indices.push_back(faceIndices[i + 1]);
                         }
                     }
+                } else {
+                    lgr::lout.warn("Ignoring a face with less than 3 vertices");
                 }
             } else if (prefix == "o" || prefix == "g") {
                 // Parse new object or group
