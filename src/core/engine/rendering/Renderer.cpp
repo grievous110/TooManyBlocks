@@ -50,48 +50,13 @@ static inline void batchByMaterialForPass(std::unordered_map<Material*, std::vec
 	}
 }
 
-static inline void setAtlasViewport(int tileSize, int index, int atlasBufferSize) {
-	int tilesPerRow = atlasBufferSize / tileSize;
-    int x = (index % tilesPerRow) * tileSize;
-    int y = (index / tilesPerRow) * tileSize;
-
-    GLCALL(glViewport(x, y, tileSize, tileSize));
-}
-
 void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& context) {
-    for (int i = 0; i < LightPriority::Count; i++) {
-		m_currentRenderContext.shadowMapAtlases[i]->bind();
-		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
-	}
+	m_lightProcessor.clearShadowMaps();
 
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_maxShadowMapsPerPriority, m_currentRenderContext);
-	
-	int activeLightCount = m_currentRenderContext.lights.size();
-	
-	m_lightBuffer.clear();
-	m_lightViewProjectionBuffer.clear();
-	for (int i = 0; i < activeLightCount; i++) {
-		Light* currLight = m_currentRenderContext.lights[i];
-		Transform lTr = currLight->getGlobalTransform();
-		m_lightBuffer[i].lightType = static_cast<unsigned int>(currLight->getType());
-		m_lightBuffer[i].priority = static_cast<unsigned int>(currLight->getPriotity());
-		m_lightBuffer[i].shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
-		m_lightBuffer[i].lightPosition = lTr.getPosition();
-		m_lightBuffer[i].direction = lTr.getForward();
-		m_lightBuffer[i].color = currLight->getColor();
-		m_lightBuffer[i].intensity = currLight->getIntensity();
-		m_lightBuffer[i].range = currLight->getRange();
-		if (Spotlight* lSpot = dynamic_cast<Spotlight*>(currLight)) {
-			m_lightBuffer[i].fovy = lSpot->getFovy();
-			m_lightBuffer[i].innerCutoffAngle = lSpot->getInnerCutoffAngle();
-		}
-
-		m_lightViewProjectionBuffer[i] = currLight->getViewProjMatrix();
-	}
-	m_currentRenderContext.lightBuff->updateData(m_lightBuffer.data(), activeLightCount * sizeof(ShaderLightStruct));
-	m_currentRenderContext.lightViewProjectionBuff->updateData(m_lightViewProjectionBuffer.data(), activeLightCount * sizeof(glm::mat4));
+	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_lightProcessor.getShadowMapCounts(), m_currentRenderContext);
+	m_lightProcessor.updateBuffers(m_currentRenderContext.lights);
 }
 
 void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
@@ -138,28 +103,15 @@ void Renderer::initialize() {
 	GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));	// Blending
 	GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
-	// Create buffers for shadowmapping
-	m_currentRenderContext.shadowMapAtlases[LightPriority::High] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
-	m_currentRenderContext.shadowMapSizes[LightPriority::High] = HIGHPRIO_SHADOWMAP_SIZE;
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Medium]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
-	m_currentRenderContext.shadowMapSizes[LightPriority::Medium] = MEDIUMPRIO_SHADOWMAP_SIZE;
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Low] = std::make_shared<FrameBuffer>();
-	m_currentRenderContext.shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
-	m_currentRenderContext.shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
+	m_lightProcessor.initialize();
+	m_currentRenderContext.lights = RawBuffer<Light*>(m_lightProcessor.totalSupportedLights());
+	m_currentRenderContext.shadowMapAtlases = m_lightProcessor.getShadowMapAtlases();
+	m_currentRenderContext.shadowMapSizes = m_lightProcessor.getShadowMapSizes();
+	m_currentRenderContext.lightBuff = m_lightProcessor.getShaderLightUniformBuffer();
+	m_currentRenderContext.lightViewProjectionBuff = m_lightProcessor.getLightViewProjectionUniformBuffer();
 
-	m_totalSupportedLights = 0;
-    for (int i = 0; i < LightPriority::Count; i++) {
-        m_maxShadowMapsPerPriority[i] = m_currentRenderContext.shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_currentRenderContext.shadowMapSizes[i];
-        m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
-		m_totalSupportedLights += m_maxShadowMapsPerPriority[i];
-    }
-	m_currentRenderContext.lights = RawBuffer<Light*>(m_totalSupportedLights);
-	m_currentRenderContext.lightBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
-	m_currentRenderContext.lightViewProjectionBuff = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
-	m_lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
-	m_lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
+	// Initialize SSAO renderer
+	m_ssaoProcessor.initialize();
 	
 	// Create vertex array / buffer for fullscreen quad
 	m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
@@ -168,9 +120,6 @@ void Renderer::initialize() {
 	layout.push(GL_FLOAT, sizeof(float), 2); // Position
 	layout.push(GL_FLOAT, sizeof(float), 2); // Screen UV
 	m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo, layout);
-
-	// Initialize SSAO renderer
-	m_ssaoProcessor.initialize();
 
 	FrameBuffer::bindDefault();
 }
@@ -190,19 +139,15 @@ void Renderer::renderScene(const Scene &scene, const ApplicationContext &context
 
 	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
 	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
-	for (int i = 0; i < std::min<int>(m_currentRenderContext.lights.size(), m_totalSupportedLights); i++) {
-		const Light* light = m_currentRenderContext.lights[i];
+	for (int i = 0; i < m_currentRenderContext.lights.size(); i++) {
+		const Light* light = m_currentRenderContext.lights[i];		
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
 		m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
 		m_currentRenderContext.viewProjection = light->getViewProjMatrix();
 		m_currentRenderContext.viewportTransform = light->getGlobalTransform();
-		m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->bind();
-		setAtlasViewport(
-			m_currentRenderContext.shadowMapSizes[m_currentRenderContext.currentLightPrio],
-			m_currentRenderContext.lightShadowAtlasIndex,
-			m_currentRenderContext.shadowMapAtlases[m_currentRenderContext.currentLightPrio]->getAttachedDepthTexture()->width()
-		);
-
+		
+		m_lightProcessor.prepareShadowPass(light);
+		
 		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
 		batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::ShadowPass);
 

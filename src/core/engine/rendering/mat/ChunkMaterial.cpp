@@ -3,6 +3,7 @@
 #include "engine/rendering/GLUtils.h"
 #include "Logger.h"
 #include <gl/glew.h>
+#include <sstream>
 
 bool ChunkMaterial::supportsPass(PassType passType) const {
 	return passType == PassType::ShadowPass || passType == PassType::AmbientOcclusion || passType == PassType::MainPass;
@@ -27,22 +28,22 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 
 			// Pass light info
 			m_shader->setUniform("u_lightCount", static_cast<int>(context.lights.size()));
-			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff, 0);
-			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff, 1);
+			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightBuff.lock(), 0);
+			m_shader->setAndBindUBO("LightViewProjBlock", *context.lightViewProjectionBuff.lock(), 1);
 
-			std::shared_ptr<Texture> ssaoTexture = context.ssaoOutput.lock();
-			ssaoTexture->bind(1);
-			m_shader->setUniform("u_ssaoTexture", 1);
+			if (std::shared_ptr<Texture> ssaoTexture = context.ssaoOutput.lock()) {
+				ssaoTexture->bind(1);
+				m_shader->setUniform("u_ssaoTexture", 1);
+			}
 			m_shader->setUniform("u_screenResolution", context.currentScreenResolution);
 
 			// Pass depth buffers for shadowmapping
 			for (int prio = 0; prio < LightPriority::Count; prio++) {
-				std::shared_ptr<FrameBuffer> frameBuff = context.shadowMapAtlases[prio];
-				if (frameBuff) {
+				if(std::shared_ptr<Texture> shadowMapAtlas = context.shadowMapAtlases[prio].lock()) {
 					const std::string strPrio = std::to_string(prio);
-					frameBuff->getAttachedDepthTexture()->bind(prio + 2);
+					shadowMapAtlas->bind(prio + 2);
 					m_shader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 2);
-					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", frameBuff->getAttachedDepthTexture()->width());
+					m_shader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", shadowMapAtlas->width());
 					m_shader->setUniform("u_shadowMapSizes[" + strPrio + "]", context.shadowMapSizes[prio]);
 				} else {
 					lgr::lout.error("Shadow map atlas not loaded for ChunkMaterial");
