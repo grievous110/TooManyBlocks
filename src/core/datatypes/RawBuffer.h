@@ -11,7 +11,7 @@ private:
     T* m_data;
 
 public:
-    RawBuffer() : m_capacity(0), m_size(0), m_data(nullptr) {}
+    RawBuffer() noexcept : m_capacity(0), m_size(0), m_data(nullptr) {}
     RawBuffer(size_t capacity) : m_capacity(capacity), m_size(0), m_data(new T[capacity]) {};
     RawBuffer(const RawBuffer& other) = delete;
     RawBuffer(RawBuffer&& other) noexcept
@@ -20,7 +20,10 @@ public:
         other.m_size = 0;
         other.m_capacity = 0;
     }
-    ~RawBuffer() { delete[] m_data; }
+    ~RawBuffer() { 
+        if (m_data)
+            delete[] m_data;
+    }
 
     void push_back(const T& value) {
         if (m_size >= m_capacity) {
