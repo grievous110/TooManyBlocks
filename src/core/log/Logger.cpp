@@ -67,7 +67,7 @@ namespace lgr {
     }
 
     Logger::Logger() noexcept {
-    #if defined(_WIN32) || defined(_WIN64)
+    #ifdef _WIN32
         // Check if console is available on windows
         if (GetConsoleWindow() != nullptr) {
             m_consoleAvailable = true;
