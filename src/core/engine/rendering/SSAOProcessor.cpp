@@ -25,12 +25,15 @@ void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
 }
 
 void SSAOProcessor::createBuffers() {
+    m_ssaoGBuffer->clearAttachedTextures();
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3));
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3));
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
+    m_ssaoPassBuffer->clearAttachedTextures();
     m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
+    m_ssaoBlurBuffer->clearAttachedTextures();
     m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 }
 

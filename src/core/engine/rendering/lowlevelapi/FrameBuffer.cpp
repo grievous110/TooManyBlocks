@@ -9,20 +9,19 @@ thread_local unsigned int FrameBuffer::currentlyBoundFBO = 0;
 void FrameBuffer::finalizeDrawBufferOutput() {
     std::vector<GLenum> drawBuffers;
     drawBuffers.reserve(m_attachedTextures.size());
-
+    
     for (unsigned int i = 0; i < m_attachedTextures.size(); i++) {
         drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
     }
 
     if (!drawBuffers.empty()) {
         GLCALL(glDrawBuffers(drawBuffers.size(), drawBuffers.data()));
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            lgr::lout.error("Framebuffer is not complete!");
+        }
     } else {
         GLCALL(glDrawBuffer(GL_NONE));
         GLCALL(glReadBuffer(GL_NONE));
-    }
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        lgr::lout.error("Framebuffer is not complete!");
     }
 }
 
@@ -81,8 +80,8 @@ void FrameBuffer::clearAttachedTextures() {
 
         if (m_attachedDepthTexture) {
             GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0));
+            m_attachedDepthTexture = nullptr;
         }
-        m_attachedDepthTexture = nullptr;
 
         finalizeDrawBufferOutput();
     }
