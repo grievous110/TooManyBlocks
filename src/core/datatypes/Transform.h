@@ -10,8 +10,8 @@ private:
     glm::quat m_rotation;
     float m_scale; // Uniform scaling to avoid skew
 
-    mutable bool m_dirty; // Tracks whether the model matrix needs recalculation
     mutable glm::mat4 m_modelMatrix;
+    mutable bool m_dirty; // Tracks whether the model matrix needs recalculation
 
     void recalculateModelMatrix() const;
 
