@@ -73,9 +73,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 set(RESOURCE_DIR ${CMAKE_SOURCE_DIR}/res)
 set(DESTINATION_DIR ${CMAKE_BINARY_DIR}/bin/res)
 
-add_custom_command(
-    TARGET ${PROJECT_NAME} PRE_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${RESOURCE_DIR} ${DESTINATION_DIR}
+add_custom_target(copy_resources
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_DIR} ${DESTINATION_DIR}
     COMMENT "Copying resource files to the build directory"
 )
+
+# Make sure it runs before the main build
+add_dependencies(${PROJECT_NAME} copy_resources)
