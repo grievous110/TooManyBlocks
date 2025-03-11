@@ -8,6 +8,8 @@
 #include <cmath>
 #include <gl/glew.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <time.h>  
 
 static constexpr float PI = 3.14159265f;
 static constexpr size_t NOISE_TEXTURE_SIZE = 4U;
@@ -23,13 +25,13 @@ void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
 }
 
 void SSAOProcessor::createBuffers() {
-    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 0);
-    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3), 1);
+    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3));
+    m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3));
     m_ssaoGBuffer->attachTexture(std::make_shared<Texture>(TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
-    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
+    m_ssaoPassBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 
-    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge), 0);
+    m_ssaoBlurBuffer->attachTexture(std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
 }
 
 SSAOProcessor::~SSAOProcessor() {
@@ -40,6 +42,7 @@ SSAOProcessor::~SSAOProcessor() {
 
 void SSAOProcessor::initialize() {
     if (!isInitialized) {
+        srand(time(NULL));
         m_ssaoGBuffer = std::make_unique<FrameBuffer>();
 		m_ssaoPassBuffer = std::make_unique<FrameBuffer>();
 		m_ssaoBlurBuffer = std::make_unique<FrameBuffer>();

@@ -8,8 +8,10 @@ thread_local unsigned int FrameBuffer::currentlyBoundFBO = 0;
 
 void FrameBuffer::finalizeDrawBufferOutput() {
     std::vector<GLenum> drawBuffers;
-    for (const auto& element : m_attachedTextures) {
-        drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + element.first);
+    drawBuffers.reserve(m_attachedTextures.size());
+
+    for (unsigned int i = 0; i < m_attachedTextures.size(); i++) {
+        drawBuffers.push_back(GL_COLOR_ATTACHMENT0 + i);
     }
 
     if (!drawBuffers.empty()) {
@@ -72,8 +74,8 @@ void FrameBuffer::bind() const {
 void FrameBuffer::clearAttachedTextures() {
     if (!m_attachedTextures.empty() || m_attachedDepthTexture) {
         bind();
-        for (const auto& element : m_attachedTextures) {
-            GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + element.first, GL_TEXTURE_2D, 0, 0));
+        for (unsigned int i = 0; i < m_attachedTextures.size(); i++) {
+            GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0));
         }
         m_attachedTextures.clear();
 
@@ -86,14 +88,15 @@ void FrameBuffer::clearAttachedTextures() {
     }
 }
 
-void FrameBuffer::attachTexture(std::shared_ptr<Texture> texture, unsigned int attachmentPoint) {
+void FrameBuffer::attachTexture(std::shared_ptr<Texture> texture) {
     bind();
 
     if (texture->type() == TextureType::Depth) {
         m_attachedDepthTexture = texture;
         GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, texture->rendererId(), 0));
     } else {
-        m_attachedTextures[attachmentPoint] = texture;
+        unsigned int attachmentPoint = m_attachedTextures.size();
+        m_attachedTextures.push_back(texture);
         GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + attachmentPoint, GL_TEXTURE_2D, texture->rendererId(), 0));
     }
 
