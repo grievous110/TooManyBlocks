@@ -11,29 +11,17 @@ endif()
 
 # Gather all .cpp files in the src directory
 file(GLOB_RECURSE SOURCES "src/*.cpp")
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(TooManyBlocks ${SOURCES})
 
 # Enable DEBUG_MODE macro in Debug mode
-target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Debug>:DEBUG_MODE>)
+target_compile_definitions(TooManyBlocks PRIVATE $<$<CONFIG:Debug>:DEBUG_MODE>)
 
 # Include directories
-target_include_directories(${PROJECT_NAME} PRIVATE
-    src/core
-    src/core/log
-    src/vendor
-    dependencies/glew-2.1.0/include
-    dependencies/glfw-3.4/include
-)
+target_include_directories(TooManyBlocks PRIVATE src/core src/core/log)
 
-# Add dependencies as subdirectories
-option(BUILD_UTILS "Build the glewinfo and visualinfo utilities" OFF)
-option(glew-cmake_BUILD_SHARED "Build GLEW as a shared library" OFF)
-option(glew-cmake_BUILD_STATIC "Build GLEW as a static library" ON)
-target_compile_definitions(${PROJECT_NAME} PRIVATE GLEW_STATIC)
-add_subdirectory(dependencies/glew-2.1.0)
-
-add_subdirectory(dependencies/glfw-3.4)
-target_link_libraries(${PROJECT_NAME} PRIVATE GLEW glfw)
+# Load configuration of all librarys from dependency folder wich contains intermediate cmake file
+add_subdirectory(dependencies)
+target_link_libraries(TooManyBlocks PRIVATE glew_s glfw imgui glm stb_image)
 
 # Additional configuration based on the current platform
 if(UNIX AND NOT APPLE)
@@ -51,6 +39,7 @@ elseif(WIN32)
             target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:WIN_MAIN>)
             set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
         elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            # Does not need to define WIN_MAIN cause main() is still used with this compiler
             set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
         endif()
     else()

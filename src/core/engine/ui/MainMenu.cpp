@@ -2,7 +2,7 @@
 #include "engine/GameInstance.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "MainMenu.h"
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 namespace UI {
 	void MainMenu::render(ApplicationContext& context) {

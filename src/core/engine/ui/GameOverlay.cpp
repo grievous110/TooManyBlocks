@@ -4,7 +4,7 @@
 #include "engine/ui/fonts/FontUtil.h"
 #include "GameOverlay.h"
 #include <glm/vec3.hpp>
-#include <imgui/imgui.h>
+#include <imgui.h>
 
 void UI::GameOverlay::render(ApplicationContext& context) {
     ImGuiIO& io = ImGui::GetIO();
