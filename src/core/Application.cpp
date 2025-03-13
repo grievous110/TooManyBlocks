@@ -122,6 +122,10 @@ void Application::run() {
 		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 		glfwWindowHint(GLFW_SAMPLES, 4); // Request MSAA 4
 
+		#ifdef DEBUG_MODE // Create debug open gl context (Some graphics cards do not enable debugging by default)
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+		#endif
+
 		// Create current context
 		ApplicationContext* context = Application::createContext();
 		// Set initial screen dimensions
@@ -156,6 +160,7 @@ void Application::run() {
 		// Graphic api details
 		std::ostringstream detailsBuf;		
 		detailsBuf << "Open GL Version: " << glGetString(GL_VERSION) << std::endl;
+		detailsBuf << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 		detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << std::endl;
 		
 		// Check Antialisasing
