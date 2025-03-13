@@ -4,7 +4,7 @@ layout(location = 0) in uint compressedPosition;
 layout(location = 1) in uint compressedData;
 
 out vec3 position;
-out vec3 normal;
+flat out vec3 normal;
 
 uniform mat4 u_view;
 uniform mat4 u_projection;
