@@ -168,10 +168,8 @@ void Application::run() {
 		GLCALL(glGetIntegerv(GL_SAMPLES, &samples));
 		detailsBuf << "Antialiasing: MSAA " << samples << std::endl;
 		lgr::lout.info(detailsBuf.str());
-	}
-	{
-		ApplicationContext* context = Application::getContext();
 
+		// ImGui setup
 		ImGui::CreateContext();
 		ImGui_ImplOpenGL3_Init();
 		ImGui_ImplGlfw_InitForOpenGL(context->window, true);
@@ -181,11 +179,13 @@ void Application::run() {
 		ImGui::StyleColorsDark();
 		
 		context->fontPool->loadFontSizes("res/fonts/ProggyClean.ttf", {16.0f, 32.0f, 48.0f, 64.0f});
-
- 		UI::registerWindow<UI::MainMenu>("MainMenu");
+		
+		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::navigateToWindow(*context, "MainMenu");
-
+	}
+	{
+		ApplicationContext* context = Application::getContext();
 		// Loop until the user closes the window
 		try {
 			context->renderer->initialize();
