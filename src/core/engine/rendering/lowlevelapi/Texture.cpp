@@ -2,7 +2,7 @@
 #include "Logger.h"
 #include "Texture.h"
 #include <gl/glew.h>
-#include <stb_image/stb_image.h>
+#include <stb_image.h>
 
 struct TextureFormat {
     GLenum internalFormat;

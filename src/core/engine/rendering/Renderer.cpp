@@ -72,12 +72,12 @@ void Renderer::beginAmbientOcclusionPass(const Scene& scene, const ApplicationCo
 	GLCALL(glDisable(GL_BLEND));
 }
 
-void Renderer::endAmbientOcclusionPass(const Scene &scene, const ApplicationContext &context) {
+void Renderer::endAmbientOcclusionPass(const Scene& scene, const ApplicationContext& context) {
 	m_currentRenderContext.ssaoOutput = m_ssaoProcessor.getOcclusionOutput();
 	GLCALL(glEnable(GL_BLEND));
 }
 
-void Renderer::beginMainpass(const Scene &scene, const ApplicationContext &context) {
+void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
     FrameBuffer::bindDefault();
 	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	glm::uvec2 screenRes = m_currentRenderContext.currentScreenResolution;
@@ -124,7 +124,7 @@ void Renderer::initialize() {
 	FrameBuffer::bindDefault();
 }
 
-void Renderer::renderScene(const Scene &scene, const ApplicationContext &context) {
+void Renderer::renderScene(const Scene& scene, const ApplicationContext& context) {
 	static auto lastLogTime = std::chrono::high_resolution_clock::now();
     static std::chrono::duration<double> totalTime(0);
     static std::chrono::duration<double> testTime(0);
