@@ -1,6 +1,6 @@
 #include "FontUtil.h"
 #include <algorithm>
-#include <imgui/imgui_impl_opengl3.h>
+#include <imgui_impl_opengl3.h>
 #include <stdexcept>
 
 ScopedFont::ScopedFont(const FontData fontData): m_fontData(fontData) {

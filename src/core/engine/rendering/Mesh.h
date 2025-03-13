@@ -29,7 +29,7 @@ private:
 	const MeshBounds m_bounds;
 
 public:
-	Mesh(std::shared_ptr<MeshRenderData> data, const MeshBounds& bounds, std::shared_ptr<Material> material = nullptr) : m_data(data), m_bounds(bounds), m_material(material) {}
+	Mesh(std::shared_ptr<MeshRenderData> data, const MeshBounds& bounds, std::shared_ptr<Material> material = nullptr) : m_data(data), m_material(material), m_bounds(bounds) {}
 	virtual ~Mesh() = default;
 
 	inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }

@@ -27,25 +27,25 @@ Transform Transform::fromMatrix(const glm::mat4 &matrix) {
 }
 
 Transform::Transform()
-    : m_modelMatrix(1.0f),
-      m_position(0.0f),
+    : m_position(0.0f),
       m_rotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f)),
       m_scale(1.0f),
+      m_modelMatrix(1.0f),
       m_dirty(true) {}
 
 Transform::Transform(const glm::vec3& position, const glm::vec3& eulerAngles, float scale)
-    : m_modelMatrix(1.0f),
-    m_position(position),
+    : m_position(position),
     m_rotation(glm::radians(eulerAngles)),
     m_scale(scale),
+    m_modelMatrix(1.0f),
     m_dirty(true) {
 }
 
 Transform::Transform(const glm::vec3& position, const glm::quat& rotation, float scale)
-    : m_modelMatrix(1.0f),
-    m_position(position),
+    : m_position(position),
     m_rotation(rotation),
     m_scale(scale),
+    m_modelMatrix(1.0f),
     m_dirty(true) {
 }
 
