@@ -26,21 +26,21 @@ target_link_libraries(TooManyBlocks PRIVATE glew_s glfw imgui glm stb_image)
 # Additional configuration based on the current platform
 if(UNIX AND NOT APPLE)
     message(STATUS "Detected Linux - Linking additional Unix-specific libraries")
-    target_link_libraries(${PROJECT_NAME} PRIVATE GL X11 pthread)
+    target_link_libraries(TooManyBlocks PRIVATE GL X11 pthread)
 elseif(WIN32)
     message(STATUS "Detected Windows - Linking additional Windows-specific libraries")
-    target_link_libraries(${PROJECT_NAME} PRIVATE opengl32 glu32 User32 gdi32 Shell32)
+    target_link_libraries(TooManyBlocks PRIVATE opengl32 glu32 User32 gdi32 Shell32)
 
     # In Release mode, define WinMain Entrypoint to get rid of console window
     if(CMAKE_BUILD_TYPE STREQUAL "Release")
         message(STATUS "Release Build: Enabling Windows GUI subsystem (No console)")
         # Properties for WinMain Entrypoint
         if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            target_compile_definitions(${PROJECT_NAME} PRIVATE $<$<CONFIG:Release>:WIN_MAIN>)
-            set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+            target_compile_definitions(TooManyBlocks PRIVATE $<$<CONFIG:Release>:WIN_MAIN>)
+            set_target_properties(TooManyBlocks PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
         elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
             # Does not need to define WIN_MAIN cause main() is still used with this compiler
-            set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "-mwindows")
+            set_target_properties(TooManyBlocks PROPERTIES LINK_FLAGS "-mwindows")
         endif()
     else()
         message(STATUS "Building as default subsystem")
@@ -50,7 +50,7 @@ else()
 endif()
 
 # Set output directories
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(TooManyBlocks PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/bin
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/bin
@@ -68,4 +68,4 @@ add_custom_target(copy_resources
 )
 
 # Make sure it runs before the main build
-add_dependencies(${PROJECT_NAME} copy_resources)
+add_dependencies(TooManyBlocks copy_resources)
