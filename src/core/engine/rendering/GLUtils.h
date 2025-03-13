@@ -10,4 +10,8 @@ void GLClearError();
 
 bool GLLogCall(const char* functionName, const char* file, int line);
 
+void GLEnableDebugging();
+
+void GLDisableDebugging();
+
 #endif
