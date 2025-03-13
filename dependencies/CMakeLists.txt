@@ -4,7 +4,7 @@ add_subdirectory(glfw)
 
 # ========================== GLEW ==========================
 # Configuration: Disable shared libraries and utility builds
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries")  # Seems to not prevent shared builds completely
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries")  # Seems to not prevent shared build completely
 set(BUILD_UTILS OFF CACHE BOOL "Disable building glewinfo and visualinfo" FORCE)
 set(GLEW_NO_GLU ON CACHE BOOL "Disable GLU support" FORCE)
 
@@ -12,6 +12,7 @@ set(GLEW_NO_GLU ON CACHE BOOL "Disable GLU support" FORCE)
 add_subdirectory(glew/build/cmake)
 
 # Ensure the correct include directories for GLEW
+target_compile_definitions(glew_s PRIVATE GLEW_STATIC)
 target_include_directories(glew_s INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glew/include>)
 
 # ========================== IMGUI ==========================
