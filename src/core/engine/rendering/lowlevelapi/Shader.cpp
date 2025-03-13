@@ -45,18 +45,17 @@ unsigned int compileShader(const unsigned int& type, const std::string& source) 
 	GLCALL(glShaderSource(id, 1, &src, nullptr));
 	GLCALL(glCompileShader(id));
 
-	int result;
-	GLCALL(glGetShaderiv(id, GL_COMPILE_STATUS, &result));
-
-	if (result == GL_FALSE) {
+	int compileSuccess;
+	GLCALL(glGetShaderiv(id, GL_COMPILE_STATUS, &compileSuccess));
+	if (compileSuccess == GL_FALSE) {
 		int length;
 		GLCALL(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
 		char* message = new char[length];
 		GLCALL(glGetShaderInfoLog(id, length, &length, message));
-        std::stringstream stream;
-		stream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
-		stream << message << std::endl;
-        lgr::lout.error(stream.str());
+        std::ostringstream ostream;
+		ostream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
+		ostream << message << std::endl;
+        lgr::lout.error(ostream.str());
 		delete[] message;
 		GLCALL(glDeleteShader(id));
 		return 0;
@@ -73,6 +72,22 @@ unsigned int createShader(const std::string& vertexShader, const std::string& fr
     GLCALL(glAttachShader(program, vs));
     GLCALL(glAttachShader(program, fs));
     GLCALL(glLinkProgram(program));
+
+    int linkingSuccess;
+    GLCALL(glGetProgramiv(program, GL_LINK_STATUS, &linkingSuccess));
+    if (!linkingSuccess) {
+        int logLength = 0;
+        GLCALL(glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength));
+        if (logLength > 0) {
+            std::ostringstream ostream;
+            char* infoLog = new char[logLength];
+            glGetProgramInfoLog(program, logLength, nullptr, infoLog);
+            ostream << "Shader Linking Error:\n" << infoLog << std::endl;
+            lgr::lout.error(ostream.str());
+            delete[] infoLog;
+        }
+    }
+
     GLCALL(glValidateProgram(program));
 
     GLCALL(glDeleteShader(vs));
