@@ -3,17 +3,27 @@
 add_subdirectory(glfw)
 
 # ========================== GLEW ==========================
-# Configuration: Disable shared libraries and utility builds
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries")  # Seems to not prevent shared build completely
-set(BUILD_UTILS OFF CACHE BOOL "Disable building glewinfo and visualinfo" FORCE)
-set(GLEW_NO_GLU ON CACHE BOOL "Disable GLU support" FORCE)
+# GLEW is tricky, so checking if user has generated the nessecary files for building from source
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/glew/src/glew.c" OR NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/glew/include/GL/glew.h")
+    message(FATAL_ERROR 
+        "GLEW generated files are missing!\n"
+        "Run the following commands in the 'glew/auto' directory to generate them:\n"
+        "cd ${CMAKE_CURRENT_SOURCE_DIR}/glew/auto\n"
+        "make"
+    )
+else()
+    # Configuration: Disable shared libraries and utility builds
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libraries")  # Seems to not prevent shared build completely
+    set(BUILD_UTILS OFF CACHE BOOL "Disable building glewinfo and visualinfo" FORCE)
+    set(GLEW_NO_GLU ON CACHE BOOL "Disable GLU support" FORCE)
 
-# GLEW has a large CMake file
-add_subdirectory(glew/build/cmake)
+    # GLEW has a large CMake file
+    add_subdirectory(glew/build/cmake)
 
-# Ensure the correct include directories for GLEW
-target_compile_definitions(glew_s PRIVATE GLEW_STATIC)
-target_include_directories(glew_s INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glew/include>)
+    # Ensure the correct include directories for GLEW
+    target_compile_definitions(glew_s PRIVATE GLEW_STATIC)
+    target_include_directories(glew_s INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glew/include>)
+endif()
 
 # ========================== IMGUI ==========================
 # Create a static library for ImGui with OpenGL and GLFW backends.
