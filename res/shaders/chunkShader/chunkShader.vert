@@ -4,9 +4,9 @@ layout(location = 0) in uint compressedPosition;
 layout(location = 1) in uint compressedData;
 
 out vec3 position;
-out uint texIndex;
+flat out uint texIndex;
 out vec2 uv;
-out vec3 normal;
+flat out vec3 normal;
 
 uniform mat4 u_viewProjection;
 uniform vec3 u_chunkPosition;
