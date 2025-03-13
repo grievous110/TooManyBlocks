@@ -11,6 +11,8 @@ flat in uint texIndex;
 in vec2 uv;
 flat in vec3 normal;
 
+layout(location = 0) out vec4 outColor;
+
 struct Light {
     uint lightType;
     uint priority;
@@ -172,5 +174,5 @@ void main() {
         color *= 1.0 - fade;
     }
 
-   gl_FragColor = vec4(color, 1.0);
+   outColor = vec4(color, 1.0);
 }
