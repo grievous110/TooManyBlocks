@@ -13,3 +13,6 @@
 [submodule "dependencies/stb"]
 	path = dependencies/stb
 	url = https://github.com/nothings/stb.git
+[submodule "dependencies/JsonParser"]
+	path = dependencies/JsonParser
+	url = https://github.com/grievous110/JsonParser.git

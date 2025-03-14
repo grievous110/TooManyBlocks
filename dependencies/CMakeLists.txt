@@ -56,3 +56,7 @@ add_library(stb_image STATIC libs/stb_image.cpp)
 
 # Include the stb header directory
 target_include_directories(stb_image PUBLIC stb)
+
+# ====================== JsonParser =======================
+# JsonParser lib also has its on cmake
+add_subdirectory(JsonParser)

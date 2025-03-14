@@ -21,7 +21,7 @@ target_include_directories(TooManyBlocks PRIVATE src/core src/core/log)
 
 # Load configuration of all librarys from dependency folder wich contains intermediate cmake file
 add_subdirectory(dependencies)
-target_link_libraries(TooManyBlocks PRIVATE glew_s glfw imgui glm stb_image)
+target_link_libraries(TooManyBlocks PRIVATE glew_s glfw imgui glm stb_image JsonParser)
 
 # Additional configuration based on the current platform
 if(UNIX AND NOT APPLE)
