@@ -16,62 +16,55 @@
 GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), m_isInitialized(false) {}
 
 GameInstance::~GameInstance() {
-	if (m_playerController)
-		delete m_playerController;
-	if (m_player)
-		delete m_player;
-	if (m_world)
-		delete m_world;
+	deinit();
 }
 
-void GameInstance::initialize() {
-	// Random seed
-	std::random_device rd;
-    std::mt19937 generator(rd());
-    std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
-	uint32_t seed = distribution(generator);
-	m_playerController = new PlayerController;
-	m_player = new Player;
-	m_world = new World(seed);
-	m_playerController->possess(m_player);
-
-	Provider* provider = Application::getContext()->provider;
-
-	std::uniform_real_distribution<float> positionDist(-50.0f, 50.0f);
-    std::uniform_real_distribution<float> lookAtDist(-50.0f, 50.0f);
-	for (int i = 0; i < 25; ++i) {
-        auto light = std::make_shared<Spotlight>(glm::vec3(1.0f), 1.0f, 45.0f, 50.0f);
-        light->setInnerCutoffAngle(25.0f);
-
-        // Randomize position
-        glm::vec3 randomPosition(positionDist(generator), 10.0f, positionDist(generator));
-        light->getLocalTransform().setPosition(randomPosition);
-
-        // Randomize lookAt target
-        glm::vec3 randomTarget(lookAtDist(generator), 5.0f, lookAtDist(generator));
-        light->getLocalTransform().lookAt(randomTarget);
-
-        // Add to the vector
-        m_lights.push_back(light);
-    }
-
-	std::shared_ptr<Shader> shader = provider->getShaderFromFile(SIMPLE_SHADER);
-	std::shared_ptr<Texture> texture = provider->getTextureFromFile("res/textures/testTexture.png");	
-	std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
-	std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
-	m_mesh1 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
-	m_mesh1->assignMaterial(testMaterial1);
-	m_mesh2 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
-	m_mesh2->assignMaterial(testMaterial2);
-
-	m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
-	m_mesh1->getLocalTransform().setScale(0.5f);
-	m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
-	m_mesh2->getLocalTransform().translate(m_mesh1->getLocalTransform().getUp() * 3.0f);
+void GameInstance::initialize(World* newWorld) {
+	if (!m_isInitialized) {
+		std::random_device rd;
+		std::mt19937 generator(rd());
+		std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
+		m_playerController = new PlayerController;
+		m_player = new Player;
+		m_world = newWorld;
+		m_playerController->possess(m_player);
 	
-	// Capture and hide the mouse cursor
-	glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-	m_isInitialized = true;
+		Provider* provider = Application::getContext()->provider;
+	
+		std::uniform_real_distribution<float> positionDist(-50.0f, 50.0f);
+		std::uniform_real_distribution<float> lookAtDist(-50.0f, 50.0f);
+		for (int i = 0; i < 25; ++i) {
+			auto light = std::make_shared<Spotlight>(glm::vec3(1.0f), 1.0f, 45.0f, 50.0f);
+			light->setInnerCutoffAngle(25.0f);
+	
+			// Randomize position
+			glm::vec3 randomPosition(positionDist(generator), 10.0f, positionDist(generator));
+			light->getLocalTransform().setPosition(randomPosition);
+	
+			// Randomize lookAt target
+			glm::vec3 randomTarget(lookAtDist(generator), 5.0f, lookAtDist(generator));
+			light->getLocalTransform().lookAt(randomTarget);
+	
+			// Add to the vector
+			m_lights.push_back(light);
+		}
+	
+		std::shared_ptr<Shader> shader = provider->getShaderFromFile(SIMPLE_SHADER);
+		std::shared_ptr<Texture> texture = provider->getTextureFromFile("res/textures/testTexture.png");	
+		std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
+		std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
+		m_mesh1 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
+		m_mesh1->assignMaterial(testMaterial1);
+		m_mesh2 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
+		m_mesh2->assignMaterial(testMaterial2);
+	
+		m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
+		m_mesh1->getLocalTransform().setScale(0.5f);
+		m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
+		m_mesh2->getLocalTransform().translate(m_mesh1->getLocalTransform().getUp() * 3.0f);
+		
+		m_isInitialized = true;
+	}
 }
 
 Scene GameInstance::craftScene() {
@@ -88,6 +81,16 @@ Scene GameInstance::craftScene() {
 	scene.meshes.push_back(m_mesh1);
 	scene.meshes.push_back(m_mesh2);
 	return scene;
+}
+
+void GameInstance::deinit() {
+	m_isInitialized = false;
+	if (m_playerController)
+		delete m_playerController;
+	if (m_player)
+		delete m_player;
+	if (m_world)
+		delete m_world;
 }
 
 void GameInstance::update(float msDelta) {

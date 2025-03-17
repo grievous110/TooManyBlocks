@@ -3,6 +3,7 @@
 #include "engine/entity/Entity.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "GameOverlay.h"
+#include <GLFW/glfw3.h>
 #include <glm/vec3.hpp>
 #include <imgui.h>
 
@@ -33,6 +34,11 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
         ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
+        if (ImGui::Button("Exit")) {
+            context.instance->deinit();
+            glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            navigateToWindow(context, "MainMenu");
+        }
     }
     ImGui::End();
 }

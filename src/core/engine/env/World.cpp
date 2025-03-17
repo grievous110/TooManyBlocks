@@ -8,9 +8,19 @@
 #include "providers/Provider.h"
 #include "World.h"
 #include <glm/glm.hpp>
+#include <json/JsonParser.h>
 #include <memory>
+#include <fstream>
 #include <unordered_set>
 #include <vector>
+
+World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir) {
+    // Load world data
+    std::ifstream file((worldDir / "info.json").string(), std::ios::binary);
+    Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+    m_seed = static_cast<uint32_t>(std::stoul(info["seed"].toString()));
+    file.close();
+}
 
 std::shared_ptr<Chunk> World::getChunk(const glm::ivec3& location) {
     if (m_loadedChunks.find(location) != m_loadedChunks.end()) {
@@ -91,7 +101,8 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
             // Put placeholder
             m_loadedChunks[chunkPos] = nullptr;
 
-            workerPool.pushJob(
+            ThreadPool* tPool = Application::getContext()->workerPool;
+            tPool->pushJob(
                 [this, chunkPos] {
                     std::shared_ptr<Chunk> newChunk = std::make_shared<Chunk>();
                     PerlinNoise noiseGenerator(m_seed);

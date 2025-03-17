@@ -28,9 +28,21 @@ namespace UI {
 	bool navigateToWindow(ApplicationContext& context, const std::string& windowName);
 
 	class Window {
+	private:
+		std::string m_errorString;
+
 	public:
-		virtual void render(ApplicationContext& context) = 0;
 		virtual ~Window() = default;
+		
+		virtual void render(ApplicationContext& context) = 0;
+		
+		inline void setError(const std::string& error) { m_errorString = error; }
+
+		inline const char* getError() const { return m_errorString.c_str(); }
+
+		inline bool hasError() const { return !m_errorString.empty(); }
+
+		inline void clearError() { m_errorString.clear(); }
 	};
 }
 
