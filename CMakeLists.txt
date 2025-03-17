@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 project(TooManyBlocks VERSION 1.0 LANGUAGES CXX)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Ensure CMAKE_BUILD_TYPE is set for single-config generators
@@ -14,6 +14,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 add_executable(TooManyBlocks ${SOURCES})
 
 # Enable DEBUG_MODE macro in Debug mode
+target_compile_definitions(TooManyBlocks PRIVATE APP_NAME="TooManyBlocks")
 target_compile_definitions(TooManyBlocks PRIVATE $<$<CONFIG:Debug>:DEBUG_MODE>)
 
 # Include directories
