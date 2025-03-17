@@ -13,6 +13,7 @@ struct FontData {
 class ScopedFont {
 private:
     const FontData m_fontData;
+    float m_oldScale;
 
 public:
     explicit ScopedFont(const FontData fontData);

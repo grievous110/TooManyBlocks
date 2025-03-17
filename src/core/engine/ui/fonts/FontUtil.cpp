@@ -1,19 +1,21 @@
 #include "FontUtil.h"
 #include <algorithm>
 #include <imgui_impl_opengl3.h>
+#include <imgui_internal.h>
 #include <stdexcept>
 
 ScopedFont::ScopedFont(const FontData fontData): m_fontData(fontData) {
     if (m_fontData.fontPtr) {
         ImGui::PushFont(m_fontData.fontPtr);
         ImGui::SetWindowFontScale(m_fontData.scale);
+        m_oldScale = ImGui::GetCurrentWindow()->FontWindowScale;
     }
 }
 
 ScopedFont::~ScopedFont() {
     if (m_fontData.fontPtr) {
         ImGui::PopFont();
-        ImGui::SetWindowFontScale(1.0f);
+        ImGui::SetWindowFontScale(m_oldScale);
     }
 }
 
