@@ -14,8 +14,14 @@
 #include <memory>
 #include <vector>
 
+struct GameState {
+	bool gamePaused = false;
+	bool quitGame = false;
+};
+
 class GameInstance : public Updatable {
 public:
+	GameState gameState;
 	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
@@ -28,7 +34,9 @@ public:
 	GameInstance();
 	virtual ~GameInstance();
 
-	void initialize();
+	void initialize(World* newWorld);
+
+	void deinit();
 
 	Scene craftScene();
 

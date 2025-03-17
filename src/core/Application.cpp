@@ -6,6 +6,7 @@
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
 #include "engine/ui/Ui.h"
+#include "engine/ui/WorldSelection.h"
 #include "Logger.h"
 #include "providers/Provider.h"
 #include "threading/ThreadPool.h"
@@ -14,6 +15,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <sstream>
+
+#define WORKER_COUNT 6
 
 ApplicationContext* Application::currentContext = nullptr;
 
@@ -74,7 +77,7 @@ void Application::setCurrentContext(ApplicationContext* context) {
 
 ApplicationContext* Application::createContext() {
 	ApplicationContext* context = new ApplicationContext;
-	context->workerPool = new ThreadPool(6);
+	context->workerPool = new ThreadPool(WORKER_COUNT);
 	context->window = nullptr;
 	context->provider = new Provider;
 	context->renderer = new Renderer;
@@ -182,6 +185,7 @@ void Application::run() {
 		
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
+		UI::registerWindow<UI::WorldSelection>("WorldSelection");
 		UI::navigateToWindow(*context, "MainMenu");
 	}
 	{
@@ -191,7 +195,7 @@ void Application::run() {
 			context->renderer->initialize();
 			double previousTime = glfwGetTime();
 
-			while (!glfwWindowShouldClose(context->window)) {
+			while (!glfwWindowShouldClose(context->window) && !context->instance->gameState.quitGame) {
 				double currentTime = glfwGetTime();
 				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
 				previousTime = currentTime;

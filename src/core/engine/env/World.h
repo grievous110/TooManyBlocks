@@ -5,6 +5,7 @@
 #include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/MeshCreate.h"
 #include "threading/ThreadPool.h"
+#include <filesystem>
 #include <glm/vec3.hpp>
 #include <memory>
 #include <mutex>
@@ -15,7 +16,7 @@
 class World {
 private:
 	uint32_t m_seed;
-	ThreadPool workerPool;
+	const std::filesystem::path m_worldDir;
 	std::unordered_map<glm::ivec3, std::shared_ptr<Chunk>, coord_hash> m_loadedChunks;
 	std::queue<std::tuple<glm::ivec3, std::shared_ptr<Chunk>, std::shared_ptr<RawChunkMeshData>>> m_loadedMeshData;
 	std::mutex m_chunkGenQueueMtx;
@@ -23,7 +24,7 @@ private:
 public:
 	const BlockToTextureMap texMap;
 
-	World(uint32_t seed) : m_seed(seed), workerPool(4) {}
+	World(const std::filesystem::path& worldDir);
 
 	uint32_t seed() const { return m_seed; }
 
