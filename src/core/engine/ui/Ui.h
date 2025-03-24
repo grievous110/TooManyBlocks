@@ -1,6 +1,8 @@
 #ifndef UIWINDOW_H
 #define UIWINDOW_H
 
+#include "engine/ui/UiDialog.h"
+#include "engine/ui/UiUtil.h"
 #include <functional>
 #include <memory>
 #include <string>
