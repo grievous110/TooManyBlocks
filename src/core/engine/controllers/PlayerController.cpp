@@ -17,15 +17,14 @@ PlayerController::~PlayerController() {
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {
-    keyStates[data.keycode] = event == KeyEvent::ButtonDown;
+    bool newKeyState = event == KeyEvent::ButtonDown;
+    if (data.keycode == GLFW_KEY_LEFT_ALT && keyStates[data.keycode] != newKeyState) {
+        glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, newKeyState ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+    }
+    keyStates[data.keycode] = newKeyState;
 }
 
 void PlayerController::notify(MousEvent event, MouseEventData data) {
-    static bool oldAltState = false;
-    if (oldAltState != keyStates[GLFW_KEY_LEFT_ALT]) {
-        glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, keyStates[GLFW_KEY_LEFT_ALT] ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-        oldAltState = keyStates[GLFW_KEY_LEFT_ALT];
-    }
     if (event == MousEvent::Move && !keyStates[GLFW_KEY_LEFT_ALT]) {
 		if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
             Transform& tr = pl->getCamera()->getLocalTransform();
