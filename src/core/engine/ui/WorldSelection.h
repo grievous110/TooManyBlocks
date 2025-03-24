@@ -13,9 +13,6 @@ namespace UI {
 		Json::JsonValue* m_selectedWorld;
 		bool m_checkedDir;
 
-		bool m_showCreateWorldDialog;
-		bool m_showRenameWorldDialog;
-		bool m_showDeleteWorldDialog;
 		char m_newWorldName[64];
 		uint32_t m_newWorldSeed;
 
@@ -30,7 +27,7 @@ namespace UI {
 		void deleteWorld();
 		
 	public:
-		WorldSelection() : m_selectedWorld(nullptr), m_showCreateWorldDialog(false), m_showRenameWorldDialog(false), m_showDeleteWorldDialog(false), m_checkedDir(false) {}
+		WorldSelection() : m_selectedWorld(nullptr), m_checkedDir(false) {}
 
 		virtual ~WorldSelection() = default;
 

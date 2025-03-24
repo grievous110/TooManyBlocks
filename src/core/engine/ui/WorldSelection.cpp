@@ -89,26 +89,25 @@ namespace UI {
             lgr::lout.error(e.what());
         }
     }
-
+    
     void WorldSelection::render(ApplicationContext& context) {
         loadWorldInfoOnce();
-        ImGuiStyle& style = ImGui::GetStyle();
-        float oldSpacing = style.ItemSpacing.x;
-        style.ItemSpacing = ImVec2(25.0f, 20.0f);
         ImGuiIO& io = ImGui::GetIO();
-
+        
 		ImGuiWindowFlags window_flags =
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_NoResize |
-			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoCollapse |
-			ImGuiWindowFlags_NoBringToFrontOnFocus |
-			ImGuiWindowFlags_NoNavFocus;
-
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(io.DisplaySize);
-
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoNavFocus;
+        
+		
+        UI::Util::MakeNextWindowFullscreen();
         ImGui::Begin("World Selection", NULL, window_flags);
+        ImGuiStyle& style = ImGui::GetStyle();
+        ImVec2 oldSpacing = style.ItemSpacing;
+        style.ItemSpacing = ImVec2(25.0f, 20.0f);
         {
             ScopedFont font(context.fontPool->getFont(35));
             ImVec2 titleSize = ImGui::CalcTextSize("World Selection");
@@ -128,7 +127,7 @@ namespace UI {
                 for (Json::JsonValue& worldInfo : m_worldInfos) {
                     std::string label = worldInfo["worldName"].toString() + "\n";
                     label += "Seed: " + worldInfo["seed"].toString() + "\n";
-
+                    
                     bool isSelected = m_selectedWorld == &worldInfo;
                     float buttonHeight = 70.0f;
                     if (ImGui::Button(label.c_str(), ImVec2(400.0f, buttonHeight))) {
@@ -150,14 +149,14 @@ namespace UI {
             }
             ImGui::EndChild();
             
-            if (hasError()) {
+            if (hasError() && !ImGui::IsPopupOpen((const char*)0, ImGuiPopupFlags_AnyPopup)) {
                 float errorWidth = ImGui::CalcTextSize(getError()).x;
                 ImGui::SetCursorPosX((io.DisplaySize.x - errorWidth) * 0.5f);
                 ImGui::TextColored(ImVec4(1, 0, 0, 1), getError());
             }
             
             ImGui::SetCursorPosX((io.DisplaySize.x - 725.0f) * 0.5f);
-
+            
             if (m_selectedWorld == nullptr) ImGui::BeginDisabled();
             if (ImGui::Button("Play selected world", ImVec2(350.0f, 45.0f))) {
                 try {
@@ -174,22 +173,24 @@ namespace UI {
                 }
             }
             if (m_selectedWorld == nullptr) ImGui::EndDisabled();
-
+            
             ImGui::SameLine();
             if (ImGui::Button("Create new world", ImVec2(350.0f, 45.0f))) {
-                m_showCreateWorldDialog = true;
                 std::memset(m_newWorldName, 0, sizeof(m_newWorldName));
                 clearError();
                 randomSeed();
+
+                ImGui::OpenPopup("Create New World");
             }
 
             ImGui::SetCursorPosX((io.DisplaySize.x - 725.0f) * 0.5f);
             
             if (m_selectedWorld == nullptr) ImGui::BeginDisabled();
             if (ImGui::Button("Rename", ImVec2(162.5f, 45.0f))) {
-                m_showRenameWorldDialog = true;
                 std::memset(m_newWorldName, 0, sizeof(m_newWorldName));
                 clearError();
+
+                ImGui::OpenPopup("Rename World");
             }
             if (m_selectedWorld == nullptr) ImGui::EndDisabled();
 
@@ -197,8 +198,9 @@ namespace UI {
             
             if (m_selectedWorld == nullptr) ImGui::BeginDisabled();
             if (ImGui::Button("Delete", ImVec2(162.5f, 45.0f))) {
-                m_showDeleteWorldDialog = true;
                 clearError();
+
+                ImGui::OpenPopup("Delete World");
             }
             if (m_selectedWorld == nullptr) ImGui::EndDisabled();
 
@@ -207,16 +209,10 @@ namespace UI {
             if (ImGui::Button("Back", ImVec2(350.0f, 45.0f))) {
                 navigateToWindow(context, "MainMenu");
             }
-            
-            if (m_showCreateWorldDialog) {
-                ImGui::OpenPopup("Create New World");
-            } else if(m_showRenameWorldDialog) {
-                ImGui::OpenPopup("Rename World");
-            } else if(m_showDeleteWorldDialog) {
-                ImGui::OpenPopup("Delete World");
-            }
 
             if (ImGui::BeginPopupModal("Create New World", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+                UI::Util::CenterPopup();
+
                 ImGui::Text("Enter World Name:");
                 ImGui::InputText("##NameInput", m_newWorldName, sizeof(m_newWorldName));
                 ImGui::Text("Enter World Seed:");
@@ -247,7 +243,6 @@ namespace UI {
                             m_checkedDir = false;                            
 
                             ImGui::CloseCurrentPopup();
-                            m_showCreateWorldDialog = false;
                             clearError();
                         }    
                     }
@@ -257,7 +252,6 @@ namespace UI {
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel", ImVec2(100.0f, 35.0f))) {
                     ImGui::CloseCurrentPopup();
-                    m_showCreateWorldDialog = false;
                     clearError();
                 }
         
@@ -265,6 +259,8 @@ namespace UI {
             }
 
             if (ImGui::BeginPopupModal("Rename World", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+                UI::Util::CenterPopup();
+                
                 ImGui::Text("Enter New World Name:");
                 ImGui::InputText("##NameInput", m_newWorldName, sizeof(m_newWorldName));
                 if (hasError()) {
@@ -289,7 +285,6 @@ namespace UI {
                             m_checkedDir = false;                            
 
                             ImGui::CloseCurrentPopup();
-                            m_showRenameWorldDialog = false;
                             clearError();
                         }    
                     }
@@ -299,7 +294,6 @@ namespace UI {
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel", ImVec2(100.0f, 35.0f))) {
                     ImGui::CloseCurrentPopup();
-                    m_showRenameWorldDialog = false;
                     clearError();
                 }
         
@@ -307,8 +301,9 @@ namespace UI {
             }
 
             if (ImGui::BeginPopupModal("Delete World", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
-                std::string prompt = "To you really want to delete world \"" + (*m_selectedWorld)["worldName"].toString() + "\"";
-                ImGui::Text(prompt.c_str());
+                UI::Util::CenterPopup();
+
+                ImGui::TextWrapped("Do you really want to delete world \"%s\"?", (*m_selectedWorld)["worldName"].toString().c_str());
                 ImGui::Separator();
         
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
@@ -317,7 +312,6 @@ namespace UI {
                     m_checkedDir = false;
 
                     ImGui::CloseCurrentPopup();
-                    m_showDeleteWorldDialog = false;
                     clearError(); 
                 }
                 ImGui::PopStyleColor();
@@ -325,14 +319,13 @@ namespace UI {
                 ImGui::SameLine();
                 if (ImGui::Button("Cancel", ImVec2(100.0f, 35.0f))) {
                     ImGui::CloseCurrentPopup();
-                    m_showDeleteWorldDialog = false;
                     clearError();
                 }
         
                 ImGui::EndPopup();
             }
         }
+        style.ItemSpacing = oldSpacing;
         ImGui::End();
-        style.ItemSpacing.x = oldSpacing;
     }
 }

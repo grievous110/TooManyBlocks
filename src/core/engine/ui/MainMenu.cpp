@@ -16,9 +16,7 @@ namespace UI {
 			ImGuiWindowFlags_NoBringToFrontOnFocus |
 			ImGuiWindowFlags_NoNavFocus;
 
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-		ImGui::SetNextWindowSize(io.DisplaySize);
-
+		UI::Util::MakeNextWindowFullscreen();
 		ImGui::Begin("Main Menu", NULL, window_flags);
 		{
 			ScopedFont font(context.fontPool->getFont(55));

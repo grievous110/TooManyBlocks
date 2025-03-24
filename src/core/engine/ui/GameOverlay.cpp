@@ -9,19 +9,18 @@
 
 void UI::GameOverlay::render(ApplicationContext& context) {
     ImGuiIO& io = ImGui::GetIO();
-    ImVec2 displaySize = io.DisplaySize;
     
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(displaySize.x, 200), ImGuiCond_Always);
-
-    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoTitleBar;
-
-    ImGui::Begin("Debug Info", nullptr, window_flags);
+    ImGuiWindowFlags window_flags =
+    ImGuiWindowFlags_NoResize |
+    ImGuiWindowFlags_NoMove |
+    ImGuiWindowFlags_NoCollapse |
+    ImGuiWindowFlags_NoBackground |
+    ImGuiWindowFlags_NoTitleBar;
+    
+    UI::Util::MakeNextWindowFullscreen();
+    ImGui::Begin("Game Overlay", nullptr, window_flags);
     {
-        ScopedFont font(context.fontPool->getFont(30));
+        ScopedFont font(context.fontPool->getFont(20));
 
         Transform& cameraTransform = context.instance->m_player->getCamera()->getLocalTransform();
         glm::vec3 camRotation = cameraTransform.getRotationEuler();
