@@ -1,7 +1,6 @@
 #include "compatability/Compatability.h"
 #include "datatypes/BlockTypes.h"
 #include "datatypes/DatatypeDefs.h"
-#include "engine/BitOperations.h"
 #include "engine/env/Chunk.h"
 #include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
@@ -11,6 +10,7 @@
 #include "gl/glew.h"
 #include "Logger.h"
 #include "MeshCreate.h"
+#include "util/BitOperations.h"
 #include <array>
 #include <cfloat>
 #include <fstream>
