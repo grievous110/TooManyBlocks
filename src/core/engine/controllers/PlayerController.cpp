@@ -17,11 +17,7 @@ PlayerController::~PlayerController() {
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {
-    bool newKeyState = event == KeyEvent::ButtonDown;
-    if (data.keycode == GLFW_KEY_LEFT_ALT && keyStates[data.keycode] != newKeyState) {
-        glfwSetInputMode(Application::getContext()->window, GLFW_CURSOR, newKeyState ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
-    }
-    keyStates[data.keycode] = newKeyState;
+    keyStates[data.keycode] = event == KeyEvent::ButtonDown;
 }
 
 void PlayerController::notify(MousEvent event, MouseEventData data) {

@@ -5,6 +5,7 @@
 #include "engine/ui/fonts/FontUtil.h"
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
+#include "engine/ui/PauseMenu.h"
 #include "engine/ui/Ui.h"
 #include "engine/ui/WorldSelection.h"
 #include "Logger.h"
@@ -178,7 +179,6 @@ void Application::run() {
 		ImGui_ImplGlfw_InitForOpenGL(context->window, true);
 		ImGuiIO& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		//io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange;
 		ImGui::StyleColorsDark();
 		
 		context->fontPool->loadFontSizes("res/fonts/ProggyClean.ttf", {16.0f, 32.0f, 48.0f, 64.0f});
@@ -186,6 +186,7 @@ void Application::run() {
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::registerWindow<UI::WorldSelection>("WorldSelection");
+		UI::registerWindow<UI::PauseMenu>("PauseMenu");
 		UI::navigateToWindow(*context, "MainMenu");
 	}
 	{
@@ -201,7 +202,9 @@ void Application::run() {
 				previousTime = currentTime;
 				
 				if (context->instance->m_isInitialized) {
-					context->instance->update(msframeTime);
+					if (!context->instance->gameState.gamePaused) {
+						context->instance->update(msframeTime);
+					}
 					Scene scene = context->instance->craftScene();
 					context->renderer->renderScene(scene, *context);
 				}
