@@ -1,5 +1,6 @@
 #include "Application.h"
 #include "datatypes/Transform.h"
+#include "engine/controllers/PlayerController.h"
 #include "engine/entity/Entity.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "GameOverlay.h"
@@ -33,10 +34,19 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
         ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
-        if (ImGui::Button("Exit")) {
-            context.instance->deinit();
+        
+        bool newShowMouse = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
+        if (newShowMouse != m_showMouse) {
+            m_showMouse = newShowMouse;
+            glfwSetInputMode(context.window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+        }
+
+        if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
+            context.instance->gameState.gamePaused = true;
+            context.io->detach(static_cast<KeyObserver*>(static_cast<PlayerController*>(context.instance->m_player->getController())));
+            context.io->detach(static_cast<MouseObserver*>(static_cast<PlayerController*>(context.instance->m_player->getController())));
             glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            navigateToWindow(context, "MainMenu");
+            navigateToWindow(context, "PauseMenu");
         }
     }
     ImGui::End();
