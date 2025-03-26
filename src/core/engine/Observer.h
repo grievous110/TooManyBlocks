@@ -7,8 +7,8 @@
 template <typename... Args>
 class Observer {
 public:
-    virtual void notify(Args... args) = 0;
     virtual ~Observer() = default;
+    virtual void notify(Args... args) = 0;
 };
 
 template <typename... Args>
@@ -16,6 +16,8 @@ class Observable {
 private:
     std::vector<Observer<Args...>*> m_observers;
 public:
+    virtual ~Observable() = default;
+
     void attach(Observer<Args...>* observer) {
         if (std::find(m_observers.begin(), m_observers.end(), observer) == m_observers.end()) {
             m_observers.push_back(observer);
