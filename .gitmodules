@@ -16,3 +16,6 @@
 [submodule "dependencies/JsonParser"]
 	path = dependencies/JsonParser
 	url = https://github.com/grievous110/JsonParser.git
+[submodule "dependencies/miniaudio"]
+	path = dependencies/miniaudio
+	url = https://github.com/mackron/miniaudio.git
