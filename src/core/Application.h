@@ -16,7 +16,9 @@ class ThreadPool;
 struct ApplicationContext {
 	unsigned int screenWidth;
 	unsigned int screenHeight;
-	
+	int lastMousepositionX;
+	int lastMousepositionY;
+
 	ThreadPool* workerPool;
 	GLFWwindow* window;
 	Provider* provider;

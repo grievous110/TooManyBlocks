@@ -22,51 +22,51 @@
 ApplicationContext* Application::currentContext = nullptr;
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-	if (action == GLFW_PRESS || action == GLFW_RELEASE) {
-		KeyEvent event = action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp;
-		KeyEventData data;
-		data.keycode = key;
-		data.mods = mods;
+	if (ApplicationContext* context = Application::getContext()) {
+		if (action == GLFW_PRESS || action == GLFW_RELEASE) {
+			KeyEventData data;
+			data.keycode = key;
+			data.mods = mods;
 
-		Application::getContext()->io->keyAdapter().notifyObservers(event, data);
+			context->io->keyAdapter().notifyObservers(action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp, data);
+		}
 	}
 }
 
 static void mouseKeyCallback(GLFWwindow* window, int button, int action, int mods) {
-	MousEvent event = action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp;
-	MouseEventData data;
-	data.key.code = button;
-	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
+	if (ApplicationContext* context = Application::getContext()) {
+		MouseEventData data;
+		data.key.code = button;
+		context->io->mouseAdapter().notifyObservers(action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp, data);
+	}
 }
 
 static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	MousEvent event = MousEvent::Scroll;
-	MouseEventData data;
-	data.delta.x = xoffset;
-	data.delta.y = yoffset;
-	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
+	if (ApplicationContext* context = Application::getContext()) {
+		MouseEventData data;
+		data.delta.x = xoffset;
+		data.delta.y = yoffset;
+		context->io->mouseAdapter().notifyObservers(MousEvent::Scroll, data);
+	}
 }
 
 static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-	static double lastXPos = 0;
-	static double lastYPos = 0;
+	if (ApplicationContext* context = Application::getContext()) {
+		MouseEventData data;
+		data.delta.x = xpos - context->lastMousepositionX;
+		data.delta.y = ypos - context->lastMousepositionY;
 
-	double xDelta = xpos - lastXPos;
-	double yDelta = ypos - lastYPos;
-	lastXPos = xpos;
-	lastYPos = ypos;
-
-	MousEvent event = MousEvent::Move;
-	MouseEventData data;
-	data.delta.x = xDelta;
-	data.delta.y = yDelta;
-	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
+		context->io->mouseAdapter().notifyObservers(MousEvent::Move, data);
+		context->lastMousepositionX = xpos;
+		context->lastMousepositionY = ypos;
+	}
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height) {
-	ApplicationContext* context = Application::getContext();
-	context->screenWidth = static_cast<unsigned int>(width);
-	context->screenHeight = static_cast<unsigned int>(height);
+	if (ApplicationContext* context = Application::getContext()) {
+		context->screenWidth = static_cast<unsigned int>(width);
+		context->screenHeight = static_cast<unsigned int>(height);
+	}
 }
 
 void Application::setCurrentContext(ApplicationContext* context) {
@@ -78,6 +78,11 @@ void Application::setCurrentContext(ApplicationContext* context) {
 
 ApplicationContext* Application::createContext() {
 	ApplicationContext* context = new ApplicationContext;
+	context->screenWidth = 0;
+	context->screenHeight = 0;
+	context->lastMousepositionX = 0;
+	context->lastMousepositionY = 0;
+
 	context->workerPool = new ThreadPool(WORKER_COUNT);
 	context->window = nullptr;
 	context->provider = new Provider;
@@ -90,8 +95,7 @@ ApplicationContext* Application::createContext() {
 }
 
 void Application::deleteCurrentContext() {
-	ApplicationContext* context = Application::currentContext;
-	if (context) {
+	if (ApplicationContext* context = Application::currentContext) {
 		delete context->workerPool;
 		delete context->provider;
 		delete context->renderer;
@@ -107,6 +111,7 @@ void Application::deleteCurrentContext() {
 			glfwDestroyWindow(context->window); // This implicitly destroys open gl context -> gl calls afterwards will cause error
 		}
 		delete context;
+		Application::currentContext = nullptr;
 	}
 }
 
