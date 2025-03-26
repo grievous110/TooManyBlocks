@@ -28,8 +28,8 @@ namespace UI {
             ImGui::Text("Game Paused");
             ImGui::Separator();
             if (ImGui::Button("Resume", ImVec2(-1, 0))) { // -1 makes it fill width
-                context.io->attach(static_cast<KeyObserver*>(static_cast<PlayerController*>(context.instance->m_playerController)));
-                context.io->attach(static_cast<MouseObserver*>(static_cast<PlayerController*>(context.instance->m_playerController)));
+                context.io->keyAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
+                context.io->mouseAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
                 glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 context.instance->gameState.gamePaused = false;
                 navigateToWindow(context, "GameOverlay");

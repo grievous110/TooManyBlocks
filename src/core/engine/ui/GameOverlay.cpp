@@ -43,8 +43,8 @@ void UI::GameOverlay::render(ApplicationContext& context) {
 
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
             context.instance->gameState.gamePaused = true;
-            context.io->detach(static_cast<KeyObserver*>(static_cast<PlayerController*>(context.instance->m_player->getController())));
-            context.io->detach(static_cast<MouseObserver*>(static_cast<PlayerController*>(context.instance->m_player->getController())));
+            context.io->keyAdapter().detach(static_cast<PlayerController*>(context.instance->m_player->getController()));
+            context.io->mouseAdapter().detach(static_cast<PlayerController*>(context.instance->m_player->getController()));
             glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             navigateToWindow(context, "PauseMenu");
         }
