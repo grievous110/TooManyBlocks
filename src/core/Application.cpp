@@ -28,7 +28,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 		data.keycode = key;
 		data.mods = mods;
 
-		Application::getContext()->io->notifyObservers(event, data);
+		Application::getContext()->io->keyAdapter().notifyObservers(event, data);
 	}
 }
 
@@ -36,7 +36,7 @@ static void mouseKeyCallback(GLFWwindow* window, int button, int action, int mod
 	MousEvent event = action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp;
 	MouseEventData data;
 	data.key.code = button;
-	Application::getContext()->io->notifyObservers(event, data);
+	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
 }
 
 static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
@@ -44,7 +44,7 @@ static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 	MouseEventData data;
 	data.delta.x = xoffset;
 	data.delta.y = yoffset;
-	Application::getContext()->io->notifyObservers(event, data);
+	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
 }
 
 static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
@@ -60,7 +60,7 @@ static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 	MouseEventData data;
 	data.delta.x = xDelta;
 	data.delta.y = yDelta;
-	Application::getContext()->io->notifyObservers(event, data);
+	Application::getContext()->io->mouseAdapter().notifyObservers(event, data);
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height) {

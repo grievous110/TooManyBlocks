@@ -2,8 +2,7 @@
 #define PLAYERCONTROLLER_H
 
 #include "engine/controllers/Controller.h"
-#include "engine/KeyObserver.h"
-#include "engine/MouseObserver.h"
+#include "datatypes/KeyMouseIO.h"
 #include <unordered_map>
 
 class PlayerController : public Controller, public KeyObserver, public MouseObserver {

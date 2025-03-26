@@ -1,8 +1,7 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-#include "engine/KeyObserver.h"
-#include "engine/MouseObserver.h"
+#include "datatypes/KeyMouseIO.h"
 #include "engine/ui/Ui.h"
 
 struct GLFWwindow;
@@ -28,19 +27,18 @@ struct ApplicationContext {
 	AppIO* io;
 };
 
-class AppIO : public MouseObservable, public KeyObservable {
+class AppIO {
 private:
+	KeyObservable m_keyObs;
+	MouseObservable m_mouseObs;
+
+	AppIO() = default;
 	virtual ~AppIO() = default;
 
 	friend Application;
-
 public:
-	using MouseObservable::notifyObservers;
-	using MouseObservable::attach;
-	using MouseObservable::detach;
-	using KeyObservable::notifyObservers;
-	using KeyObservable::attach;
-	using KeyObservable::detach;
+	inline KeyObservable& keyAdapter() { return m_keyObs; };
+	inline MouseObservable& mouseAdapter() { return m_mouseObs; };
 };
 
 class Application {

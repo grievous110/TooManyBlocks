@@ -7,13 +7,13 @@
 #include <GLFW/glfw3.h>
 
 PlayerController::PlayerController() {
-    Application::getContext()->io->attach(static_cast<KeyObserver*>(this));
-	Application::getContext()->io->attach(static_cast<MouseObserver*>(this));
+    Application::getContext()->io->keyAdapter().attach(this);
+	Application::getContext()->io->mouseAdapter().attach(this);
 }
 
 PlayerController::~PlayerController() {
-    Application::getContext()->io->detach(static_cast<KeyObserver*>(this));
-	Application::getContext()->io->detach(static_cast<MouseObserver*>(this));
+    Application::getContext()->io->keyAdapter().detach(this);
+	Application::getContext()->io->mouseAdapter().detach(this);
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {
