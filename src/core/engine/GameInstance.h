@@ -28,15 +28,16 @@ public:
 	std::shared_ptr<Mesh> m_mesh1;
 	std::shared_ptr<Mesh> m_mesh2;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
-	bool m_isInitialized;
 	
 public:
 	GameInstance();
 	virtual ~GameInstance();
 
-	void initialize(World* newWorld);
+	void initializeWorld(World* newWorld);
 
-	void deinit();
+	void deinitWorld();
+
+	inline bool isWorldInitialized() const { return m_world != nullptr; }
 
 	Scene craftScene();
 

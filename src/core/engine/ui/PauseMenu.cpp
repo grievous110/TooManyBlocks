@@ -36,7 +36,7 @@ namespace UI {
             }
             if (ImGui::Button("Exit", ImVec2(-1, 0))) {
                 context.instance->gameState.gamePaused = false;
-                context.instance->deinit();
+                context.instance->deinitWorld();
                 navigateToWindow(context, "MainMenu");
             }
         }

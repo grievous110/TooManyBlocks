@@ -206,7 +206,7 @@ void Application::run() {
 				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
 				previousTime = currentTime;
 				
-				if (context->instance->m_isInitialized) {
+				if (context->instance->isWorldInitialized()) {
 					if (!context->instance->gameState.gamePaused) {
 						context->instance->update(msframeTime);
 					}

@@ -13,14 +13,14 @@
 #include <random>
 #include <vector>
 
-GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr), m_isInitialized(false) {}
+GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr) {}
 
 GameInstance::~GameInstance() {
-	deinit();
+	deinitWorld();
 }
 
-void GameInstance::initialize(World* newWorld) {
-	if (!m_isInitialized) {
+void GameInstance::initializeWorld(World* newWorld) {
+	if (m_world != nullptr) {
 		std::random_device rd;
 		std::mt19937 generator(rd());
 		std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
@@ -62,8 +62,6 @@ void GameInstance::initialize(World* newWorld) {
 		m_mesh1->getLocalTransform().setScale(0.5f);
 		m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
 		m_mesh2->getLocalTransform().translate(m_mesh1->getLocalTransform().getUp() * 3.0f);
-		
-		m_isInitialized = true;
 	}
 }
 
@@ -83,12 +81,12 @@ Scene GameInstance::craftScene() {
 	return scene;
 }
 
-void GameInstance::deinit() {
-	m_isInitialized = false;
+void GameInstance::deinitWorld() {
 	if (m_playerController)
 		delete m_playerController;
 	if (m_player)
 		delete m_player;
+		m_player = nullptr;
 	if (m_world)
 		delete m_world;
 }

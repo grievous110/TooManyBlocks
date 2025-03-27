@@ -162,12 +162,12 @@ namespace UI {
                 try {
                     fs::path worldPath = getAppDataPath() / "saved" / (*m_selectedWorld)["worldName"].toString();
                     World* world = new World(worldPath);
-                    context.instance->initialize(world);
+                    context.instance->initializeWorld(world);
                     // Capture and hide the mouse cursor
                     glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                     navigateToWindow(context, "GameOverlay");
                 } catch (const std::exception& e) {
-                    context.instance->deinit();
+                    context.instance->deinitWorld();
                     setError(e.what());
                     lgr::lout.error(e.what());
                 }
