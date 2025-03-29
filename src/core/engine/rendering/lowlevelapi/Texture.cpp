@@ -233,8 +233,14 @@ void Texture::updateData(int xOffset, int yOffset, unsigned int width, unsigned 
         throw std::runtime_error("Invalid state of Texture with id 0");
 	if (m_type == TextureType::Depth)
 		throw std::runtime_error("Depth textures should ideally not be updated, if still needed then do so manually and unbind it from active frame buffers");
-	if (width > m_width || height > m_height)
-		throw std::runtime_error("Can not update Texture since update size is greater than texture itself");
+	if (width + xOffset > m_width || height + yOffset > m_height)
+		throw std::runtime_error(
+			"Texture update failed: Update region "
+			+ std::to_string(width) + "x" + std::to_string(height)
+			+ " at offset (" + std::to_string(xOffset) + ", " + std::to_string(yOffset)
+			+ ") exceeds texture dimensions (" + std::to_string(m_width)
+			+ "x" + std::to_string(m_height) + ")."
+		);
 
 	GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
 	TextureFormat format = toOpenGLTexFormat(m_type, m_channels);
