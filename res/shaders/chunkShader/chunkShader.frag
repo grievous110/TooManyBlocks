@@ -39,9 +39,9 @@ layout(std140) uniform LightViewProjBlock {
 };
 
 uniform sampler2D u_textureAtlas;
-uniform vec3 u_cameraPosition;
 uniform uint u_textureAtlasSize;
 uniform uint u_textureSize;
+uniform vec3 u_cameraPosition;
 
 uniform int u_lightCount;
 
@@ -55,16 +55,10 @@ uniform uint u_shadowMapSizes[3];
 vec4 sampleFromTexAtlas(vec2 uv_coord) {
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
-    float row = floor(float(texIndex) / texturesPerRow);
-    row = texturesPerRow - 1.0 - row; // Flip Y-axis (Image is loaded starting from top left / opengl reads uvs starting from bottom left tho)
-    float col = mod(float(texIndex), texturesPerRow);
-
-    vec2 scaledUV = uv_coord * textureScale;
-    vec2 atlasUV = vec2(
-        (col * textureScale) + scaledUV.x,
-        (row * textureScale) + scaledUV.y
-    );
-
+    
+    // Flip Y-axis (Image is loaded starting from top left / opengl reads uvs starting from bottom left tho)
+    vec2 index = vec2(mod(float(texIndex), texturesPerRow), texturesPerRow - 1.0 - floor(float(texIndex) / texturesPerRow));
+    vec2 atlasUV = (index + uv_coord) * textureScale;
     return texture(u_textureAtlas, atlasUV);
 }
 
@@ -100,22 +94,36 @@ vec3 calcLightContribution(int lightIndex) {
     float tilesPerRow = shadowAtlasSize / shadowMapSize;
 
     // Determine the light's position in the shadow map atlas
-    float col = mod(float(shadowMapIndex), tilesPerRow);
-    float row = floor(float(shadowMapIndex) / tilesPerRow);
+    vec2 lightShadomapPos = vec2(mod(float(shadowMapIndex), tilesPerRow), floor(float(shadowMapIndex) / tilesPerRow));
 
     // Offset the lightSpaceCoord to target the correct tile in the atlas
-    vec2 atlasUV = lightSpaceCoord.xy / tilesPerRow + vec2(col, row) * (shadowMapSize / shadowAtlasSize);
+    vec2 shadowMapScale = vec2(shadowMapSize / shadowAtlasSize);
+    vec2 atlasUV = lightSpaceCoord.xy / tilesPerRow + lightShadomapPos * shadowMapScale;
 
-    // Sample the shadow map atlas
-    float shadowDepth = texture(u_shadowMapAtlas[priority], atlasUV).r;
 
-    // Compare depths with bias to determine shadow
-    float bias = 0.00005;
+    // PCF shadow sampling
+    float lightFactor = 0.0;
+    float bias = 0.0001;
     float currentDepth = lightSpaceCoord.z;
 
-    bool inShadow = currentDepth > shadowDepth + bias;
+    vec2 texelSize = vec2(1.0) / shadowAtlasSize; // Size of a single texel in shadow atlas
+    vec2 tileMin = lightShadomapPos * shadowMapScale;
+    vec2 tileMax = tileMin + shadowMapScale;
+    for (int x = -1; x <= 1; x++) {
+        for (int y = -1; y <= 1; y++) {
+            vec2 sampleOffset = vec2(x, y) * texelSize; 
+            vec2 sampleUV = atlasUV + sampleOffset;
 
-    if (!inShadow) {
+            // Stay inside the tile
+            if (all(greaterThanEqual(sampleUV, tileMin)) && all(lessThan(sampleUV, tileMax))) {                
+                float pcfDepth = texture(u_shadowMapAtlas[priority], sampleUV).r;
+                lightFactor += (currentDepth <= pcfDepth + bias) ? 1.0 : 0.0;
+            }
+        }
+    }
+    lightFactor /= 9.0;  // 1.0 if fully lit, 0.0 if fully in shadow
+
+    if (lightFactor > 0.0) {
         // Diffuse color
         vec3 lightDirection = normalize(lightPosition - position);
         float diffuseFactor = max(dot(normal, lightDirection), 0.0);
@@ -141,7 +149,7 @@ vec3 calcLightContribution(int lightIndex) {
             falloff = 1.0 - smoothstep(falloffStartRange, range, distanceToLight);
         }
 
-        return color * intensity * falloff * spotFactor * (diffuseFactor + specularFactor);
+        return color * intensity * falloff * spotFactor * lightFactor * (diffuseFactor + specularFactor);
     } else {
         return vec3(0.0);
     }
