@@ -99,6 +99,7 @@ void Application::deleteCurrentContext() {
 	if (ApplicationContext* context = Application::currentContext) {
 		context->workerPool->forceCancelAllJobs();
 		context->workerPool->waitForCompletion();
+		Application::currentContext = nullptr;
 		delete context->workerPool;
 		delete context->provider;
 		delete context->renderer;
@@ -114,7 +115,6 @@ void Application::deleteCurrentContext() {
 			glfwDestroyWindow(context->window); // This implicitly destroys open gl context -> gl calls afterwards will cause error
 		}
 		delete context;
-		Application::currentContext = nullptr;
 	}
 }
 

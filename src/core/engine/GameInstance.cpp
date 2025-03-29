@@ -92,11 +92,12 @@ void GameInstance::deinitWorld() {
 		m_player= nullptr;
 	}
 	if (m_world) {
-		ThreadPool* tpool = Application::getContext()->workerPool;
-		tpool->cancelJobs(m_world);
-		tpool->waitForOwnerCompletion(m_world);
-		delete m_world;
-		m_world = nullptr;
+		if (ApplicationContext* context = Application::getContext()) {
+			context->workerPool->cancelJobs(m_world);
+			context->workerPool->waitForOwnerCompletion(m_world);
+			delete m_world;
+			m_world = nullptr;
+		}
 	}
 }
 
