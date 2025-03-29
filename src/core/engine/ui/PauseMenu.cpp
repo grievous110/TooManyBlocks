@@ -9,7 +9,11 @@
 namespace UI {
     void UI::PauseMenu::render(ApplicationContext& context) {
         ImGuiIO& io = ImGui::GetIO();
-    
+        
+        if (!ImGui::IsKeyDown(ImGuiKey_Escape)) {
+            m_escWasReleased = true;
+        }
+
         ImGuiWindowFlags window_flags =
         ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove |
@@ -27,7 +31,7 @@ namespace UI {
             ScopedFont font(context.fontPool->getFont(30));
             ImGui::Text("Game Paused");
             ImGui::Separator();
-            if (ImGui::Button("Resume", ImVec2(-1, 0))) { // -1 makes it fill width
+            if (ImGui::Button("Resume", ImVec2(-1, 0)) || (ImGui::IsKeyPressed(ImGuiKey_Escape) && m_escWasReleased)) { // -1 makes it fill width
                 context.io->keyAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
                 context.io->mouseAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
                 glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

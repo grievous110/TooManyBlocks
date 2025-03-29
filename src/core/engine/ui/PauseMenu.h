@@ -5,7 +5,11 @@
 
 namespace UI {
 	class PauseMenu : public Window {
+	private:
+		bool m_escWasReleased;
+
 	public:
+		PauseMenu() : m_escWasReleased(false) {}
         virtual ~PauseMenu() = default;
 
 		void render(ApplicationContext& context) override;
