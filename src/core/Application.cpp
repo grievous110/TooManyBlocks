@@ -89,6 +89,7 @@ ApplicationContext* Application::createContext() {
 	context->renderer = new Renderer;
 	context->instance = new GameInstance;
 	context->currentWindow = nullptr;
+	context->nextWindow = nullptr;
 	context->fontPool = new FontPool;
 	context->io = new AppIO;
 	return context;
@@ -96,6 +97,8 @@ ApplicationContext* Application::createContext() {
 
 void Application::deleteCurrentContext() {
 	if (ApplicationContext* context = Application::currentContext) {
+		context->workerPool->forceCancelAllJobs();
+		context->workerPool->waitForCompletion();
 		delete context->workerPool;
 		delete context->provider;
 		delete context->renderer;
@@ -213,13 +216,24 @@ void Application::run() {
 					Scene scene = context->instance->craftScene();
 					context->renderer->renderScene(scene, *context);
 				}
-				
-				ImGui_ImplOpenGL3_NewFrame();
-				ImGui_ImplGlfw_NewFrame();
-				ImGui::NewFrame();
-				context->currentWindow->render(*context);
-				ImGui::Render();
-				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				if (context->nextWindow) {
+					// Navigate safely to new window
+					if (context->currentWindow) {
+						context->workerPool->cancelJobs(context->currentWindow);
+                    	context->workerPool->waitForOwnerCompletion(context->currentWindow);
+						delete context->currentWindow;
+					}
+					context->currentWindow = context->nextWindow;
+					context->nextWindow = nullptr;
+				}
+				if (context->currentWindow) {
+					ImGui_ImplOpenGL3_NewFrame();
+					ImGui_ImplGlfw_NewFrame();
+					ImGui::NewFrame();
+					context->currentWindow->render(*context);
+					ImGui::Render();
+					ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+				}				
 
 				// Swap front and back buffers
 				glfwSwapBuffers(context->window);

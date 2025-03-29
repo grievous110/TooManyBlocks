@@ -23,13 +23,11 @@ namespace UI {
 		WindowFactory& factory = getWindowFactory();
 		auto it = factory.find(windowName);
 		if (it != factory.end()) {
-			// Delete current window if set (Remember to set to nullptr on initialization)
-			if (context.currentWindow) {
-				delete context.currentWindow;
+			// Set create as next window
+			if (!context.nextWindow) {
+				context.nextWindow = it->second();
+				return true;
 			}
-			// Call the stored factory function
-			context.currentWindow = it->second();
-			return true;
 		}
 		return false;
 	}

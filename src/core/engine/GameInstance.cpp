@@ -9,6 +9,7 @@
 #include "Logger.h"
 #include "providers/Provider.h"
 #include "rendering/Mesh.h"
+#include "threading/ThreadPool.h"
 #include <GLFW/glfw3.h>
 #include <random>
 #include <vector>
@@ -20,7 +21,7 @@ GameInstance::~GameInstance() {
 }
 
 void GameInstance::initializeWorld(World* newWorld) {
-	if (m_world != nullptr) {
+	if (m_world == nullptr) {
 		std::random_device rd;
 		std::mt19937 generator(rd());
 		std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
@@ -82,13 +83,21 @@ Scene GameInstance::craftScene() {
 }
 
 void GameInstance::deinitWorld() {
-	if (m_playerController)
+	if (m_playerController) {
 		delete m_playerController;
-	if (m_player)
+		m_playerController = nullptr;
+	}
+	if (m_player) {
 		delete m_player;
-		m_player = nullptr;
-	if (m_world)
+		m_player= nullptr;
+	}
+	if (m_world) {
+		ThreadPool* tpool = Application::getContext()->workerPool;
+		tpool->cancelJobs(m_world);
+		tpool->waitForOwnerCompletion(m_world);
 		delete m_world;
+		m_world = nullptr;
+	}
 }
 
 void GameInstance::update(float msDelta) {
