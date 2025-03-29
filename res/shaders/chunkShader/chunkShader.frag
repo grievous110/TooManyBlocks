@@ -109,6 +109,7 @@ vec3 calcLightContribution(int lightIndex) {
     vec2 texelSize = vec2(1.0) / shadowAtlasSize; // Size of a single texel in shadow atlas
     vec2 tileMin = lightShadomapPos * shadowMapScale;
     vec2 tileMax = tileMin + shadowMapScale;
+    float validSamples = 0;
     for (int x = -1; x <= 1; x++) {
         for (int y = -1; y <= 1; y++) {
             vec2 sampleOffset = vec2(x, y) * texelSize; 
@@ -118,10 +119,11 @@ vec3 calcLightContribution(int lightIndex) {
             if (all(greaterThanEqual(sampleUV, tileMin)) && all(lessThan(sampleUV, tileMax))) {                
                 float pcfDepth = texture(u_shadowMapAtlas[priority], sampleUV).r;
                 lightFactor += (currentDepth <= pcfDepth + bias) ? 1.0 : 0.0;
+                validSamples += 1.0;
             }
         }
     }
-    lightFactor /= 9.0;  // 1.0 if fully lit, 0.0 if fully in shadow
+    lightFactor /= max(validSamples, 1.0);  // 1.0 if fully lit, 0.0 if fully in shadow
 
     if (lightFactor > 0.0) {
         // Diffuse color
