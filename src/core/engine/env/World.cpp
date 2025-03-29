@@ -102,42 +102,40 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
             m_loadedChunks[chunkPos] = nullptr;
 
             ThreadPool* tPool = Application::getContext()->workerPool;
-            tPool->pushJob(
-                [this, chunkPos] {
-                    std::shared_ptr<Chunk> newChunk = std::make_shared<Chunk>();
-                    PerlinNoise noiseGenerator(m_seed);
+            tPool->pushJob(this, [this, chunkPos] {
+                std::shared_ptr<Chunk> newChunk = std::make_shared<Chunk>();
+                PerlinNoise noiseGenerator(m_seed);
 
-                    // Generate height values for the xz plane in global coordinates
-                    std::shared_ptr<float> heightValues = noiseGenerator.generatePerlinNoise(
-                        {CHUNK_WIDTH, CHUNK_DEPTH}, {chunkPos.x, chunkPos.z}, 32, 2
-                    );
+                // Generate height values for the xz plane in global coordinates
+                std::shared_ptr<float> heightValues = noiseGenerator.generatePerlinNoise(
+                    {CHUNK_WIDTH, CHUNK_DEPTH}, {chunkPos.x, chunkPos.z}, 32, 2
+                );
 
-                    for (int x = 0; x < CHUNK_WIDTH; x++) {
-                        for (int z = 0; z < CHUNK_DEPTH; z++) {
-                            // Height based on noise
-                            float height = heightValues.get()[z * CHUNK_DEPTH + x] * 10.0f;
+                for (int x = 0; x < CHUNK_WIDTH; x++) {
+                    for (int z = 0; z < CHUNK_DEPTH; z++) {
+                        // Height based on noise
+                        float height = heightValues.get()[z * CHUNK_DEPTH + x] * 10.0f;
 
-                            for (int y = 0; y < CHUNK_HEIGHT; y++) {
-                                // Global y coordinate
-                                int globalY = chunkPos.y + y;
+                        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+                            // Global y coordinate
+                            int globalY = chunkPos.y + y;
 
-                                if (globalY < static_cast<int>(floor(height))) {
-                                    newChunk->blocks[chunkBlockIndex(x, y, z)] = {STONE,  true};
-                                } else if (globalY == static_cast<int>(floor(height))) {
-                                    newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS,  true};
-                                }
+                            if (globalY < static_cast<int>(floor(height))) {
+                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {STONE,  true};
+                            } else if (globalY == static_cast<int>(floor(height))) {
+                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS,  true};
                             }
                         }
                     }
-
-                    std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(*newChunk, texMap);
-
-                    {
-                        std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                        m_loadedMeshData.push(std::make_tuple(chunkPos, newChunk, meshData));
-                    }
                 }
-            );
+
+                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(*newChunk, texMap);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
+                    m_loadedMeshData.push(std::make_tuple(chunkPos, newChunk, meshData));
+                }
+            });
         }
     }
 }

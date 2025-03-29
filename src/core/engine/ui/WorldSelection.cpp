@@ -3,6 +3,7 @@
 #include "engine/GameInstance.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "Logger.h"
+#include "threading/ThreadPool.h"
 #include "util/Utility.h"
 #include "WorldSelection.h"
 #include <algorithm>
@@ -25,28 +26,36 @@ namespace UI {
     }
 
     void WorldSelection::loadWorldInfoOnce() {
-        if (!m_checkedDir) {
-            m_worldInfos.clear();
-            fs::path savedDir = getAppDataPath() / "saved";
-            if (!fs::exists(savedDir)) {
-                if (!fs::create_directories(savedDir)) {
-                    throw std::runtime_error("Could not create directory: " + savedDir.string());                    
-                }
-            } else {
-                for (const auto& entry : fs::directory_iterator(savedDir)) {
-                    fs::path infoPath = entry.path() / "info.json";
-                    if (fs::exists(infoPath)) {
-                        std::ifstream file(infoPath.string(), std::ios::binary);
-                        Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
-                        m_worldInfos.push_back(info);
-                        file.close();
+        std::lock_guard<std::mutex> lock(m_mtx);
+        if (m_shouldLoadInfo) {
+            m_shouldLoadInfo = false;
+            ThreadPool* worker = Application::getContext()->workerPool;
+            worker->pushJob(this, [this] {
+                Json::JsonArray infoArray;
+                fs::path savedDir = getAppDataPath() / "saved";
+                if (!fs::exists(savedDir)) {
+                    if (!fs::create_directories(savedDir)) {
+                        throw std::runtime_error("Could not create directory: " + savedDir.string());                    
+                    }
+                } else {
+                    for (const auto& entry : fs::directory_iterator(savedDir)) {
+                        fs::path infoPath = entry.path() / "info.json";
+                        if (fs::exists(infoPath)) {
+                            std::ifstream file(infoPath.string(), std::ios::binary);
+                            Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+                            infoArray.push_back(info);
+                            file.close();
+                        }
                     }
                 }
-            }
-            lgr::lout.debug("Saves directory: " + savedDir.string());
+                lgr::lout.debug("Saves directory: " + savedDir.string());
 
-            m_selectedWorld = nullptr;
-            m_checkedDir = true;
+                {
+                    std::lock_guard<std::mutex> lock(m_mtx);
+                    m_worldInfos = std::move(infoArray);
+                    m_selectedWorld = nullptr;
+                }
+            });
         }
     }
     
@@ -92,6 +101,8 @@ namespace UI {
     
     void WorldSelection::render(ApplicationContext& context) {
         loadWorldInfoOnce();
+        std::lock_guard<std::mutex> lock(m_mtx);
+
         ImGuiIO& io = ImGui::GetIO();
         
 		ImGuiWindowFlags window_flags =
@@ -240,7 +251,7 @@ namespace UI {
                             setError("World with that name already exists!");
                         } else {
                             createNewWorld(worldName);
-                            m_checkedDir = false;                            
+                            m_shouldLoadInfo = true;                            
 
                             ImGui::CloseCurrentPopup();
                             clearError();
@@ -282,7 +293,7 @@ namespace UI {
                             setError("World with that name already exists!");
                         } else {
                             renameWorld(worldName);
-                            m_checkedDir = false;                            
+                            m_shouldLoadInfo = true;                            
 
                             ImGui::CloseCurrentPopup();
                             clearError();
@@ -309,7 +320,7 @@ namespace UI {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
                 if (ImGui::Button("DELETE", ImVec2(100.0f, 35.0f))) {
                     deleteWorld();
-                    m_checkedDir = false;
+                    m_shouldLoadInfo = true;
 
                     ImGui::CloseCurrentPopup();
                     clearError(); 

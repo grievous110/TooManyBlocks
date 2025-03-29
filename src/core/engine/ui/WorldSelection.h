@@ -4,14 +4,15 @@
 #include "engine/ui/Ui.h"
 #include <json/JsonParser.h>
 #include <string>
-#include <vector>
+#include <mutex>
 
 namespace UI {
 	class WorldSelection : public Window {
     private:
-        std::vector<Json::JsonValue> m_worldInfos;
+		std::mutex m_mtx;
+        Json::JsonArray m_worldInfos;
 		Json::JsonValue* m_selectedWorld;
-		bool m_checkedDir;
+		bool m_shouldLoadInfo;
 
 		char m_newWorldName[64];
 		uint32_t m_newWorldSeed;
@@ -27,7 +28,7 @@ namespace UI {
 		void deleteWorld();
 		
 	public:
-		WorldSelection() : m_selectedWorld(nullptr), m_checkedDir(false) {}
+		WorldSelection() : m_selectedWorld(nullptr), m_shouldLoadInfo(true) {}
 
 		virtual ~WorldSelection() = default;
 

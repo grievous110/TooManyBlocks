@@ -25,6 +25,7 @@ struct ApplicationContext {
 	Renderer* renderer;
 	GameInstance* instance;
 	UI::Window* currentWindow;
+	UI::Window* nextWindow;
 	FontPool* fontPool;
 	AppIO* io;
 };
