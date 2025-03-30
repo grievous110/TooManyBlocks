@@ -1,3 +1,4 @@
+#include "AppConstants.h"
 #include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/GLUtils.h"
@@ -189,7 +190,7 @@ void Application::run() {
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		ImGui::StyleColorsDark();
 		
-		context->fontPool->loadFontSizes("res/fonts/ProggyClean.ttf", {16.0f, 32.0f, 48.0f, 64.0f});
+		context->fontPool->loadFontSizes(Res::Font::PROGGY_CLEAN, {16.0f, 32.0f, 48.0f, 64.0f});
 		
 		UI::registerWindow<UI::MainMenu>("MainMenu");
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
