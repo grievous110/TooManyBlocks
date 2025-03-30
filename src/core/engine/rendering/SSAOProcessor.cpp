@@ -1,9 +1,9 @@
+#include "AppConstants.h"
 #include "Application.h"
 #include "engine/entity/Player.h"
 #include "engine/GameInstance.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
-#include "engine/rendering/ShaderPathsConstants.h"
 #include "SSAOProcessor.h"
 #include <cmath>
 #include <gl/glew.h>
@@ -81,8 +81,8 @@ void SSAOProcessor::initialize() {
         m_ssaoNoiseTexture = std::make_unique<Texture>(TextureType::Float16, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest, TextureWrap::Repeat);
         delete[] noiseData;
 
-        m_ssaoPassShader = std::make_unique<Shader>(SSAO_PASS_SHADER);
-        m_ssaoBlurShader = std::make_unique<Shader>(SSAO_BLUR_SHADER);
+        m_ssaoPassShader = std::make_unique<Shader>(Res::Shader::SSAO_PASS);
+        m_ssaoBlurShader = std::make_unique<Shader>(Res::Shader::SSAO_BLUR);
 
         isInitialized = true;
     }

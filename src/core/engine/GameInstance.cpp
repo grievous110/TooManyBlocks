@@ -1,10 +1,10 @@
+#include "AppConstants.h"
 #include "Application.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/env/lights/Spotlight.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/MeshCreate.h"
-#include "engine/rendering/ShaderPathsConstants.h"
 #include "GameInstance.h"
 #include "Logger.h"
 #include "providers/Provider.h"
@@ -50,13 +50,13 @@ void GameInstance::initializeWorld(World* newWorld) {
 			m_lights.push_back(light);
 		}
 	
-		std::shared_ptr<Shader> shader = provider->getShaderFromFile(SIMPLE_SHADER);
-		std::shared_ptr<Texture> texture = provider->getTextureFromFile("res/textures/testTexture.png");	
+		std::shared_ptr<Shader> shader = provider->getShaderFromFile(Res::Shader::SIMPLE);
+		std::shared_ptr<Texture> texture = provider->getTextureFromFile(Res::Texture::TESTBLOCK_TEXTURE);	
 		std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
 		std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
-		m_mesh1 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
+		m_mesh1 = provider->getMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
 		m_mesh1->assignMaterial(testMaterial1);
-		m_mesh2 = provider->getMeshFromFile("res/models/testUnitBlock.obj");
+		m_mesh2 = provider->getMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
 		m_mesh2->assignMaterial(testMaterial2);
 	
 		m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));

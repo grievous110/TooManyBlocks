@@ -3,7 +3,6 @@
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/SceneOptimizing.h"
-#include "engine/rendering/ShaderPathsConstants.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "Logger.h"
