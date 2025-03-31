@@ -3,6 +3,7 @@
 #include "engine/GameInstance.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/Renderer.h"
+#include "engine/ui/AboutScreen.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "engine/ui/GameOverlay.h"
 #include "engine/ui/MainMenu.h"
@@ -196,6 +197,7 @@ void Application::run() {
 		UI::registerWindow<UI::GameOverlay>("GameOverlay");
 		UI::registerWindow<UI::WorldSelection>("WorldSelection");
 		UI::registerWindow<UI::PauseMenu>("PauseMenu");
+		UI::registerWindow<UI::AboutScreen>("AboutScreen");
 		UI::navigateToWindow(*context, "MainMenu");
 	}
 	{
