@@ -70,3 +70,6 @@ add_custom_target(copy_resources
 
 # Make sure it runs before the main build
 add_dependencies(TooManyBlocks copy_resources)
+
+# Copy third party licenses to output dir
+file(COPY "${CMAKE_SOURCE_DIR}/third_party.txt" DESTINATION "${CMAKE_BINARY_DIR}/bin")
