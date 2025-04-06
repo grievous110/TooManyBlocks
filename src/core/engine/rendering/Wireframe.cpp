@@ -7,7 +7,8 @@ void Wireframe::draw() const {
     m_data->vao.bind();
 	m_data->ibo.bind();
 
-	GLCALL(glDrawElements(GL_TRIANGLES, m_data->ibo.count(), GL_UNSIGNED_INT, nullptr));
+    GLCALL(glLineWidth(m_lineWidth));
+	GLCALL(glDrawElements(GL_LINES, m_data->ibo.count(), GL_UNSIGNED_INT, nullptr));
 }
 
 Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
@@ -39,7 +40,7 @@ Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
     // IBO
     IndexBuffer ibo(indices, 24);
 
-    std::unique_ptr<WireframeRenderData> renderData = std::make_unique<WireframeRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-    
-    return Wireframe(std::move(renderData), bbox);
+    std::shared_ptr<WireframeRenderData> renderData = std::make_shared<WireframeRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+
+    return Wireframe(renderData, bbox);
 }

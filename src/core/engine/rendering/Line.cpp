@@ -6,10 +6,11 @@
 void Line::draw() const {
     m_vao->bind();
 
+    GLCALL(glLineWidth(m_lineWidth));
     GLCALL(glDrawArrays(GL_LINES, 0, 2));
 }
 
-Line::Line(const glm::vec3& start, const glm::vec3& end, std::shared_ptr<Material> material) {
+Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::shared_ptr<Material> material) : m_lineWidth(lineWidth), m_material(material) {
     float lineVertices[] = {
         start.x, start.y, start.z,
         end.x, end.y, end.z
