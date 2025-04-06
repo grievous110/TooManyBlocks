@@ -8,7 +8,8 @@
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Line.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
-#include "rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/Wireframe.h"
 #include "Updatable.h"
 #include <glm/glm.hpp>
 #include <memory>
@@ -28,6 +29,7 @@ public:
 	std::shared_ptr<Line> m_line;
 	std::shared_ptr<Mesh> m_mesh1;
 	std::shared_ptr<Mesh> m_mesh2;
+	std::shared_ptr<Wireframe> m_focusedBlockOutline;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
 	
 public:

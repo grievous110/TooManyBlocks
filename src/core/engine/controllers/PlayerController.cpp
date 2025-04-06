@@ -2,6 +2,7 @@
 #include "datatypes/DatatypeDefs.h"
 #include "datatypes/Transform.h"
 #include "engine/entity/Player.h"
+#include "engine/hittest/Linetrace.h"
 #include "engine/rendering/Camera.h"
 #include "PlayerController.h"
 #include <GLFW/glfw3.h>
@@ -41,6 +42,7 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
 void PlayerController::update(float msDelta) {
     if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
         glm::vec3 vel(0.0f);
+        const Transform camGlobTransform = pl->getCamera()->getGlobalTransform();
         const Transform& camTransform = pl->getCamera()->getLocalTransform();
         float cameraSpeed = 5.0f;
         if (keyStates[GLFW_KEY_LEFT_SHIFT]) {
@@ -54,5 +56,11 @@ void PlayerController::update(float msDelta) {
         if (keyStates[GLFW_KEY_SPACE]) vel += glm::vec3(0.0f, 1.0f, 0.0f) * cameraSpeed;
         if (keyStates[GLFW_KEY_LEFT_CONTROL]) vel -= glm::vec3(0.0f, 1.0f, 0.0f) * cameraSpeed;
         pl->getMovementComponent()->setVelocity(vel);
+
+        HitResult result = linetrace(camGlobTransform.getPosition(), camGlobTransform.getPosition() + (camGlobTransform.getForward() * pl->getReachDistance()), Channel::BlockTrace);
+        pl->setIsFocusingBlock(result.hitSuccess);
+        if (result.hitSuccess) {
+            pl->setFocusedBlock(glm::ivec3(result.position));
+        }
     }
 }

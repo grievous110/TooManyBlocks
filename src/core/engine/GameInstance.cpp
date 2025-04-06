@@ -5,6 +5,7 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/LineMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
+#include "engine/rendering/BoundingVolume.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/Renderer.h"
 #include "GameInstance.h"
@@ -65,6 +66,12 @@ void GameInstance::initializeWorld(World* newWorld) {
 		m_mesh1->getLocalTransform().setScale(0.5f);
 		// m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
 		m_mesh2->getLocalTransform().scale(0.6f);
+
+		
+		std::shared_ptr<Shader> lineShader = provider->getShaderFromFile(Res::Shader::LINE);
+		m_focusedBlockOutline = std::make_shared<Wireframe>(Wireframe::fromBoundigBox({ glm::vec3(-0.005), glm::vec3(1.005) }));
+		m_focusedBlockOutline->assignMaterial(std::make_shared<LineMaterial>(lineShader, glm::vec3(0.05, 0.05, 0.05)));
+		m_focusedBlockOutline->setLineWidth(3.5f);
 	}
 }
 
@@ -101,6 +108,11 @@ void GameInstance::pushWorldRenderData() const {
 		}
 		renderer->submitRenderable(m_mesh2.get());
 		renderer->submitRenderable(m_mesh2.get());
+
+		if (m_player->isFocusingBlock()) {
+			m_focusedBlockOutline->getLocalTransform().setPosition(m_player->getFocusedBlock());
+			renderer->submitRenderable(m_focusedBlockOutline.get());
+		}
 	}
 }
 
