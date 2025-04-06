@@ -21,7 +21,7 @@ public:
 
     void bindForPass(PassType passType, const RenderContext& context) const override;
 
-    void bindForMeshDraw(PassType passType, const RenderContext& context) const override;
+    void bindForObjectDraw(PassType passType, const RenderContext& context) const override;
 };
 
 #endif

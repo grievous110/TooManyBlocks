@@ -1,4 +1,5 @@
 #include "engine/env/lights/Spotlight.h"
+#include "engine/rendering/BoundingVolume.h"
 #include "engine/rendering/GLUtils.h"
 #include "LightProcessor.h"
 #include <gl/glew.h>
@@ -7,6 +8,45 @@
 #define HIGHPRIO_SHADOWMAP_SIZE 2048
 #define MEDIUMPRIO_SHADOWMAP_SIZE 1024
 #define LOWPRIO_SHADOWMAP_SIZE 512
+
+void LightProcessor::prioritizeLights(const std::vector<Light*>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context) {
+    struct ScoredLight { Light* valPtr; float score; };
+    
+    const Frustum cameraFrustum(context.viewProjection);
+
+    // Calculate scores for lights
+    glm::vec3 cameraPosition = context.viewportTransform.getPosition();
+    std::vector<ScoredLight> scoredLights;
+    for (Light* light : lights) {
+        if (!cameraFrustum.isSphereInside(light->getGlobalTransform().getPosition(), light->getRange())) {
+            // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for directional lights
+            continue;
+        }
+        float distance = glm::distance(cameraPosition, light->getGlobalTransform().getPosition());
+        float score = (1.0f / (distance + 1.0f)) * light->getRange();
+        scoredLights.push_back({ light, score });
+    }
+
+    // Sort lights by score in descending order
+    std::sort(scoredLights.begin(), scoredLights.end(), [](const ScoredLight& a, const ScoredLight& b) {
+        return a.score > b.score;
+    });
+
+    // Assign priorities and shadow atlas indices
+    std::array<unsigned int, LightPriority::Count> currentShadowMapCounts = {0, 0, 0};
+
+    outputBuffer.clear();
+    for (const auto& sLight : scoredLights) {
+        for (int prio = LightPriority::High; prio <= LightPriority::Low; prio++) {
+            if (currentShadowMapCounts[prio] < maxShadowMapsPerPriority[prio]) {
+                sLight.valPtr->setPriotity(static_cast<LightPriority>(prio));
+                sLight.valPtr->setShadowAtlasIndex(currentShadowMapCounts[prio]++);
+                outputBuffer.push_back(sLight.valPtr);
+                break;
+            }
+        }
+    }
+}
 
 void LightProcessor::initialize() {
     if (!isInitialized) {

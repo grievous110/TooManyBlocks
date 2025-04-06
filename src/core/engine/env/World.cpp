@@ -110,20 +110,39 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
                 std::shared_ptr<float> heightValues = noiseGenerator.generatePerlinNoise(
                     {CHUNK_WIDTH, CHUNK_DEPTH}, {chunkPos.x, chunkPos.z}, 32, 2
                 );
+                std::shared_ptr<float> ironOre = noiseGenerator.generatePerlinNoise(
+                    {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH}, {chunkPos.x, chunkPos.y, chunkPos.z}, 16, 2
+                );
 
                 for (int x = 0; x < CHUNK_WIDTH; x++) {
-                    for (int z = 0; z < CHUNK_DEPTH; z++) {
-                        // Height based on noise
-                        float height = heightValues.get()[z * CHUNK_DEPTH + x] * 10.0f;
-
-                        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+                    for (int y = 0; y < CHUNK_HEIGHT; y++) {
+                        for (int z = 0; z < CHUNK_DEPTH; z++) {
+                            // Surface height
+                            float surfaceHeight = heightValues.get()[z * CHUNK_DEPTH + x] * 10.0f;
+                
                             // Global y coordinate
                             int globalY = chunkPos.y + y;
-
-                            if (globalY < static_cast<int>(floor(height))) {
-                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {STONE,  true};
-                            } else if (globalY == static_cast<int>(floor(height))) {
-                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS,  true};
+                            
+                            // Get iron ore noise value
+                            float ironValue = ironOre.get()[z * CHUNK_HEIGHT * CHUNK_WIDTH + y * CHUNK_WIDTH + x];
+                
+                            // Conditions for placing blocks
+                            if (globalY < static_cast<int>(floor(surfaceHeight))) {
+                                // Default to stone
+                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {STONE, true};
+                
+                                // Apply ore generation logic
+                                if (globalY < 0) { // Only generate iron below Y=60
+                                    float threshold = 0.6f; // Adjust spawn probability
+                                    
+                                    if (ironValue > threshold ) {
+                                        newChunk->blocks[chunkBlockIndex(x, y, z)] = {IRON_ORE, true};
+                                    }
+                                }
+                            } else if (globalY == static_cast<int>(floor(surfaceHeight))) {
+                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS, true};
+                            } else {
+                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS, false};
                             }
                         }
                     }

@@ -1,8 +1,8 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
+#include "engine/rendering/BoundingVolume.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
-#include "engine/rendering/SceneOptimizing.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "Logger.h"
@@ -40,29 +40,29 @@ static constexpr float fullScreenQuadCW[] = {
 	 1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
 };
 
-static inline void batchByMaterialForPass(std::unordered_map<Material*, std::vector<Mesh*>>& materialBatches, const RawBuffer<Mesh*>& meshBuff, PassType type) {
+static inline void batchByMaterialForPass(std::unordered_map<Material*, std::vector<Renderable*>>& materialBatches, const RawBuffer<Renderable*>& meshBuff, PassType type) {
 	materialBatches.clear();
-	for (Mesh* mesh : meshBuff) {
+	for (Renderable* mesh : meshBuff) {
 		if (mesh->getMaterial()->supportsPass(type)) {
 			materialBatches[mesh->getMaterial().get()].push_back(mesh);
 		}
 	}
 }
 
-void Renderer::beginShadowpass(const Scene &scene, const ApplicationContext& context) {
+void Renderer::beginShadowpass(const ApplicationContext& context) {
 	m_lightProcessor.clearShadowMaps();
 
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-	prioritizeLights(scene.lights, m_currentRenderContext.lights, m_lightProcessor.getShadowMapCounts(), m_currentRenderContext);
+	LightProcessor::prioritizeLights(m_lightsToRender, m_currentRenderContext.lights, m_lightProcessor.getShadowMapCounts(), m_currentRenderContext);
 	m_lightProcessor.updateBuffers(m_currentRenderContext.lights);
 }
 
-void Renderer::endShadowpass(const Scene& scene, const ApplicationContext& context) {
+void Renderer::endShadowpass(const ApplicationContext& context) {
 
 }
 
-void Renderer::beginAmbientOcclusionPass(const Scene& scene, const ApplicationContext& context) {
+void Renderer::beginAmbientOcclusionPass(const ApplicationContext& context) {
 	m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
 	m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
 	m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
@@ -71,12 +71,12 @@ void Renderer::beginAmbientOcclusionPass(const Scene& scene, const ApplicationCo
 	GLCALL(glDisable(GL_BLEND));
 }
 
-void Renderer::endAmbientOcclusionPass(const Scene& scene, const ApplicationContext& context) {
+void Renderer::endAmbientOcclusionPass(const ApplicationContext& context) {
 	m_currentRenderContext.ssaoOutput = m_ssaoProcessor.getOcclusionOutput();
 	GLCALL(glEnable(GL_BLEND));
 }
 
-void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& context) {
+void Renderer::beginMainpass(const ApplicationContext& context) {
     FrameBuffer::bindDefault();
 	GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
 	glm::uvec2 screenRes = m_currentRenderContext.currentScreenResolution;
@@ -87,8 +87,9 @@ void Renderer::beginMainpass(const Scene& scene, const ApplicationContext& conte
 	m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
-void Renderer::endMainpass(const Scene& scene, const ApplicationContext& context) {
-
+void Renderer::endMainpass(const ApplicationContext& context) {
+	m_lightsToRender.clear();
+	m_objectsToRender.clear();
 }
 
 void Renderer::initialize() {
@@ -123,7 +124,15 @@ void Renderer::initialize() {
 	FrameBuffer::bindDefault();
 }
 
-void Renderer::renderScene(const Scene& scene, const ApplicationContext& context) {
+void Renderer::submitLight(Light* light) {
+	m_lightsToRender.push_back(light);
+}
+
+void Renderer::submitRenderable(Renderable* obj) {
+	m_objectsToRender.push_back(obj);
+}
+
+void Renderer::render(const ApplicationContext& context) {
 	static auto lastLogTime = std::chrono::high_resolution_clock::now();
     static std::chrono::duration<double> totalTime(0);
     static std::chrono::duration<double> testTime(0);
@@ -134,10 +143,10 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 	// Update screen resolution
 	m_currentRenderContext.currentScreenResolution = glm::uvec2(context.screenWidth, context.screenHeight);
 
-    beginShadowpass(scene, context);
+    beginShadowpass(context);
 
-	RawBuffer<Mesh*> culledMeshBuffer = RawBuffer<Mesh*>(scene.meshes.size());
-	std::unordered_map<Material*, std::vector<Mesh*>> materialBatches;
+	RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
+	std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;
 	for (int i = 0; i < m_currentRenderContext.lights.size(); i++) {
 		const Light* light = m_currentRenderContext.lights[i];		
 		m_currentRenderContext.currentLightPrio = light->getPriotity();
@@ -147,27 +156,27 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		
 		m_lightProcessor.prepareShadowPass(light);
 		
-		cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-		batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::ShadowPass);
+		cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.viewProjection);
+		batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::ShadowPass);
 
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 			
-			for (const Mesh* mesh : batch.second) {
-				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-				batch.first->bindForMeshDraw(PassType::ShadowPass, m_currentRenderContext);
-				drawMesh(*mesh);
+			for (const Renderable* obj : batch.second) {
+				m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+				batch.first->bindForObjectDraw(PassType::ShadowPass, m_currentRenderContext);
+				obj->draw();
 			}
 		}
 	}
 	
-	endShadowpass(scene, context);
+	endShadowpass(context);
 	
 	auto testTimerStart = std::chrono::high_resolution_clock::now();
-	beginAmbientOcclusionPass(scene, context);
+	beginAmbientOcclusionPass(context);
 	
-	cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::AmbientOcclusion);
+	cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.viewProjection);
+	batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::AmbientOcclusion);
 	
 	if (!materialBatches.empty()) {		
 		m_ssaoProcessor.prepareSSAOGBufferPass(context);
@@ -175,10 +184,10 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		for (const auto& batch : materialBatches) {
 			batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
 			
-			for (const Mesh* mesh : batch.second) {
-				m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-				batch.first->bindForMeshDraw(PassType::AmbientOcclusion, m_currentRenderContext);
-				drawMesh(*mesh);
+			for (const Renderable* obj : batch.second) {
+				m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+				batch.first->bindForObjectDraw(PassType::AmbientOcclusion, m_currentRenderContext);
+				obj->draw();
 			}
 		}
 		
@@ -189,26 +198,26 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		drawFullscreenQuad();
 	}
 	
-	endAmbientOcclusionPass(scene, context);
+	endAmbientOcclusionPass(context);
 	testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 	
-	beginMainpass(scene, context);
+	beginMainpass(context);
 	
 	// No culling since main pass uses same view
 	//cullMeshesOutOfView(scene.meshes, culledMeshBuffer, m_currentRenderContext.viewProjection);
-	batchByMaterialForPass(materialBatches, culledMeshBuffer, PassType::MainPass);
+	batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::MainPass);
 	
 	for (const auto& batch : materialBatches) {
 		batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
 		
-		for (const Mesh* mesh : batch.second) {
-			m_currentRenderContext.meshTransform = mesh->getGlobalTransform();
-			batch.first->bindForMeshDraw(PassType::MainPass, m_currentRenderContext);
-			drawMesh(*mesh);
+		for (const Renderable* obj : batch.second) {
+			m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+			batch.first->bindForObjectDraw(PassType::MainPass, m_currentRenderContext);
+			obj->draw();
 		}
 	}
-	
-	endMainpass(scene, context);
+
+	endMainpass(context);
 	totalTime += std::chrono::high_resolution_clock::now() - totalTimerStart;
 
     // Logging
@@ -220,7 +229,7 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
 		msg << "Tested time: " << testTime.count() * 1000.0 / frameCount << "ms (average per frame)" << std::endl;
 		msg << "Tested part took " << testTime.count() / totalTime.count() * 100.0 << "% of " << totalTime.count() * 1000.0 / frameCount << "ms excution time" << std::endl;
         msg << "Lights processed: " << m_currentRenderContext.lights.size() << std::endl;
-        msg << "Objects drawn: " << culledMeshBuffer.size() << std::endl;
+        msg << "Objects drawn: " << culledObjectBuffer.size() << std::endl;
 		msg << "Batches: " << materialBatches.size();
 		lgr::lout.debug(msg.str());
 
@@ -230,14 +239,6 @@ void Renderer::renderScene(const Scene& scene, const ApplicationContext& context
         frameCount = 0;
         lastLogTime = now;
     }
-}
-
-void Renderer::drawMesh(const Mesh& mesh) {
-	const std::shared_ptr<MeshRenderData> rData = mesh.renderData();
-	rData->vao.bind();
-	rData->ibo.bind();
-
-	GLCALL(glDrawElements(GL_TRIANGLES, rData->ibo.count(), GL_UNSIGNED_INT, nullptr));
 }
 
 void Renderer::drawFullscreenQuad() {

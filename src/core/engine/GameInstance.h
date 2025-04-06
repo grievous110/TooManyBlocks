@@ -6,8 +6,8 @@
 #include "engine/env/lights/Spotlight.h"
 #include "engine/env/World.h"
 #include "engine/rendering/Camera.h"
+#include "engine/rendering/Line.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
-#include "engine/rendering/Scene.h"
 #include "rendering/lowlevelapi/Texture.h"
 #include "Updatable.h"
 #include <glm/glm.hpp>
@@ -25,6 +25,7 @@ public:
 	Controller* m_playerController;
 	Player* m_player;
 	World* m_world;
+	std::shared_ptr<Line> m_line;
 	std::shared_ptr<Mesh> m_mesh1;
 	std::shared_ptr<Mesh> m_mesh2;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
@@ -39,7 +40,7 @@ public:
 
 	inline bool isWorldInitialized() const { return m_world != nullptr; }
 
-	Scene craftScene();
+	void pushWorldRenderData() const;
 
 	void update(float msDelta) override;
 };
