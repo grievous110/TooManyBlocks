@@ -8,6 +8,7 @@ namespace Res {
         constexpr const char* CHUNK = "res/shaders/chunkShader";
         constexpr const char* SIMPLE = "res/shaders/simpleShader";
         constexpr const char* DEPTH = "res/shaders/depthShader";
+        constexpr const char* LINE = "res/shaders/lineShader";
         constexpr const char* SSAO_PASS = "res/shaders/SSAO_PassShader";
         constexpr const char* SSAO_BLUR = "res/shaders/SSAO_BlurShader";
     }
