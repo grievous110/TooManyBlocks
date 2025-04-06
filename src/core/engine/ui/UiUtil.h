@@ -4,6 +4,8 @@
 namespace UI::Util {
     void CenterPopup();
     void MakeNextWindowFullscreen();
+
+    void DrawCrosshair(float crossSize, float thickness);
 }
 
 #endif
