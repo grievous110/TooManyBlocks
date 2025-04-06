@@ -61,8 +61,8 @@ static glm::ivec3 axisToCoord(Axis axis, int slice, int row, int column) {
     }
 }
 
-static MeshBounds calculateChunkMeshBounds(const std::vector<CompactChunkVertex>& vertexBuffer) {
-    MeshBounds bounds = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
+static BoundingBox calculateChunkMeshBounds(const std::vector<CompactChunkVertex>& vertexBuffer) {
+    BoundingBox bounds = BoundingBox::invalid();
     for (const CompactChunkVertex& vertex : vertexBuffer) {
         bounds.min = glm::min(bounds.min, glm::vec3(vertex.getPosition()));
         bounds.max = glm::max(bounds.max, glm::vec3(vertex.getPosition()));
@@ -70,8 +70,8 @@ static MeshBounds calculateChunkMeshBounds(const std::vector<CompactChunkVertex>
     return bounds;
 }
 
-static MeshBounds calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) {
-    MeshBounds bounds = { glm::vec3(FLT_MAX), glm::vec3(-FLT_MAX) };
+static BoundingBox calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) {
+    BoundingBox bounds = BoundingBox::invalid();
     for (const Vertex& vertex : vertexBuffer) {
         bounds.min = glm::min(bounds.min, vertex.position);
         bounds.max = glm::max(bounds.max, vertex.position);
@@ -156,7 +156,7 @@ static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisD
 
 std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData &data) {
     // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), static_cast<int>(data.vertices.size() * sizeof(CompactChunkVertex)));
+    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
 
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
@@ -233,7 +233,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const
             }
         }
     }
-
+    
     std::shared_ptr<RawChunkMeshData> data = std::make_shared<RawChunkMeshData>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);

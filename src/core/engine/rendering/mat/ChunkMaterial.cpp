@@ -68,7 +68,7 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 	}
 }
 
-void ChunkMaterial::bindForMeshDraw(PassType passType, const RenderContext &context) const {
+void ChunkMaterial::bindForObjectDraw(PassType passType, const RenderContext &context) const {
 	if (passType == PassType::MainPass) {
 		if (m_shader) {
 			m_shader->bind();

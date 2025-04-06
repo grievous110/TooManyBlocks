@@ -14,7 +14,7 @@ private:
     std::unordered_map<std::string, std::weak_ptr<Material>> m_materialCache;
     std::unordered_map<std::string, std::weak_ptr<Shader>> m_shaderCache;
 	std::unordered_map<std::string, std::weak_ptr<Texture>> m_textureCache;
-	std::unordered_map<std::string, std::pair<std::shared_ptr<MeshRenderData>, MeshBounds>> m_meshCache;
+	std::unordered_map<std::string, std::pair<std::shared_ptr<MeshRenderData>, BoundingBox>> m_meshCache;
 
 public:
     void putMaterial(const std::string& name, std::shared_ptr<Material> material);

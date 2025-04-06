@@ -25,7 +25,9 @@ private:
 
     bool isInitialized;
 
-public:
+public:    
+    static void prioritizeLights(const std::vector<Light*>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context);
+    
     LightProcessor() : m_totalSupportedLights(0), isInitialized(false) {}
 
     void initialize();

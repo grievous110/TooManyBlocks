@@ -3,8 +3,10 @@
 #include "engine/controllers/PlayerController.h"
 #include "engine/env/lights/Spotlight.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
+#include "engine/rendering/mat/LineMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/MeshCreate.h"
+#include "engine/rendering/Renderer.h"
 #include "GameInstance.h"
 #include "Logger.h"
 #include "providers/Provider.h"
@@ -61,25 +63,9 @@ void GameInstance::initializeWorld(World* newWorld) {
 	
 		m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 		m_mesh1->getLocalTransform().setScale(0.5f);
-		m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
-		m_mesh2->getLocalTransform().translate(m_mesh1->getLocalTransform().getUp() * 3.0f);
+		// m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
+		m_mesh2->getLocalTransform().scale(0.6f);
 	}
-}
-
-Scene GameInstance::craftScene() {
-	Scene scene;
-	for (const auto& light : m_lights) {
-        scene.lights.push_back(light);
-    }
-
-	for (const auto& val : m_world->loadedChunks()) {
-		if (val.second && val.second->mesh) {
-			scene.meshes.push_back(val.second->mesh);
-		}
-	}
-	scene.meshes.push_back(m_mesh1);
-	scene.meshes.push_back(m_mesh2);
-	return scene;
 }
 
 void GameInstance::deinitWorld() {
@@ -101,8 +87,25 @@ void GameInstance::deinitWorld() {
 	}
 }
 
+void GameInstance::pushWorldRenderData() const {
+	if (ApplicationContext* context = Application::getContext()) {
+		Renderer* renderer = context->renderer;
+		for (const auto& light : m_lights) {
+			renderer->submitLight(light.get());
+		}
+
+		for (const auto& val : m_world->loadedChunks()) {
+			if (val.second && val.second->mesh) {
+				renderer->submitRenderable(val.second->mesh.get());
+			}
+		}
+		renderer->submitRenderable(m_mesh2.get());
+		renderer->submitRenderable(m_mesh2.get());
+	}
+}
+
 void GameInstance::update(float msDelta) {
-	m_player->update(msDelta);
+    m_player->update(msDelta);
 	for (const auto& light : m_lights) {
         light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * (msDelta / 1000.0f), 0.0f));
     }

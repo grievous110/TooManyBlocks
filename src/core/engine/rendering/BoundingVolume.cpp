@@ -1,4 +1,4 @@
-#include "SceneOptimizing.h"
+#include "BoundingVolume.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include <algorithm>
 #include <array>
@@ -11,11 +11,6 @@ enum Planes {
     Right,
     Top,
     Bottom
-};
-
-struct ScoredLight {
-    Light* valPtr;
-    float score;
 };
 
 Frustum::Frustum(const glm::mat4& viewProjMatrix) {
@@ -60,58 +55,17 @@ bool Frustum::isSphereInside(const glm::vec3& center, float radius) const {
     return true;
 }
 
-bool isInvalidMeshBounds(const MeshBounds& bounds) {
-    return glm::vec3(FLT_MAX) == bounds.min && glm::vec3(-FLT_MAX) == bounds.max;
-}
-
-void cullMeshesOutOfView(const std::vector<std::shared_ptr<Mesh>>& meshes, RawBuffer<Mesh*>& outputBuffer, const glm::mat4& viewProj) {
+void cullObjectsOutOfView(const std::vector<Renderable*>& meshes, RawBuffer<Renderable*>& outputBuffer, const glm::mat4& viewProj) {
     const Frustum frustum(viewProj);
 
     outputBuffer.clear();
-	for (const auto& mesh : meshes) {
-        const MeshBounds bounds = mesh->getMeshBounds();
-        if (!isInvalidMeshBounds(bounds)) {
+	for (Renderable* mesh : meshes) {
+        const BoundingBox bounds = mesh->getBoundingBox();
+        if (!bounds.isInvalid()) {
             glm::vec3 pos = mesh->getGlobalTransform().getPosition();
             if (frustum.isBoxInside(bounds.min + pos, bounds.max + pos)) {
-                outputBuffer.push_back(mesh.get());
+                outputBuffer.push_back(mesh);
             }
         }
 	}
-}
-
-void prioritizeLights(const std::vector<std::shared_ptr<Light>>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context) {
-    const Frustum cameraFrustum(context.viewProjection);
-
-    // Calculate scores for lights
-    glm::vec3 cameraPosition = context.viewportTransform.getPosition();
-    std::vector<ScoredLight> scoredLights;
-    for (const auto& light : lights) {
-        if (!cameraFrustum.isSphereInside(light->getGlobalTransform().getPosition(), light->getRange())) {
-            // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for directional lights
-            continue;
-        }
-        float distance = glm::distance(cameraPosition, light->getGlobalTransform().getPosition());
-        float score = (1.0f / (distance + 1.0f)) * light->getRange();
-        scoredLights.push_back({ light.get(), score });
-    }
-
-    // Sort lights by score in descending order
-    std::sort(scoredLights.begin(), scoredLights.end(), [](const ScoredLight& a, const ScoredLight& b) {
-        return a.score > b.score;
-    });
-
-    // Assign priorities and shadow atlas indices
-    std::array<unsigned int, LightPriority::Count> currentShadowMapCounts = {0, 0, 0};
-
-    outputBuffer.clear();
-    for (const auto& sLight : scoredLights) {
-        for (int prio = LightPriority::High; prio <= LightPriority::Low; prio++) {
-            if (currentShadowMapCounts[prio] < maxShadowMapsPerPriority[prio]) {
-                sLight.valPtr->setPriotity(static_cast<LightPriority>(prio));
-                sLight.valPtr->setShadowAtlasIndex(currentShadowMapCounts[prio]++);
-                outputBuffer.push_back(sLight.valPtr);
-                break;
-            }
-        }
-    }
 }

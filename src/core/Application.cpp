@@ -216,8 +216,8 @@ void Application::run() {
 					if (!context->instance->gameState.gamePaused) {
 						context->instance->update(msframeTime);
 					}
-					Scene scene = context->instance->craftScene();
-					context->renderer->renderScene(scene, *context);
+					context->instance->pushWorldRenderData();
+					context->renderer->render(*context);
 				}
 				if (context->nextWindow) {
 					// Navigate safely to new window

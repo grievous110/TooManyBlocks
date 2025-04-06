@@ -49,7 +49,7 @@ public:
 
 	virtual bool supportsPass(PassType passType) const = 0;
 	virtual void bindForPass(PassType passType, const RenderContext& context) const = 0;
-	virtual void bindForMeshDraw(PassType passType, const RenderContext& context) const = 0;
+	virtual void bindForObjectDraw(PassType passType, const RenderContext& context) const = 0;
 };
 
 #endif
