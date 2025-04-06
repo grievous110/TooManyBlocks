@@ -64,8 +64,8 @@ void GameInstance::initializeWorld(World* newWorld) {
 	
 		m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
 		m_mesh1->getLocalTransform().setScale(0.5f);
-		// m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
-		m_mesh2->getLocalTransform().scale(0.6f);
+		m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
+		m_mesh2->getLocalTransform().translate(glm::vec3(0.0f, 3.0f, 0.0f));
 
 		
 		std::shared_ptr<Shader> lineShader = provider->getShaderFromFile(Res::Shader::LINE);
@@ -106,7 +106,7 @@ void GameInstance::pushWorldRenderData() const {
 				renderer->submitRenderable(val.second->mesh.get());
 			}
 		}
-		renderer->submitRenderable(m_mesh2.get());
+		renderer->submitRenderable(m_mesh1.get());
 		renderer->submitRenderable(m_mesh2.get());
 
 		if (m_player->isFocusingBlock()) {
