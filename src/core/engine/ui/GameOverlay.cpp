@@ -35,6 +35,8 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
         
+        UI::Util::DrawCrosshair(35.0f, 3.0f);
+
         bool newShowMouse = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
         if (newShowMouse != m_showMouse) {
             m_showMouse = newShowMouse;
