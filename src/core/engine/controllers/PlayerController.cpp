@@ -4,6 +4,7 @@
 #include "engine/entity/Player.h"
 #include "engine/hittest/Linetrace.h"
 #include "engine/rendering/Camera.h"
+#include "engine/GameInstance.h"
 #include "PlayerController.h"
 #include <GLFW/glfw3.h>
 
@@ -36,7 +37,17 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
             tr.rotate(yawDelta, WorldUp);
             tr.rotate(allowedPitchDelta, tr.getRight());
         }
-	}
+	} else if (event == MousEvent::ButtonDown || event == MousEvent::ButtonUp) {
+        if (!keyStates[GLFW_MOUSE_BUTTON_LEFT] && data.key.code == GLFW_MOUSE_BUTTON_LEFT && event == MousEvent::ButtonDown) {
+            // Block breaking logic
+            if (ApplicationContext* context = Application::getContext()) {
+                if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
+                    context->instance->m_world->setBlock(pl->getFocusedBlock(), AIR);
+                }
+            }            
+        }
+        keyStates[data.key.code] = event == MousEvent::ButtonDown;
+    }
 }
 
 void PlayerController::update(float msDelta) {

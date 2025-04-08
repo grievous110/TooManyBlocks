@@ -131,9 +131,9 @@ std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData& data);
 
 std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data);
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const BlockToTextureMap& texMap);
+std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk, const BlockToTextureMap& texMap);
+std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
 
 std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
