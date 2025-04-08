@@ -5,7 +5,8 @@
 
 struct HitResult {
     bool hitSuccess;
-    glm::vec3 position;
+    glm::vec3 objectPosition;
+    glm::vec3 impactPoint;
 };
 
 enum Channel {
