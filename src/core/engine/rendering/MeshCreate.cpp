@@ -173,11 +173,11 @@ std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData &da
     return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData &data) {
+std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData& data) {
     return std::make_shared<Mesh>(packToChunkRenderData(data), data.bounds);
 }
 
-std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData &data) {
+std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData& data) {
     // Vertex Buffer Object (VBO)
     VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
 
@@ -196,11 +196,11 @@ std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData &data) {
     return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData &data) {
+std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data) {
     return std::make_shared<Mesh>(packToRenderData(data), data.bounds);
 }
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const BlockToTextureMap& texMap) {
+std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
 	std::vector<CompactChunkVertex> vertexBuffer;
 	std::vector<unsigned int> indexBuffer;
 
@@ -210,12 +210,12 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const
     for (origin.x = 0; origin.x < CHUNK_WIDTH; origin.x++) {
         for (origin.y = 0; origin.y < CHUNK_HEIGHT; origin.y++) {
             for (origin.z = 0; origin.z < CHUNK_DEPTH; origin.z++) {
-                const Block& blockRef = chunk.blocks[chunkBlockIndex(origin.x, origin.y, origin.z)];
+                const Block& blockRef = blocks[chunkBlockIndex(origin.x, origin.y, origin.z)];
                 if (blockRef.isSolid) {
 
                     // Check each face and add the appropriate face to the buffer if visible
                     for (AxisDirection dir : allAxisDirections) {
-                        if (isBlockFaceVisible(chunk, origin.x, origin.y, origin.z, dir)) {
+                        if (isBlockFaceVisible(blocks, origin.x, origin.y, origin.z, dir)) {
                             CompactChunkFace face = generateCompactChunkFace(origin, dir, texMap.getTexIndex(blockRef.type, dir));
                             // Add face vertices to the global vertex buffer
                             for (int i = 0; i < 4; i++) {
@@ -242,7 +242,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Chunk& chunk, const
     return data;
 }
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk, const BlockToTextureMap& texMap) {
+std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
     // Hold for each blocktype cullplanes for all 3 axes
     std::unordered_map<uint16_t, BinaryPlanes[3]> blockTypeCullPlanes;
 
@@ -250,7 +250,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Chunk& chunk,
     for (int x = 0; x < CHUNK_WIDTH; x++) {
         for (int y = 0; y < CHUNK_HEIGHT; y++) {
             for (int z = 0; z < CHUNK_DEPTH; z++) {
-                const Block& blockRef = chunk.blocks[chunkBlockIndex(x, y, z)];
+                const Block& blockRef = blocks[chunkBlockIndex(x, y, z)];
                 if (blockRef.isSolid) {
                     BinaryPlanes* planes = nullptr;
                     

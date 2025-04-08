@@ -2,7 +2,7 @@
 #define CHUNK_H
 
 #include "datatypes/DatatypeDefs.h"
-#include <glm/vec3.hpp>
+#include <glm/glm.hpp>
 #include <memory>
 #include <unordered_map>
 
@@ -31,16 +31,32 @@ struct Block {
 	bool isSolid;
 };
 
-struct Chunk {
-	bool changed;
-	Block blocks[BLOCKS_PER_CHUNK];
-	std::shared_ptr<Mesh> mesh;
+class Chunk {
+	friend class World;
+
+private:
+	bool m_isBeingRebuild;
+	bool m_changed;
+	std::shared_ptr<Block[]> m_blocks;
+	std::shared_ptr<Mesh> m_mesh;
+
+public:	
+	static glm::ivec3 worldToChunkOrigin(const glm::vec3& worldPos);
+	static glm::ivec3 worldToChunkLocal(const glm::ivec3& chunkOrigin, const glm::ivec3& worldBlockPos);
+
+	Chunk() : m_isBeingRebuild(false), m_changed(false) {}
+
+	inline bool isBeingRebuild() const { return m_isBeingRebuild; }
+	inline bool isChanged() const { return m_changed; }
+	inline bool isLoaded() const { return m_blocks != nullptr; }
+	inline const Block* blocks() const { return m_blocks.get(); }
+	inline Mesh* getMesh() const { return m_mesh.get(); }
 };
 
 constexpr int chunkBlockIndex(int x, int y, int z) {
     return z * CHUNK_SLICE_SIZE  + y * CHUNK_WIDTH + x;
 }
 
-bool isBlockFaceVisible(const Chunk& chunk, int x, int y, int z, AxisDirection faceDirection);
+bool isBlockFaceVisible(const Block* blocks, int x, int y, int z, AxisDirection faceDirection);
 
 #endif

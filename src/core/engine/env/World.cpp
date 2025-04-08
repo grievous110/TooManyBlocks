@@ -7,31 +7,61 @@
 #include "Logger.h"
 #include "providers/Provider.h"
 #include "World.h"
+#include <algorithm>
 #include <fstream>
 #include <glm/glm.hpp>
 #include <json/JsonParser.h>
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
-World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir) {
-    // Load world data
-    std::ifstream file((worldDir / "info.json").string(), std::ios::binary);
-    Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
-    m_seed = static_cast<uint32_t>(std::stoul(info["seed"].toString()));
-    file.close();
-}
+static void generateChunkBlocks(Block* blocks, const glm::ivec3& chunkPos, uint32_t seed) {
+    PerlinNoise noiseGenerator(seed);
 
-std::shared_ptr<Chunk> World::getChunk(const glm::ivec3& location) {
-    if (m_loadedChunks.find(location) != m_loadedChunks.end()) {
-        return m_loadedChunks[location];
-    }
-    return nullptr;
-}
+    // Generate height values for the xz plane in global coordinates
+    std::unique_ptr<float[]> heightValues = noiseGenerator.generatePerlinNoise(
+        {CHUNK_WIDTH, CHUNK_DEPTH}, {chunkPos.x, chunkPos.z}, 32, 2
+    );
+    std::unique_ptr<float[]> ironOre = noiseGenerator.generatePerlinNoise(
+        {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH}, {chunkPos.x, chunkPos.y, chunkPos.z}, 16, 2
+    );
 
-void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
-    std::unordered_set<glm::ivec3, coord_hash> activeChunks;
+    for (int x = 0; x < CHUNK_WIDTH; x++) {
+        for (int y = 0; y < CHUNK_HEIGHT; y++) {
+            for (int z = 0; z < CHUNK_DEPTH; z++) {
+                // Surface height
+                float surfaceHeight = heightValues[z * CHUNK_DEPTH + x] * 10.0f;
     
+                // Global y coordinate
+                int globalY = chunkPos.y + y;
+                
+                // Get iron ore noise value
+                float ironValue = ironOre[z * CHUNK_HEIGHT * CHUNK_WIDTH + y * CHUNK_WIDTH + x];
+    
+                // Conditions for placing blocks
+                if (globalY < static_cast<int>(floor(surfaceHeight))) {
+                    // Default to stone
+                    blocks[chunkBlockIndex(x, y, z)] = {STONE, true};
+    
+                    // Apply ore generation logic
+                    if (globalY < 0) { // Only generate iron below Y=60
+                        float threshold = 0.6f; // Adjust spawn probability
+                        
+                        if (ironValue > threshold ) {
+                            blocks[chunkBlockIndex(x, y, z)] = {IRON_ORE, true};
+                        }
+                    }
+                } else if (globalY == static_cast<int>(floor(surfaceHeight))) {
+                    blocks[chunkBlockIndex(x, y, z)] = {GRASS, true};
+                } else {
+                    blocks[chunkBlockIndex(x, y, z)] = {AIR, false};
+                }
+            }
+        }
+    }
+}
+
+std::unordered_set<glm::ivec3, coord_hash> World::determineActiveChunks(const glm::ivec3& position, int renderDistance) {
+    std::unordered_set<glm::ivec3, coord_hash> activeChunks;
     glm::ivec3 centerChunk(
         (position.x < 0 ? (position.x - CHUNK_WIDTH + 1) : position.x) / CHUNK_WIDTH * CHUNK_WIDTH,
         (position.y < 0 ? (position.y - CHUNK_HEIGHT + 1) : position.y) / CHUNK_HEIGHT * CHUNK_HEIGHT,
@@ -52,40 +82,74 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
             }
         }
     }
+    return activeChunks;
+}
 
-    // Step 1: Process data from queues
-    {
-        std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-        
-        if (!m_loadedMeshData.empty()) {
-            Provider* provider = Application::getContext()->provider;
-
-            std::shared_ptr<Material> material = provider->getChachedMaterial("ChunkMaterial");
-            // Check if material has been cached and create it if not
-            if (!material) {
-                std::shared_ptr<Shader> shader = provider->getShaderFromFile(Res::Shader::CHUNK);
-                std::shared_ptr<Shader> depthShader = provider->getShaderFromFile(Res::Shader::CHUNK_DEPTH);
-                std::shared_ptr<Shader> ssaoGBuffShader = provider->getShaderFromFile(Res::Shader::CHUNK_SSAO_GBUFFER);
-                std::shared_ptr<Texture> texture = provider->getTextureFromFile(Res::Texture::BLOCK_TEX_ATLAS);
-                material = std::make_shared<ChunkMaterial>(shader, depthShader, ssaoGBuffShader, texture);
-                provider->putMaterial("ChunkMaterial", material);
-            }
-
-            while (!m_loadedMeshData.empty()) {
-                std::tuple<glm::ivec3, std::shared_ptr<Chunk>, std::shared_ptr<RawChunkMeshData>> data = m_loadedMeshData.front();
-                m_loadedMeshData.pop();
-                
-                glm::ivec3 chunkPos = std::get<glm::ivec3>(data);
-                std::shared_ptr<Chunk> chunk = std::get<std::shared_ptr<Chunk>>(data);
-
-                chunk->mesh = buildFromChunkMeshData(*std::get<std::shared_ptr<RawChunkMeshData>>(data));
-                chunk->mesh->assignMaterial(material);
-                chunk->mesh->getLocalTransform().setPosition(chunkPos);
-                m_loadedChunks[chunkPos] = chunk;
+void World::processDataFromWorkers() {
+    if (ApplicationContext* context = Application::getContext()) {
+        Provider* provider = context->provider;
+        std::shared_ptr<Material> material = provider->getChachedMaterial("ChunkMaterial");
+        // Check if material has been cached and create it if not
+        if (!material) {
+            std::shared_ptr<Shader> shader = provider->getShaderFromFile(Res::Shader::CHUNK);
+            std::shared_ptr<Shader> depthShader = provider->getShaderFromFile(Res::Shader::CHUNK_DEPTH);
+            std::shared_ptr<Shader> ssaoGBuffShader = provider->getShaderFromFile(Res::Shader::CHUNK_SSAO_GBUFFER);
+            std::shared_ptr<Texture> texture = provider->getTextureFromFile(Res::Texture::BLOCK_TEX_ATLAS);
+            material = std::make_shared<ChunkMaterial>(shader, depthShader, ssaoGBuffShader, texture);
+            provider->putMaterial("ChunkMaterial", material);
+        }
+    
+        while (!m_loadedMeshData.empty()) {
+            std::tuple<glm::ivec3, std::shared_ptr<Block[]>, std::shared_ptr<RawChunkMeshData>> data = m_loadedMeshData.front();
+            m_loadedMeshData.pop();
+            
+            glm::ivec3 chunkPos = std::get<glm::ivec3>(data);
+            auto it = m_loadedChunks.find(chunkPos);
+            if (it != m_loadedChunks.end()) {
+                Chunk& chunk = it->second;
+                if (!chunk.isLoaded()) {
+                    // 1. Case: Chunk has been initially loaded (blocks + mesh must be set)
+                    chunk.m_blocks = std::get<std::shared_ptr<Block[]>>(data);
+                    chunk.m_mesh = buildFromChunkMeshData(*std::get<std::shared_ptr<RawChunkMeshData>>(data));
+                    chunk.m_mesh->assignMaterial(material);
+                    chunk.m_mesh->getLocalTransform().setPosition(chunkPos);
+                } else if (chunk.isBeingRebuild()) {
+                    // 2. Case: Chunk has been rebuilded (Reset flag and replace mesh)
+                    chunk.m_isBeingRebuild = false;
+                    
+                    // *No need to set blocks*
+                    
+                    chunk.m_mesh = buildFromChunkMeshData(*std::get<std::shared_ptr<RawChunkMeshData>>(data));
+                    chunk.m_mesh->assignMaterial(material);
+                    chunk.m_mesh->getLocalTransform().setPosition(chunkPos);
+                }
             }
         }
-    }
+    }   
+}
 
+World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir) {
+    // Load world data
+    std::ifstream file((worldDir / "info.json").string(), std::ios::binary);
+    Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+    m_seed = static_cast<uint32_t>(std::stoul(info["seed"].toString()));
+    file.close();
+}
+
+Chunk* World::getChunk(const glm::ivec3& location) {
+    auto it = m_loadedChunks.find(location);
+    if (it != m_loadedChunks.end()) {
+        if (it->second.isLoaded()){
+            return &it->second;
+        }
+    }
+    return nullptr;
+}
+
+void World::updateChunks(const glm::ivec3& position, int renderDistance) {
+    // Step 1: Determine active chunk positions
+    std::unordered_set<glm::ivec3, coord_hash> activeChunks = determineActiveChunks(position, renderDistance);
+    
     // Step 2: Unload chunks that are no longer in the active set
     for (auto it = m_loadedChunks.begin(); it != m_loadedChunks.end(); ) {
         if (activeChunks.find(it->first) == activeChunks.end()) {
@@ -95,66 +159,68 @@ void World::updateChunks(const glm::ivec3 &position, int renderDistance) {
         }
     }
 
-    // Step 3: Load chunks that are in the active set but not yet loaded
-    for (const glm::ivec3& chunkPos : activeChunks) {
-        if (m_loadedChunks.find(chunkPos) == m_loadedChunks.end()) {            
-            // Put placeholder
-            m_loadedChunks[chunkPos] = nullptr;
+    // Step 1: Process data from queues
+    {
+        std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);        
+        if (!m_loadedMeshData.empty()) {
+            processDataFromWorkers();
+        }
+    }
 
+    // Process pending changes for unloaded chunks
+    // * Currently unhanlded *
+    m_pendingChanges.clear();
+
+    // Step 3: Load chunks that are in the active set but not yet loaded and rebuild changed once
+    for (const glm::ivec3& chunkPos : activeChunks) {
+        auto it = m_loadedChunks.find(chunkPos);
+        if (it == m_loadedChunks.end()) {
+            // Put placeholder chunk (Chunk with no block data / mesh)
+            m_loadedChunks[chunkPos] = Chunk();
+
+            // Create new one
             ThreadPool* tPool = Application::getContext()->workerPool;
             tPool->pushJob(this, [this, chunkPos] {
-                std::shared_ptr<Chunk> newChunk = std::make_shared<Chunk>();
-                PerlinNoise noiseGenerator(m_seed);
+                std::shared_ptr<Block[]> blocks(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
+                generateChunkBlocks(blocks.get(), chunkPos, m_seed);
 
-                // Generate height values for the xz plane in global coordinates
-                std::shared_ptr<float> heightValues = noiseGenerator.generatePerlinNoise(
-                    {CHUNK_WIDTH, CHUNK_DEPTH}, {chunkPos.x, chunkPos.z}, 32, 2
-                );
-                std::shared_ptr<float> ironOre = noiseGenerator.generatePerlinNoise(
-                    {CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH}, {chunkPos.x, chunkPos.y, chunkPos.z}, 16, 2
-                );
-
-                for (int x = 0; x < CHUNK_WIDTH; x++) {
-                    for (int y = 0; y < CHUNK_HEIGHT; y++) {
-                        for (int z = 0; z < CHUNK_DEPTH; z++) {
-                            // Surface height
-                            float surfaceHeight = heightValues.get()[z * CHUNK_DEPTH + x] * 10.0f;
-                
-                            // Global y coordinate
-                            int globalY = chunkPos.y + y;
-                            
-                            // Get iron ore noise value
-                            float ironValue = ironOre.get()[z * CHUNK_HEIGHT * CHUNK_WIDTH + y * CHUNK_WIDTH + x];
-                
-                            // Conditions for placing blocks
-                            if (globalY < static_cast<int>(floor(surfaceHeight))) {
-                                // Default to stone
-                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {STONE, true};
-                
-                                // Apply ore generation logic
-                                if (globalY < 0) { // Only generate iron below Y=60
-                                    float threshold = 0.6f; // Adjust spawn probability
-                                    
-                                    if (ironValue > threshold ) {
-                                        newChunk->blocks[chunkBlockIndex(x, y, z)] = {IRON_ORE, true};
-                                    }
-                                }
-                            } else if (globalY == static_cast<int>(floor(surfaceHeight))) {
-                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS, true};
-                            } else {
-                                newChunk->blocks[chunkBlockIndex(x, y, z)] = {GRASS, false};
-                            }
-                        }
-                    }
-                }
-
-                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(*newChunk, texMap);
+                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocks.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_loadedMeshData.push(std::make_tuple(chunkPos, newChunk, meshData));
+                    m_loadedMeshData.push(std::make_tuple(chunkPos, blocks, meshData));
+                }
+            });
+        } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
+            ThreadPool* tPool = Application::getContext()->workerPool;
+
+            // Make copy of blockdata
+            std::shared_ptr<Block[]> blocksCopy(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
+            const Block* src = it->second.blocks();
+            std::copy(src, src + BLOCKS_PER_CHUNK, blocksCopy.get());
+
+            it->second.m_isBeingRebuild = true;
+            tPool->pushJob(this, [this, chunkPos, blocksCopy] {
+                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
+
+                {
+                    std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
+                    m_loadedMeshData.push(std::make_tuple(chunkPos, nullptr, meshData));
                 }
             });
         }
+    }
+}
+
+void World::setBlock(const glm::ivec3& position, uint16_t newBlock) {
+    glm::ivec3 chunkPos = Chunk::worldToChunkOrigin(position);
+    if (Chunk* chunk = getChunk(chunkPos)) {
+        // Immediate data change if chunk is loaded
+        glm::ivec3 relChunkPos = Chunk::worldToChunkLocal(chunkPos, position);
+        chunk->m_blocks[chunkBlockIndex(relChunkPos.x, relChunkPos.y, relChunkPos.z)] = { newBlock, newBlock != AIR };
+        chunk->m_changed = true;
+    } else {
+        // Queue changes
+        m_pendingChanges[position] = newBlock;
     }
 }

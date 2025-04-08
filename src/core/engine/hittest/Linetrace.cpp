@@ -6,11 +6,6 @@
 #include "Logger.h"
 #include <cfloat>
 
-static glm::ivec3 getChunkOriginFromWorld(const glm::vec3& worldPos, const glm::ivec3& chunkSize) {
-    glm::ivec3 chunkCoord = glm::floor(worldPos / glm::vec3(chunkSize));
-    return chunkCoord * chunkSize;
-}
-
 static HitResult marchInBlocks(glm::vec3 start, glm::vec3 end) {
     World* world = Application::getContext()->instance->m_world;
 
@@ -39,14 +34,14 @@ static HitResult marchInBlocks(glm::vec3 start, glm::vec3 end) {
     bool hit = false;
     
     while (totalDistance < maxDistance) {
-        glm::ivec3 currentChunkPos = getChunkOriginFromWorld(pos, glm::ivec3(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH));
-        glm::ivec3 chunkRelPos = pos - currentChunkPos;
-        if (std::shared_ptr<Chunk> chunk = world->getChunk(currentChunkPos)) {
-            Block& block = chunk->blocks[chunkBlockIndex(chunkRelPos.x, chunkRelPos.y, chunkRelPos.z)];
-           if (block.isSolid) {
+        glm::ivec3 currentChunkPos = Chunk::worldToChunkOrigin(pos);
+        glm::ivec3 chunkRelPos = Chunk::worldToChunkLocal(currentChunkPos, pos);
+        if (Chunk* chunk = world->getChunk(currentChunkPos)) {
+            const Block& block = chunk->blocks()[chunkBlockIndex(chunkRelPos.x, chunkRelPos.y, chunkRelPos.z)];
+            if (block.isSolid) {
                 hit = true;
                 break;
-           }            
+            }
         }
 
         int minDim = 0;

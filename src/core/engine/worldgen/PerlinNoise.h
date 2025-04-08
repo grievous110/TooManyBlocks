@@ -25,12 +25,12 @@ public:
 	 * @param octaves Number of noise layers to combine, increasing detail with each layer.
 	 * @param amplitude Initial amplitude (magnitude) multiplier for the noise, controlling contrast.
 	 * @param persistence Rate at which amplitude decreases with each octave (values in [0, 1] give natural results).
-	 * @return A `std::shared_ptr<float>` pointing to a 1D array of floats in [0.0f, 1.0f] representing the noise map.
+	 * @return A `std::unique_ptr<float[]>` pointing to a 1D array of floats in [0.0f, 1.0f] representing the noise map.
 	 *
 	 * @note The array is 1D but represents an N-dimensional map. For a coordinate (x, y, ...):
 	 *       `index = x + (y * width) + (z * width * height)` for 3D.
 	 */
-	std::shared_ptr<float> generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize = 256, int octaves = 1, float amplitude = 1.0f, float persistence = 0.5f);
+	std::unique_ptr<float[]> generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize = 256, int octaves = 1, float amplitude = 1.0f, float persistence = 0.5f);
 
     inline uint32_t seed() const { return m_seed; };
 };

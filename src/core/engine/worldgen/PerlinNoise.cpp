@@ -64,7 +64,7 @@ static inline void putRandomGradient(float* gradientDest, const int* sourceCoord
     }
 }
 
-std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize, int octaves, float amplitude, float persistence) {
+std::unique_ptr<float[]> PerlinNoise::generatePerlinNoise(const std::vector<int>& regionSize, const std::vector<int>& regionOffset, int baseSubsectionSize, int octaves, float amplitude, float persistence) {
     int dimensions = static_cast<int>(regionOffset.size());
     if (dimensions < 1 || static_cast<int>(regionSize.size()) != dimensions) {
         throw std::runtime_error("Starts and extents must have the same non-zero dimensions.");
@@ -266,6 +266,6 @@ std::shared_ptr<float> PerlinNoise::generatePerlinNoise(const std::vector<int>& 
 
     delete[] tmpCoordBuff;
 
-    // Return with custom deleter for dynamic array, cause shared_ptr uses delete instead of delete[] by default.
-    return std::shared_ptr<float>(noiseMap, [](float* ptr) { delete[] ptr; });
+    // Return with custom deleter for dynamic array, ensuring proper cleanup for array.
+    return std::unique_ptr<float[]>(noiseMap, std::default_delete<float[]>());
 }

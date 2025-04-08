@@ -102,8 +102,8 @@ void GameInstance::pushWorldRenderData() const {
 		}
 
 		for (const auto& val : m_world->loadedChunks()) {
-			if (val.second && val.second->mesh) {
-				renderer->submitRenderable(val.second->mesh.get());
+			if (val.second.getMesh()) {
+				renderer->submitRenderable(val.second.getMesh());
 			}
 		}
 		renderer->submitRenderable(m_mesh1.get());
@@ -121,6 +121,7 @@ void GameInstance::update(float msDelta) {
 	for (const auto& light : m_lights) {
         light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * (msDelta / 1000.0f), 0.0f));
     }
+	
 	Transform& mehs1Tr = m_mesh1->getLocalTransform();
 	mehs1Tr.rotate(msDelta / 100.0f, WorldUp);
 	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
