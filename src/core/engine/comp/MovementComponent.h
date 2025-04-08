@@ -9,9 +9,9 @@
 class Entity;
 
 enum class MovementMode {
-    Walk,
-    Fly,
-    Swim,
+	Walk,
+	Fly,
+	Swim,
 	Spectator
 }; 
 
