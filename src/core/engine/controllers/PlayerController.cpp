@@ -71,7 +71,7 @@ void PlayerController::update(float msDelta) {
         HitResult result = linetrace(camGlobTransform.getPosition(), camGlobTransform.getPosition() + (camGlobTransform.getForward() * pl->getReachDistance()), Channel::BlockTrace);
         pl->setIsFocusingBlock(result.hitSuccess);
         if (result.hitSuccess) {
-            pl->setFocusedBlock(glm::ivec3(result.position));
+            pl->setFocusedBlock(glm::ivec3(result.objectPosition));
         }
     }
 }

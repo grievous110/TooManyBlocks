@@ -32,6 +32,7 @@ static HitResult marchInBlocks(glm::vec3 start, glm::vec3 end) {
     float totalDistance = 0.0f;
 
     bool hit = false;
+    glm::vec3 impactPoint(0.0f);
     
     while (totalDistance < maxDistance) {
         glm::ivec3 currentChunkPos = Chunk::worldToChunkOrigin(pos);
@@ -40,20 +41,22 @@ static HitResult marchInBlocks(glm::vec3 start, glm::vec3 end) {
             const Block& block = chunk->blocks()[chunkBlockIndex(chunkRelPos.x, chunkRelPos.y, chunkRelPos.z)];
             if (block.isSolid) {
                 hit = true;
+                impactPoint = start + (totalDistance * directionVec);
                 break;
             }
+            int minDim = 0;
+            if (tMax[1] < tMax[minDim]) minDim = 1;
+            if (tMax[2] < tMax[minDim]) minDim = 2;
+    
+            totalDistance = tMax[minDim];
+            pos[minDim] += step[minDim];
+            tMax[minDim] += deltaDist[minDim];
+        } else {
+            break;
         }
-
-        int minDim = 0;
-        if (tMax[1] < tMax[minDim]) minDim = 1;
-        if (tMax[2] < tMax[minDim]) minDim = 2;
-
-        totalDistance = tMax[minDim];
-        pos[minDim] += step[minDim];
-        tMax[minDim] += deltaDist[minDim];
     }
 
-    return { hit, glm::vec3(pos) };
+    return { hit, glm::vec3(pos), impactPoint };
 }
 
 HitResult linetrace(glm::vec3 start, glm::vec3 end, Channel channel) {
