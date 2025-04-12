@@ -15,7 +15,7 @@ private:
 	float m_reach;
 
 public:
-	Player() : m_camera(std::make_shared<Camera>(45.0f, 950.0f / 540.0f)), m_reach(6.0f) { m_sceneRoot.attachChild(m_camera.get()); m_camera->getLocalTransform().translate(glm::vec3(0, 1.5, 0)); }
+	Player();
 	virtual ~Player() = default;
 
 	inline std::shared_ptr<Camera> getCamera() const { return m_camera; }
@@ -32,7 +32,7 @@ public:
 
 	inline bool isFocusingBlock() const { return m_isFocusingBlock; }
 
-	void update(float msDelta) override;
+	void update(float deltaTime) override;
 };
 
 #endif

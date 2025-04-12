@@ -25,6 +25,10 @@ struct BoundingBox {
         return (min + max) * 0.5f;
     }
 
+    inline BoundingBox movedBy(const glm::vec3& delta) const {
+        return { min + delta, max + delta };
+    }
+
     inline bool isInvalid() const {
         return min == glm::vec3(FLT_MAX) && max == glm::vec3(-FLT_MAX);
     }
@@ -41,19 +45,5 @@ struct BoundingBox {
         return !(*this == other);
     }
 };
-
-class Frustum {
-private:
-    glm::vec4 planes[6];
-
-public:
-    Frustum(const glm::mat4& viewProjMatrix);
-
-    bool isBoxInside(const glm::vec3& min, const glm::vec3& max) const;
-
-    bool isSphereInside(const glm::vec3& center, float radius) const;
-};
-
-void cullObjectsOutOfView(const std::vector<Renderable*>& meshes, RawBuffer<Renderable*>& outputBuffer, const glm::mat4& viewProj);
 
 #endif

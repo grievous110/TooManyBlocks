@@ -1,8 +1,14 @@
 #include "Application.h"
 #include "Player.h"
 
-void Player::update(float msDelta) {
-	m_controller->update(msDelta);
-	m_movement->update(msDelta);
-	Entity::update(msDelta);
+Player::Player() : m_camera(std::make_shared<Camera>(45.0f, 950.0f / 540.0f)), m_reach(6.0f) {
+	m_sceneRoot.attachChild(m_camera.get()); m_camera->getLocalTransform().translate(glm::vec3(0, 1.5, 0));
+	m_movement->setMovementMode(MovementMode::Walk);
+	m_movement->setGravityEnabled(true);
+}
+
+void Player::update(float deltaTime) {
+	m_controller->update(deltaTime);
+	m_movement->update(deltaTime);
+	Entity::update(deltaTime);
 }

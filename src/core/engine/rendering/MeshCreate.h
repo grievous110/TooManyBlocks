@@ -3,7 +3,7 @@
 
 #include "engine/env/Chunk.h"
 #include "engine/rendering/BlockToTextureMapping.h"
-#include "engine/rendering/BoundingVolume.h"
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/Mesh.h"
 #include <cstdint>
 #include <glm/glm.hpp>

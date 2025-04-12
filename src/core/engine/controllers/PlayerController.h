@@ -18,7 +18,7 @@ public:
 
 	void notify(MousEvent event, MouseEventData data) override;
     
-    void update(float msDelta) override;
+    void update(float deltaTime) override;
 };
 
 #endif
