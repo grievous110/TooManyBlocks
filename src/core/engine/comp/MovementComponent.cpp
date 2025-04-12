@@ -7,8 +7,8 @@
 #include "MovementComponent.h"
 #include "Logger.h"
 
-constexpr float GRAVITY = 9.81f;
-constexpr float GROUND_CHECK_EPSILON = 0.01f;
+static constexpr float GRAVITY = 9.81f;
+static constexpr float GROUND_CHECK_EPSILON = 0.01f;
 
 MovementComponent::MovementComponent(Entity* owner)
 	: owner(owner),

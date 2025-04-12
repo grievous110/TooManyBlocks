@@ -1,6 +1,6 @@
 #include "Collision.h"
 
-constexpr float SWEEP_TOLERANCE = 0.0001f;
+static constexpr float SWEEP_TOLERANCE = 0.0001f;
 
 bool aabbIntersects(const BoundingBox& a, const BoundingBox& b) {
     return (a.min.x < b.max.x && a.max.x > b.min.x) &&
