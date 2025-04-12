@@ -44,7 +44,7 @@ public:
 
 	void pushWorldRenderData() const;
 
-	void update(float msDelta) override;
+	void update(float deltaTime) override;
 };
 
 #endif

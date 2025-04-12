@@ -1,7 +1,7 @@
 #ifndef LINE_H
 #define LINE_H
 
-#include "engine/rendering/BoundingVolume.h"
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/Renderable.h"

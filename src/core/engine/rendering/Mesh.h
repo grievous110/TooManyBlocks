@@ -1,7 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
-#include "engine/rendering/BoundingVolume.h"
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"

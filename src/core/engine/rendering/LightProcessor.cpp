@@ -1,5 +1,6 @@
 #include "engine/env/lights/Spotlight.h"
-#include "engine/rendering/BoundingVolume.h"
+#include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/Frustum.h"
 #include "engine/rendering/GLUtils.h"
 #include "LightProcessor.h"
 #include <gl/glew.h>

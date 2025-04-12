@@ -5,7 +5,7 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/LineMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
-#include "engine/rendering/BoundingVolume.h"
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/Renderer.h"
 #include "GameInstance.h"
@@ -116,13 +116,13 @@ void GameInstance::pushWorldRenderData() const {
 	}
 }
 
-void GameInstance::update(float msDelta) {
-    m_player->update(msDelta);
+void GameInstance::update(float deltaTime) {
+    m_player->update(deltaTime);
 	for (const auto& light : m_lights) {
-        light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * (msDelta / 1000.0f), 0.0f));
+        light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * deltaTime, 0.0f));
     }
 	
 	Transform& mehs1Tr = m_mesh1->getLocalTransform();
-	mehs1Tr.rotate(msDelta / 100.0f, WorldUp);
+	mehs1Tr.rotate(0.1f * deltaTime, WorldUp);
 	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
 }

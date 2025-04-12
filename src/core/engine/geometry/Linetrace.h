@@ -13,6 +13,6 @@ enum Channel {
     BlockTrace
 };
 
-HitResult linetrace(glm::vec3 start, glm::vec3 end, Channel channel);
+HitResult linetraceByChannel(const glm::vec3& start, const glm::vec3& end, Channel channel);
 
 #endif

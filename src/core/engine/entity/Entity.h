@@ -10,6 +10,8 @@
 class MovementComponent;
 
 class Entity : public Updatable {
+	friend class Controller;
+
 protected:
 	SceneComponent m_sceneRoot;
 	MovementComponent* m_movement;
@@ -19,7 +21,7 @@ public:
 	Entity();
 	virtual ~Entity();
 
-	void update(float msDelta) override;
+	void update(float deltaTime) override;
 
 	inline Transform& getTransform() { return m_sceneRoot.getLocalTransform(); }
 
@@ -30,8 +32,6 @@ public:
 	inline Controller* getController() const { return m_controller; }
 	
 	inline bool isPossessed() const { return m_controller != nullptr; }
-
-	friend class Controller;
 };
 
 #endif

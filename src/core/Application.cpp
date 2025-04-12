@@ -209,12 +209,12 @@ void Application::run() {
 
 			while (!glfwWindowShouldClose(context->window) && !context->instance->gameState.quitGame) {
 				double currentTime = glfwGetTime();
-				float msframeTime = static_cast<float>(currentTime - previousTime) * 1000.0f;
+				float deltaTime = static_cast<float>(currentTime - previousTime);
 				previousTime = currentTime;
 				
 				if (context->instance->isWorldInitialized()) {
 					if (!context->instance->gameState.gamePaused) {
-						context->instance->update(msframeTime);
+						context->instance->update(deltaTime);
 					}
 					context->instance->pushWorldRenderData();
 					context->renderer->render(*context);
