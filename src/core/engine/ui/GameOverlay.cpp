@@ -35,6 +35,24 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
         
+        ImVec2 pos(io.DisplaySize.x - 110, 10); // Adjust X for width
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.0f); // transparent background
+
+        if (ImGui::BeginCombo("##Dropdown", "Movement Mode", ImGuiComboFlags_NoArrowButton))
+        {
+            if (ImGui::Button("Walk")) {
+                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Walk);
+            }
+            if (ImGui::Button("Fly")) {
+                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Fly);
+            }
+            if (ImGui::Button("Spectator")) {
+                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Spectator);
+            }
+            ImGui::EndCombo();
+        }
+
         UI::Util::DrawCrosshair(35.0f, 3.0f);
 
         bool newShowMouse = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
