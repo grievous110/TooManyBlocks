@@ -109,6 +109,12 @@ enum Biome {
     CoreBiome
 };
 
+enum StructureType {
+    Decoration,
+    Regional,
+    SuperStructure
+};
+
 enum BlockGenPriority {
     FILLER,
     MEDIUM,
