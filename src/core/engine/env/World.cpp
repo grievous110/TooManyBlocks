@@ -128,10 +128,10 @@ void World::processDataFromWorkers() {
     }   
 }
 
-World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir) {
+World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir), m_cStorage(worldDir) {
     // Load world data
     std::ifstream file((worldDir / "info.json").string(), std::ios::binary);
-    Json::JsonValue info = Json::parseJson(std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+    Json::JsonValue info = Json::parseJson(std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>()));
     m_seed = static_cast<uint32_t>(std::stoul(info["seed"].toString()));
     file.close();
 }
@@ -153,13 +153,27 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
     // Step 2: Unload chunks that are no longer in the active set
     for (auto it = m_loadedChunks.begin(); it != m_loadedChunks.end(); ) {
         if (activeChunks.find(it->first) == activeChunks.end()) {
+            if (it->second.isMarkedForSave()) {
+                // Save chunk that will be unloaded but has changes
+                ThreadPool* tPool = Application::getContext()->workerPool;
+                
+                glm::ivec3 chunkPos = it->first;
+                std::shared_ptr<Block[]> blockData = it->second.m_blocks;
+                tPool->pushJob(this, [this, chunkPos, blockData] {
+                    try {
+                        m_cStorage.saveChunkData(chunkPos, blockData.get());
+                    } catch (const std::exception& e) {
+                        lgr::lout.error(e.what());
+                    }
+                });
+            }
             it = m_loadedChunks.erase(it);
         } else {
             ++it; // Chunk is still active
         }
     }
 
-    // Step 1: Process data from queues
+    // Step 3: Process data from queues
     {
         std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);        
         if (!m_loadedMeshData.empty()) {
@@ -167,22 +181,29 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
         }
     }
 
-    // Process pending changes for unloaded chunks
+    // Step 4: Process pending changes for unloaded chunks
     // * Currently unhanlded *
     m_pendingChanges.clear();
 
-    // Step 3: Load chunks that are in the active set but not yet loaded and rebuild changed once
+    // Step 5: Load chunks that are in the active set but not yet loaded or need mesh rebuild
     for (const glm::ivec3& chunkPos : activeChunks) {
         auto it = m_loadedChunks.find(chunkPos);
         if (it == m_loadedChunks.end()) {
+            // Chunk does not exist -> Needs to be fully loaded
             // Put placeholder chunk (Chunk with no block data / mesh)
             m_loadedChunks[chunkPos] = Chunk();
 
             // Create new one
             ThreadPool* tPool = Application::getContext()->workerPool;
             tPool->pushJob(this, [this, chunkPos] {
-                std::shared_ptr<Block[]> blocks(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
-                generateChunkBlocks(blocks.get(), chunkPos, m_seed);
+
+                std::shared_ptr<Block[]> blocks = nullptr;
+                if (m_cStorage.hasChunk(chunkPos)) {
+                    blocks = m_cStorage.loadChunkData(chunkPos);
+                } else {
+                    blocks = std::shared_ptr<Block[]>(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
+                    generateChunkBlocks(blocks.get(), chunkPos, m_seed);
+                }                
 
                 std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocks.get(), texMap);
 
@@ -192,6 +213,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                 }
             });
         } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
+            // Chunk already exists and needs a rebuild (and no other worker is currently rebuilding this) -> rebuild only mesh data
             ThreadPool* tPool = Application::getContext()->workerPool;
 
             // Make copy of blockdata
@@ -200,6 +222,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             std::copy(src, src + BLOCKS_PER_CHUNK, blocksCopy.get());
 
             it->second.m_isBeingRebuild = true;
+            it->second.m_changed = false;
             tPool->pushJob(this, [this, chunkPos, blocksCopy] {
                 std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
 
@@ -219,6 +242,7 @@ void World::setBlock(const glm::ivec3& position, uint16_t newBlock) {
         glm::ivec3 relChunkPos = Chunk::worldToChunkLocal(chunkPos, position);
         chunk->m_blocks[chunkBlockIndex(relChunkPos.x, relChunkPos.y, relChunkPos.z)] = { newBlock, newBlock != AIR };
         chunk->m_changed = true;
+        chunk->m_isMarkedForSave = true;
     } else {
         // Queue changes
         m_pendingChanges[position] = newBlock;

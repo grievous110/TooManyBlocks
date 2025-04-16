@@ -2,6 +2,7 @@
 #define WORLD_H
 
 #include "engine/env/Chunk.h"
+#include "engine/persistence/ChunkStorage.h"
 #include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/MeshCreate.h"
 #include "threading/ThreadPool.h"
@@ -18,10 +19,11 @@ class World {
 private:
 	uint32_t m_seed;
 	const std::filesystem::path m_worldDir;
+	const ChunkStorage m_cStorage;
 	std::unordered_map<glm::ivec3, Chunk, coord_hash> m_loadedChunks;
 	std::queue<std::tuple<glm::ivec3, std::shared_ptr<Block[]>, std::shared_ptr<RawChunkMeshData>>> m_loadedMeshData;
 	std::unordered_map<glm::ivec3, uint16_t, coord_hash> m_pendingChanges;
-	std::mutex m_chunkGenQueueMtx;
+	std::mutex m_chunkGenQueueMtx;	
 	
 	std::unordered_set<glm::ivec3, coord_hash> determineActiveChunks(const glm::ivec3& position, int renderDistance);
 	

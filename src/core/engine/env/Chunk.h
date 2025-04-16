@@ -35,8 +35,9 @@ class Chunk {
 	friend class World;
 
 private:
-	bool m_isBeingRebuild;
-	bool m_changed;
+	bool m_isBeingRebuild; // true if a worker is currently building its mesh
+	bool m_changed; // If any block has been changed since the last rebuild started
+	bool m_isMarkedForSave; // If there are changes that need to be written back chunk file
 	std::shared_ptr<Block[]> m_blocks;
 	std::shared_ptr<Mesh> m_mesh;
 
@@ -44,10 +45,11 @@ public:
 	static glm::ivec3 worldToChunkOrigin(const glm::vec3& worldPos);
 	static glm::ivec3 worldToChunkLocal(const glm::ivec3& chunkOrigin, const glm::ivec3& worldBlockPos);
 
-	Chunk() : m_isBeingRebuild(false), m_changed(false) {}
+	Chunk() : m_isBeingRebuild(false), m_changed(false), m_isMarkedForSave(false) {}
 
 	inline bool isBeingRebuild() const { return m_isBeingRebuild; }
 	inline bool isChanged() const { return m_changed; }
+	inline bool isMarkedForSave() const { return m_isMarkedForSave; }
 	inline bool isLoaded() const { return m_blocks != nullptr; }
 	inline const Block* blocks() const { return m_blocks.get(); }
 	inline Mesh* getMesh() const { return m_mesh.get(); }

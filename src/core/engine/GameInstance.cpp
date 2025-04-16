@@ -63,7 +63,7 @@ void GameInstance::initializeWorld(World* newWorld) {
 		m_mesh2->assignMaterial(testMaterial2);
 	
 		m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
-		m_mesh1->getLocalTransform().setScale(0.5f);
+		m_mesh1->getLocalTransform().setScale(1.0f);
 		m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
 		m_mesh2->getLocalTransform().translate(glm::vec3(0.0f, 3.0f, 0.0f));
 
@@ -123,6 +123,6 @@ void GameInstance::update(float deltaTime) {
     }
 	
 	Transform& mehs1Tr = m_mesh1->getLocalTransform();
-	mehs1Tr.rotate(0.1f * deltaTime, WorldUp);
-	m_world->updateChunks(m_player->getTransform().getPosition(), 3);
+	mehs1Tr.rotate(10.0f * deltaTime, WorldUp);
+	m_world->updateChunks(m_player->getTransform().getPosition(), 2);
 }
