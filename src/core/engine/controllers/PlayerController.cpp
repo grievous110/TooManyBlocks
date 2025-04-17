@@ -10,13 +10,17 @@
 #include <GLFW/glfw3.h>
 
 PlayerController::PlayerController() : m_cameraPitch(0.0f), m_playerNeedsReadjustment(true) {
-    Application::getContext()->io->keyAdapter().attach(this);
-	Application::getContext()->io->mouseAdapter().attach(this);
+    if (ApplicationContext* context = Application::getContext()) {
+        Application::getContext()->io->keyAdapter().attach(this);
+        Application::getContext()->io->mouseAdapter().attach(this);
+    }
 }
 
 PlayerController::~PlayerController() {
-    Application::getContext()->io->keyAdapter().detach(this);
-	Application::getContext()->io->mouseAdapter().detach(this);
+    if (ApplicationContext* context = Application::getContext()) {
+        Application::getContext()->io->keyAdapter().detach(this);
+	    Application::getContext()->io->mouseAdapter().detach(this);
+    }    
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {
@@ -44,9 +48,11 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
                 // Block breaking logic
                 if (ApplicationContext* context = Application::getContext()) {
                     if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
-                        context->instance->m_world->setBlock(pl->getFocusedBlock(), AIR);
+                        if (pl->isFocusingBlock()) {
+                            context->instance->m_world->setBlock(pl->getFocusedBlock(), AIR);
+                        }
                     }
-                }            
+                }
             }
             if (!keyStates[GLFW_MOUSE_BUTTON_RIGHT] && data.key.code == GLFW_MOUSE_BUTTON_RIGHT && event == MousEvent::ButtonDown) {
                 // Teleport player up (to unstuck)
