@@ -2,6 +2,23 @@
 #include "engine/ui/UiUtil.h"
 #include <imgui.h>
 
+bool UI::Dialog::Notification(const std::string& title, const std::string& message) {
+    bool closed = false;
+    if (ImGui::BeginPopupModal(title.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
+        UI::Util::CenterPopup();
+        ImGui::TextWrapped("%s", message.c_str());
+
+        ImGui::Separator();
+        
+        if (ImGui::Button("OK")) {
+            closed = true;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    return closed;
+}
+
 bool UI::Dialog::Confirm(const std::string& title, const std::string& message) {
     bool confirmed = false;
     if (ImGui::BeginPopupModal(title.c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove)) {
