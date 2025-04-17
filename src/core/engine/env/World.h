@@ -19,7 +19,7 @@ class World {
 private:
 	uint32_t m_seed;
 	const std::filesystem::path m_worldDir;
-	const ChunkStorage m_cStorage;
+	ChunkStorage m_cStorage;
 	std::unordered_map<glm::ivec3, Chunk, coord_hash> m_loadedChunks;
 	std::queue<std::tuple<glm::ivec3, std::shared_ptr<Block[]>, std::shared_ptr<RawChunkMeshData>>> m_loadedMeshData;
 	std::unordered_map<glm::ivec3, uint16_t, coord_hash> m_pendingChanges;
@@ -39,6 +39,8 @@ public:
 	Chunk* getChunk(const glm::ivec3& location);
 
 	void updateChunks(const glm::ivec3& position, int renderDistance);
+
+	void syncedSaveChunks();
 
 	void setBlock(const glm::ivec3& position, uint16_t newBlocks);
 
