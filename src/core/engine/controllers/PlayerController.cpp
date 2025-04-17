@@ -54,12 +54,6 @@ void PlayerController::notify(MousEvent event, MouseEventData data) {
                     }
                 }
             }
-            if (!keyStates[GLFW_MOUSE_BUTTON_RIGHT] && data.key.code == GLFW_MOUSE_BUTTON_RIGHT && event == MousEvent::ButtonDown) {
-                // Teleport player up (to unstuck)
-                if(Player* pl = dynamic_cast<Player*>(m_possessedEntity)) {
-                    pl->getTransform().setPosition(pl->getTransform().getPosition() + glm::vec3(0, 5, 0));
-                }
-            }
         }
 
         keyStates[data.key.code] = event == MousEvent::ButtonDown;
