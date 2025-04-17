@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-std::shared_ptr<std::mutex> ChunkStorage::getChunkMutex(const glm::ivec3& pos) const {
+std::shared_ptr<std::mutex> ChunkStorage::getChunkMutex(const glm::ivec3& pos) {
     std::lock_guard<std::mutex> lock(m_lockMapMutex);
 
     // Clean up expired entries
@@ -37,8 +37,7 @@ ChunkStorage::ChunkStorage(const std::filesystem::path &worldPath) : m_chunkStor
     }
 }
 
-bool ChunkStorage::hasChunk(const glm::ivec3 &chunkPos) const
-{
+bool ChunkStorage::hasChunk(const glm::ivec3& chunkPos) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
     
@@ -46,7 +45,7 @@ bool ChunkStorage::hasChunk(const glm::ivec3 &chunkPos) const
     return std::filesystem::exists(m_chunkStoragePath / chunkFileName);
 }
 
-std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos) const {
+std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
@@ -116,7 +115,7 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
     return blocks;
 }
 
-void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks) const {
+void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 

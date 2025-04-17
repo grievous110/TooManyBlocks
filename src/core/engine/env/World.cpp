@@ -235,6 +235,15 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
     }
 }
 
+void World::syncedSaveChunks() {
+    for (auto& entry : m_loadedChunks) {
+        if (entry.second.isMarkedForSave()) {
+            m_cStorage.saveChunkData(entry.first, entry.second.blocks());
+            entry.second.m_isMarkedForSave = false;
+        }
+    }
+}
+
 void World::setBlock(const glm::ivec3& position, uint16_t newBlock) {
     glm::ivec3 chunkPos = Chunk::worldToChunkOrigin(position);
     if (Chunk* chunk = getChunk(chunkPos)) {
