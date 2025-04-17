@@ -85,6 +85,11 @@ void GameInstance::deinitWorld() {
 		m_player= nullptr;
 	}
 	if (m_world) {
+		try {
+			m_world->syncedSaveChunks();
+		} catch (const std::exception& e) {
+			lgr::lout.error(e.what());
+		} 
 		if (ApplicationContext* context = Application::getContext()) {
 			context->workerPool->cancelJobs(m_world);
 			context->workerPool->waitForOwnerCompletion(m_world);
