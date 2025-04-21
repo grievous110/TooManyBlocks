@@ -14,7 +14,7 @@ constexpr int CHUNK_SLICE_SIZE = CHUNK_WIDTH * CHUNK_HEIGHT; 	// Vertical slice 
 constexpr int CHUNK_PLANE_SIZE = CHUNK_WIDTH * CHUNK_DEPTH; 	// Horizontal plane size in a chunk
 constexpr int BLOCKS_PER_CHUNK = CHUNK_WIDTH * CHUNK_DEPTH * CHUNK_HEIGHT;
 
-class Mesh;
+class StaticMesh;
 
 struct coord_hash {
 	size_t operator() (const glm::ivec3& v) const {
@@ -39,7 +39,7 @@ private:
 	bool m_changed; // If any block has been changed since the last rebuild started
 	bool m_isMarkedForSave; // If there are changes that need to be written back chunk file
 	std::shared_ptr<Block[]> m_blocks;
-	std::shared_ptr<Mesh> m_mesh;
+	std::shared_ptr<StaticMesh> m_mesh;
 
 public:	
 	static glm::ivec3 worldToChunkOrigin(const glm::vec3& worldPos);
@@ -52,7 +52,7 @@ public:
 	inline bool isMarkedForSave() const { return m_isMarkedForSave; }
 	inline bool isLoaded() const { return m_blocks != nullptr; }
 	inline const Block* blocks() const { return m_blocks.get(); }
-	inline Mesh* getMesh() const { return m_mesh.get(); }
+	inline StaticMesh* getMesh() const { return m_mesh.get(); }
 };
 
 constexpr int chunkBlockIndex(int x, int y, int z) {

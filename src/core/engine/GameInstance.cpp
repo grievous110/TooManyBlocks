@@ -11,7 +11,7 @@
 #include "GameInstance.h"
 #include "Logger.h"
 #include "providers/Provider.h"
-#include "rendering/Mesh.h"
+#include "rendering/StaticMesh.h"
 #include "threading/ThreadPool.h"
 #include <GLFW/glfw3.h>
 #include <random>

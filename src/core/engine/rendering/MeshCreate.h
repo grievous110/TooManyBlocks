@@ -4,7 +4,7 @@
 #include "engine/env/Chunk.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/BlockToTextureMapping.h"
-#include "engine/rendering/Mesh.h"
+#include "engine/rendering/StaticMesh.h"
 #include "engine/rendering/RenderData.h"
 #include <cstdint>
 #include <glm/glm.hpp>
