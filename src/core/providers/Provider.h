@@ -4,7 +4,7 @@
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
-#include "engine/rendering/Mesh.h"
+#include "engine/rendering/StaticMesh.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -25,7 +25,7 @@ public:
 
 	std::shared_ptr<Texture> getTextureFromFile(const std::string& texturePath);
 
-	std::shared_ptr<Mesh> getMeshFromFile(const std::string& meshPath);
+	std::shared_ptr<StaticMesh> getMeshFromFile(const std::string& meshPath);
 };
 
 #endif

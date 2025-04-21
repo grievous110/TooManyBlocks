@@ -27,8 +27,8 @@ public:
 	Player* m_player;
 	World* m_world;
 	std::shared_ptr<Line> m_line;
-	std::shared_ptr<Mesh> m_mesh1;
-	std::shared_ptr<Mesh> m_mesh2;
+	std::shared_ptr<StaticMesh> m_mesh1;
+	std::shared_ptr<StaticMesh> m_mesh2;
 	std::shared_ptr<Wireframe> m_focusedBlockOutline;
 	std::vector<std::shared_ptr<Spotlight>> m_lights;
 	

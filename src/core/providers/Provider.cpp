@@ -44,15 +44,15 @@ std::shared_ptr<Texture> Provider::getTextureFromFile(const std::string& texture
 	return newTexture;
 }
 
-std::shared_ptr<Mesh> Provider::getMeshFromFile(const std::string &meshPath) {
+std::shared_ptr<StaticMesh> Provider::getMeshFromFile(const std::string &meshPath) {
     auto it = m_meshCache.find(meshPath);
 	if (it != m_meshCache.end()) {
-		return std::make_shared<Mesh>(it->second.first, it->second.second);
+		return std::make_shared<StaticMesh>(it->second.first, it->second.second);
 	}
 
 	// Use the provided creator function to create the new object
 	std::shared_ptr<CPURenderData<Vertex>> meshData = readMeshDataFromObjFile(meshPath, true);
 	std::shared_ptr<RenderData> renderData = packToRenderData(*meshData);
 	m_meshCache[meshPath] = std::make_pair(renderData, meshData->bounds);
-	return std::make_shared<Mesh>(renderData, meshData->bounds);
+	return std::make_shared<StaticMesh>(renderData, meshData->bounds);
 }

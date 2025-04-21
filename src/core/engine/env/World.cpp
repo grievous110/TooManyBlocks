@@ -1,7 +1,7 @@
 #include "AppConstants.h"
 #include "Application.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
-#include "engine/rendering/Mesh.h"
+#include "engine/rendering/StaticMesh.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/worldgen/PerlinNoise.h"
 #include "Logger.h"
@@ -109,14 +109,14 @@ void World::processDataFromWorkers() {
                 if (!chunk.isLoaded()) {
                     // 1. Case: Chunk has been initially loaded (blocks + mesh must be set)
                     chunk.m_blocks = data.blockData;
-                    chunk.m_mesh = std::make_shared<Mesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh = std::make_shared<StaticMesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 } else if (chunk.isBeingRebuild()) {
                     // 2. Case: Chunk has been rebuilded (Reset flag and replace mesh)
                     chunk.m_isBeingRebuild = false;
                     
                     // *No need to set blocks*
-                    chunk.m_mesh = std::make_shared<Mesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh = std::make_shared<StaticMesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 }
             }

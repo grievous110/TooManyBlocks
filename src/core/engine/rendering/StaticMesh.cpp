@@ -1,7 +1,7 @@
 #include "engine/rendering/GLUtils.h"
-#include "Mesh.h"
+#include "StaticMesh.h"
 #include <GL/glew.h>
 
-void Mesh::draw() const {
+void StaticMesh::draw() const {
     m_data->drawAs(GL_TRIANGLES);
 }
