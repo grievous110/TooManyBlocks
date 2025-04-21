@@ -7,6 +7,16 @@
 #include <string>
 #include <unordered_map>
 
+class ShaderDefines {
+private:
+	std::unordered_map<std::string, std::string> m_defines;
+
+public:
+	inline void add(const std::string& key, const std::string& value = "") { m_defines[key] = value; }
+
+	inline const std::unordered_map<std::string, std::string>& definitions() const { return m_defines; }
+};
+
 class Shader : public RenderApiObject {
 private:
 	static thread_local unsigned int currentlyBoundShader;
@@ -21,7 +31,7 @@ public:
 	static void bindDefault();
 	static void syncBinding();
 
-	Shader(const std::string& shaderPath);
+	Shader(const std::string& shaderPath, const ShaderDefines& defines = ShaderDefines());
 	Shader(Shader&& other) noexcept;
 	virtual ~Shader();
 
