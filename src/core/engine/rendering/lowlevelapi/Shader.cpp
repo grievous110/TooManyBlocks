@@ -1,15 +1,16 @@
 #include "engine/rendering/GLUtils.h"
 #include "Logger.h"
 #include "Shader.h"
-#include <glm/gtc/type_ptr.hpp>
 #include <fstream>
 #include <gl/glew.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <sstream>
+#include <stddef.h>
 #include <stdexcept>
 
 struct ShaderSource {
-    const std::string vertexSource;
-    const std::string fragmentSource;
+    std::string vertexSource;
+    std::string fragmentSource;
 };
 
 enum CurrentlyReading {
@@ -20,7 +21,7 @@ enum CurrentlyReading {
 
 thread_local unsigned int Shader::currentlyBoundShader = 0;
 
-std::string readFile(const std::string& filepath) {
+static std::string readFile(const std::string& filepath) {
     std::ifstream file(filepath, std::ios::in);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filepath);
@@ -28,7 +29,7 @@ std::string readFile(const std::string& filepath) {
     return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 }
 
-ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
+static ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
     std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
     std::string vertFile = shaderPath + "/" + basename + ".vert";
     std::string fragFile = shaderPath + "/" + basename + ".frag";
@@ -39,9 +40,43 @@ ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
     return { vertexShaderCode, fragmentShaderCode };
 }
 
-unsigned int compileShader(const unsigned int& type, const std::string& source) {
+static unsigned int compileShader(unsigned int type, const std::string& source, const ShaderDefines& definitions) {
+    const char* src = nullptr;
+    std::string processedSource;
+    
+    // Insert optional compile definitions
+    if (!definitions.definitions().empty()) {
+        size_t versionPos = source.find("#version");
+        size_t insertPos = source.find('\n', versionPos);
+        
+        if (versionPos != std::string::npos && insertPos != std::string::npos) {
+            std::string defineBlock;
+            for (const auto& define : definitions.definitions()) {
+                defineBlock += "#define " + define.first;
+                if (!define.second.empty()) {
+                    defineBlock += " " + define.second;
+                }
+                defineBlock += "\n";
+            }
+
+            size_t preLength = insertPos + 1; // include newline
+            processedSource.reserve(defineBlock.size() + source.size()); // Preallocate
+
+            // Build final string in-place
+            processedSource.append(source, 0, preLength);
+            processedSource.append(defineBlock);
+            processedSource.append(source, preLength);
+
+            src = processedSource.c_str();
+        } else {
+            // Fallback
+            src = source.c_str();
+        }
+    } else {
+        src = source.c_str();
+    }
+
 	unsigned int id = glCreateShader(type);
-	const char* src = source.c_str();
 	GLCALL(glShaderSource(id, 1, &src, nullptr));
 	GLCALL(glCompileShader(id));
 
@@ -64,10 +99,10 @@ unsigned int compileShader(const unsigned int& type, const std::string& source) 
 	return id;
 }
 
-unsigned int createShader(const std::string& vertexShader, const std::string& fragmentShader) {
+static unsigned int createShader(const ShaderSource& source, const ShaderDefines& definitions) {
     GLCALL(unsigned int program = glCreateProgram());
-    unsigned int vs = compileShader(GL_VERTEX_SHADER, vertexShader);
-    unsigned int fs = compileShader(GL_FRAGMENT_SHADER, fragmentShader);
+    unsigned int vs = compileShader(GL_VERTEX_SHADER, source.vertexSource, definitions);
+    unsigned int fs = compileShader(GL_FRAGMENT_SHADER, source.fragmentSource, definitions);
 
     GLCALL(glAttachShader(program, vs));
     GLCALL(glAttachShader(program, fs));
@@ -139,9 +174,9 @@ void Shader::syncBinding() {
     Shader::currentlyBoundShader = static_cast<unsigned int>(binding);
 }
 
-Shader::Shader(const std::string& shaderPath) : m_shaderPath(shaderPath) {
+Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) : m_shaderPath(shaderPath) {
     ShaderSource source = shaderSourceFromFile(shaderPath);
-    m_rendererId = createShader(source.vertexSource, source.fragmentSource);
+    m_rendererId = createShader(source, definitions);
 }
 
 Shader::Shader(Shader&& other) noexcept : RenderApiObject(std::move(other)), m_shaderPath(std::move(other.m_shaderPath)) {
