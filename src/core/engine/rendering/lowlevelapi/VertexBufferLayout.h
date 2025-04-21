@@ -18,10 +18,7 @@ private:
 public:
     VertexBufferLayout() : m_stride(0) {};
 
-	void push(unsigned int type, unsigned int typeSize, unsigned int count, bool normalized = false) {
-        m_elements.push_back({ type , typeSize, count, normalized });
-        m_stride += count * typeSize;
-	}
+	void push(unsigned int type, unsigned int count, bool normalized = false);
     
     inline const std::vector<BufferLayoutElement>& elements() const { return m_elements; }
 
