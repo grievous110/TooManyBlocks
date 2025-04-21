@@ -11,17 +11,22 @@
 #include <memory>
 #include <mutex>
 #include <queue>
-#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 
 class World {
 private:
+	struct WorkerResult {
+		glm::ivec3 chunkPos;
+		std::shared_ptr<Block[]> blockData; // nullptr if just rebuild
+		std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData;
+	};
+
 	uint32_t m_seed;
 	const std::filesystem::path m_worldDir;
 	ChunkStorage m_cStorage;
 	std::unordered_map<glm::ivec3, Chunk, coord_hash> m_loadedChunks;
-	std::queue<std::tuple<glm::ivec3, std::shared_ptr<Block[]>, std::shared_ptr<RawChunkMeshData>>> m_loadedMeshData;
+	std::queue<WorkerResult> m_workerResultQueue;
 	std::unordered_map<glm::ivec3, uint16_t, coord_hash> m_pendingChanges;
 	std::mutex m_chunkGenQueueMtx;	
 	

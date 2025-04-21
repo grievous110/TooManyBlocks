@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <vector>
 
-typedef unsigned int** BinaryPlanes;
+typedef unsigned int** BinaryPlaneArray;
 typedef unsigned int* BinaryPlane;
 
 struct CompactChunkFace {
@@ -26,7 +26,7 @@ struct CompactChunkFace {
     unsigned int indices[6];
 };
 
-static void zeroFillPlanes(BinaryPlanes planes, size_t size) {
+static void zeroFillPlanes(BinaryPlaneArray planes, size_t size) {
     for (size_t slice = 0; slice < size; slice++) {
         for (size_t row = 0; row < size; row++) {
             planes[slice][row] = 0U;
@@ -34,8 +34,8 @@ static void zeroFillPlanes(BinaryPlanes planes, size_t size) {
     }
 }
 
-static BinaryPlanes allocateBinaryPlanes(size_t size) {
-    BinaryPlanes planes = new BinaryPlane[size];
+static BinaryPlaneArray allocateBinaryPlanes(size_t size) {
+    BinaryPlaneArray planes = new BinaryPlane[size];
     for (size_t slice = 0; slice < size; slice++) {
        planes[slice] = new unsigned int[size];
     }
@@ -43,7 +43,7 @@ static BinaryPlanes allocateBinaryPlanes(size_t size) {
     return planes;
 }
 
-static void freeBinaryPlanes(BinaryPlanes planes, size_t size) {
+static void freeBinaryPlanes(BinaryPlaneArray planes, size_t size) {
     for (size_t slice = 0; slice < size; slice++) {
        delete[] planes[slice];
     }
@@ -77,6 +77,17 @@ static BoundingBox calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) 
         bounds.max = glm::max(bounds.max, vertex.position);
     }
     return bounds;
+}
+
+static size_t getNumComponents(const std::string& accessorType) {
+	if (accessorType == "SCALAR") return 1;
+	if (accessorType == "VEC2")   return 2;
+	if (accessorType == "VEC3")   return 3;
+	if (accessorType == "VEC4")   return 4;
+	if (accessorType == "MAT2")   return 4;
+	if (accessorType == "MAT3")   return 9;
+	if (accessorType == "MAT4")   return 16;
+	throw std::runtime_error("Unknown accessor type: " + accessorType);
 }
 
 static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1) {
@@ -154,53 +165,47 @@ static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisD
     return face;
 }
 
-std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData &data) {
+std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data) {
     // Vertex Buffer Object (VBO)
     VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
 
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
     // Compressed data
-    layout.push(GL_UNSIGNED_INT, sizeof(unsigned int), 1);
-    layout.push(GL_UNSIGNED_INT, sizeof(unsigned int), 1);
+    layout.push(GL_UNSIGNED_INT, 1);
+    layout.push(GL_UNSIGNED_INT, 1);
+    vbo.setLayout(layout);
 
     // Vertex Array Object (VAO)
     VertexArray vao;
-    vao.addBuffer(vbo, layout);
+    vao.addBuffer(vbo);
 
     // Index Buffer Object (IBO)
     IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData& data) {
-    return std::make_shared<Mesh>(packToChunkRenderData(data), data.bounds);
-}
-
-std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData& data) {
+std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) {
     // Vertex Buffer Object (VBO)
     VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
 
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
-    layout.push(GL_FLOAT, sizeof(float), 3); // Position
-    layout.push(GL_FLOAT, sizeof(float), 2); // UV
-    layout.push(GL_FLOAT, sizeof(float), 3); // Normal
+    layout.push(GL_FLOAT, 3); // Position
+    layout.push(GL_FLOAT, 2); // UV
+    layout.push(GL_FLOAT, 3); // Normal
+    vbo.setLayout(layout);
 
     // Vertex Array Object (VAO)
     VertexArray vao;
-    vao.addBuffer(vbo, layout);
+    vao.addBuffer(vbo);
 
     // Index Buffer Object (IBO)
     IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<MeshRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data) {
-    return std::make_shared<Mesh>(packToRenderData(data), data.bounds);
-}
-
-std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
 	std::vector<CompactChunkVertex> vertexBuffer;
 	std::vector<unsigned int> indexBuffer;
 
@@ -234,7 +239,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, cons
         }
     }
     
-    std::shared_ptr<RawChunkMeshData> data = std::make_shared<RawChunkMeshData>();
+    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
@@ -242,9 +247,9 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, cons
     return data;
 }
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
     // Hold for each blocktype cullplanes for all 3 axes
-    std::unordered_map<uint16_t, BinaryPlanes[3]> blockTypeCullPlanes;
+    std::unordered_map<uint16_t, BinaryPlaneArray[3]> blockTypeCullPlanes;
 
     // Populate culling planes with mesh data
     for (int x = 0; x < CHUNK_WIDTH; x++) {
@@ -252,7 +257,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks
             for (int z = 0; z < CHUNK_DEPTH; z++) {
                 const Block& blockRef = blocks[chunkBlockIndex(x, y, z)];
                 if (blockRef.isSolid) {
-                    BinaryPlanes* planes = nullptr;
+                    BinaryPlaneArray* planes = nullptr;
                     
                     // Check if axis planes for blocktype exist
                     auto it = blockTypeCullPlanes.find(blockRef.type);
@@ -282,12 +287,12 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks
 	unsigned int currentIndexOffset = 0;
 
     // Two greedy meshing planes because forward and backwards direction can be face culled in a single iteration
-    BinaryPlanes forwardGreedyMeshingPlanes = allocateBinaryPlanes(CHUNK_SIZE);
-    BinaryPlanes backwardGreedyMeshingPlanes = allocateBinaryPlanes(CHUNK_SIZE);
+    BinaryPlaneArray forwardGreedyMeshingPlanes = allocateBinaryPlanes(CHUNK_SIZE);
+    BinaryPlaneArray backwardGreedyMeshingPlanes = allocateBinaryPlanes(CHUNK_SIZE);
 
     for (auto& element : blockTypeCullPlanes) {
         for (Axis axis : allAxis) {
-            BinaryPlanes cullPlanes = element.second[axis];
+            BinaryPlaneArray cullPlanes = element.second[axis];
 
             AxisDirection forward;
             AxisDirection backward;
@@ -334,7 +339,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks
             // Greedy meshing in forward and backward direction
             for (int dir = 0; dir < 2; dir++) {
                 AxisDirection currentDirection;
-                BinaryPlanes greedyMeshingPlanes;
+                BinaryPlaneArray greedyMeshingPlanes;
                 if (dir == 0) { // Forward
                     currentDirection = forward;
                     greedyMeshingPlanes = forwardGreedyMeshingPlanes;
@@ -398,7 +403,7 @@ std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks
     freeBinaryPlanes(forwardGreedyMeshingPlanes, CHUNK_SIZE);
     freeBinaryPlanes(backwardGreedyMeshingPlanes, CHUNK_SIZE);
 
-    std::shared_ptr<RawChunkMeshData> data = std::make_shared<RawChunkMeshData>();
+    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
@@ -418,14 +423,14 @@ namespace std {
     };
 }
 
-std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
-    std::vector<RawMeshData> meshes;
-    {       
+std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
+    std::vector<CPURenderData<Vertex>> meshes;
+    {
         std::vector<glm::vec3> positions;
         std::vector<glm::vec2> uvs;
         std::vector<glm::vec3> normals;
 
-        RawMeshData currentMesh;
+        CPURenderData<Vertex> currentMesh;
         currentMesh.name = "default"; // Default name in case none is provided
 
         std::unordered_map<Vertex, unsigned int> vertexMap; // Map to indices to reuse vertices
@@ -503,8 +508,8 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
             } else if (prefix == "o" || prefix == "g") {
                 // Parse new object or group
                 if(!currentMesh.vertices.empty()) {
-                    meshes.push_back(currentMesh);
-                    currentMesh = RawMeshData();
+                    meshes.push_back(std::move(currentMesh));
+                    currentMesh = CPURenderData<Vertex>();
                     vertexMap.clear();
                 }
                 ss >> currentMesh.name;
@@ -513,7 +518,7 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
 
         // Push the last mesh
         if (!currentMesh.vertices.empty()) {
-            meshes.push_back(currentMesh);
+            meshes.push_back(std::move(currentMesh));
         }
 
         file.close();
@@ -526,8 +531,8 @@ std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath
         lgr::lout.warn("There are multiple objects in that file, ignoring all except first object in: " + filePath);
     }
 
-    RawMeshData& obj = meshes[0];
-    std::shared_ptr<RawMeshData> meshData = std::make_shared<RawMeshData>();
+    CPURenderData<Vertex>& obj = meshes[0];
+    std::shared_ptr<CPURenderData<Vertex>> meshData = std::make_shared<CPURenderData<Vertex>>();
     meshData->name = std::move(obj.name);
     meshData->vertices = std::move(obj.vertices);
     meshData->indices = std::move(obj.indices);

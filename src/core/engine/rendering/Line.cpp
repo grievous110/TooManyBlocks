@@ -1,13 +1,13 @@
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
+#include "engine/rendering/lowlevelapi/VertexArray.h"
+#include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "Line.h"
 #include <gl/glew.h>
 
 void Line::draw() const {
-    m_vao->bind();
-
     GLCALL(glLineWidth(m_lineWidth));
-    GLCALL(glDrawArrays(GL_LINES, 0, 2));
+    m_data->drawAs(GL_LINES);
 }
 
 Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::shared_ptr<Material> material) : m_lineWidth(lineWidth), m_material(material) {
@@ -18,9 +18,12 @@ Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::s
 
     m_bounds = { glm::min(start, end), glm::max(start, end) };
 
-    m_vbo = std::make_unique<VertexBuffer>(lineVertices, 6 * sizeof(float));
+    VertexBuffer vbo(lineVertices, sizeof(lineVertices));
     VertexBufferLayout layout;
-    layout.push(GL_FLOAT, sizeof(float), 3);
-    m_vao = std::make_unique<VertexArray>();
-    m_vao->addBuffer(*m_vbo, layout);
+    layout.push(GL_FLOAT, 3);
+    vbo.setLayout(layout);
+    VertexArray vao;
+    vao.addBuffer(vbo);
+
+    m_data = std::make_unique<NonIndexedRenderData>(std::move(vao), std::move(vbo));
 }

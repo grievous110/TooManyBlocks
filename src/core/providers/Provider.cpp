@@ -51,8 +51,8 @@ std::shared_ptr<Mesh> Provider::getMeshFromFile(const std::string &meshPath) {
 	}
 
 	// Use the provided creator function to create the new object
-	std::shared_ptr<RawMeshData> meshData = readMeshDataFromObjFile(meshPath, true);
-	std::shared_ptr<MeshRenderData> renderData = packToRenderData(*meshData);
+	std::shared_ptr<CPURenderData<Vertex>> meshData = readMeshDataFromObjFile(meshPath, true);
+	std::shared_ptr<RenderData> renderData = packToRenderData(*meshData);
 	m_meshCache[meshPath] = std::make_pair(renderData, meshData->bounds);
 	return std::make_shared<Mesh>(renderData, meshData->bounds);
 }

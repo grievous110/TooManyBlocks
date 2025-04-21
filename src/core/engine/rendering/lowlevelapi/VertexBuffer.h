@@ -2,11 +2,13 @@
 #define VERTEXBUFFER_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include <stddef.h>
 
 class VertexBuffer : public RenderApiObject {
 private:
 	static thread_local unsigned int currentlyBoundVBO;
+	VertexBufferLayout m_layout;
 	size_t m_size;
 	
 public:
@@ -21,7 +23,13 @@ public:
 
 	void bind() const;
 
+	inline void setLayout(const VertexBufferLayout& layout) { m_layout = layout; }
+
+	inline const VertexBufferLayout& getLayout() const { return m_layout; }
+
 	inline size_t getByteSize() const { return m_size; };
+
+	inline size_t getVertexCount() const { return m_layout.stride() ? (m_size / m_layout.stride()) : 0;	}
 
 	VertexBuffer& operator=(VertexBuffer&& other) noexcept;
 };

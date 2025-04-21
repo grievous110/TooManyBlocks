@@ -99,29 +99,25 @@ void World::processDataFromWorkers() {
             provider->putMaterial("ChunkMaterial", material);
         }
     
-        while (!m_loadedMeshData.empty()) {
-            std::tuple<glm::ivec3, std::shared_ptr<Block[]>, std::shared_ptr<RawChunkMeshData>> data = m_loadedMeshData.front();
-            m_loadedMeshData.pop();
+        while (!m_workerResultQueue.empty()) {
+            WorkerResult data = m_workerResultQueue.front();
+            m_workerResultQueue.pop();
             
-            glm::ivec3 chunkPos = std::get<glm::ivec3>(data);
-            auto it = m_loadedChunks.find(chunkPos);
+            auto it = m_loadedChunks.find(data.chunkPos);
             if (it != m_loadedChunks.end()) {
                 Chunk& chunk = it->second;
                 if (!chunk.isLoaded()) {
                     // 1. Case: Chunk has been initially loaded (blocks + mesh must be set)
-                    chunk.m_blocks = std::get<std::shared_ptr<Block[]>>(data);
-                    chunk.m_mesh = buildFromChunkMeshData(*std::get<std::shared_ptr<RawChunkMeshData>>(data));
-                    chunk.m_mesh->assignMaterial(material);
-                    chunk.m_mesh->getLocalTransform().setPosition(chunkPos);
+                    chunk.m_blocks = data.blockData;
+                    chunk.m_mesh = std::make_shared<Mesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 } else if (chunk.isBeingRebuild()) {
                     // 2. Case: Chunk has been rebuilded (Reset flag and replace mesh)
                     chunk.m_isBeingRebuild = false;
                     
                     // *No need to set blocks*
-                    
-                    chunk.m_mesh = buildFromChunkMeshData(*std::get<std::shared_ptr<RawChunkMeshData>>(data));
-                    chunk.m_mesh->assignMaterial(material);
-                    chunk.m_mesh->getLocalTransform().setPosition(chunkPos);
+                    chunk.m_mesh = std::make_shared<Mesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 }
             }
         }
@@ -176,7 +172,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
     // Step 3: Process data from queues
     {
         std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);        
-        if (!m_loadedMeshData.empty()) {
+        if (!m_workerResultQueue.empty()) {
             processDataFromWorkers();
         }
     }
@@ -205,11 +201,11 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                     generateChunkBlocks(blocks.get(), chunkPos, m_seed);
                 }                
 
-                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocks.get(), texMap);
+                std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData = generateMeshForChunkGreedy(blocks.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_loadedMeshData.push(std::make_tuple(chunkPos, blocks, meshData));
+                    m_workerResultQueue.push({ chunkPos, blocks, meshData });
                 }
             });
         } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
@@ -224,11 +220,11 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             it->second.m_isBeingRebuild = true;
             it->second.m_changed = false;
             tPool->pushJob(this, [this, chunkPos, blocksCopy] {
-                std::shared_ptr<RawChunkMeshData> meshData = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
+                std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_loadedMeshData.push(std::make_tuple(chunkPos, nullptr, meshData));
+                    m_workerResultQueue.push({ chunkPos, nullptr, meshData });
                 }
             });
         }

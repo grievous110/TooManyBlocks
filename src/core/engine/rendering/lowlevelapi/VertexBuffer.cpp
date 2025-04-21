@@ -27,7 +27,7 @@ VertexBuffer::VertexBuffer(const void *data, size_t size) : m_size(size) {
 	GLCALL(glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer::currentlyBoundVBO));
 }
 
-VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_size(other.m_size) {
+VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_layout(std::move(other.m_layout)), m_size(other.m_size) {
 	other.m_size = 0;
 }
 
@@ -81,6 +81,7 @@ VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
 			}
 		}
 		RenderApiObject::operator=(std::move(other));
+		m_layout = std::move(other.m_layout);
 		m_size = other.m_size;
 		
 		other.m_size = 0;

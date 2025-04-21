@@ -2,23 +2,13 @@
 #define WIREFRAME_H
 
 #include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/lowlevelapi/IndexBuffer.h"
-#include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/Renderable.h"
+#include "engine/rendering/RenderData.h"
 #include <memory>
-
-struct WireframeRenderData {
-	VertexArray vao;
-	VertexBuffer vbo;
-	IndexBuffer ibo;
-
-	WireframeRenderData(VertexArray&& array, VertexBuffer&& buffer, IndexBuffer&& indices) : vao(std::move(array)), vbo(std::move(buffer)), ibo(std::move(indices)) {}
-};
 
 class Wireframe : public Renderable {
 private:
-    std::shared_ptr<WireframeRenderData> m_data;
+    std::shared_ptr<RenderData> m_data;
     std::shared_ptr<Material> m_material;
     BoundingBox m_bounds;
     float m_lineWidth;
@@ -28,7 +18,7 @@ private:
 public:    
     static Wireframe fromBoundigBox(const BoundingBox& bbox);
 
-    Wireframe(std::shared_ptr<WireframeRenderData> renderData, const BoundingBox& bounds, float lineWidth = 2.0f, std::shared_ptr<Material> material = nullptr) : m_data(renderData), m_material(material), m_bounds(bounds), m_lineWidth(lineWidth) {}
+    Wireframe(std::shared_ptr<RenderData> renderData, const BoundingBox& bounds, float lineWidth = 2.0f, std::shared_ptr<Material> material = nullptr) : m_data(renderData), m_material(material), m_bounds(bounds), m_lineWidth(lineWidth) {}
     virtual ~Wireframe() = default;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }
