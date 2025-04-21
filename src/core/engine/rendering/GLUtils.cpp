@@ -106,3 +106,18 @@ void GLDisableDebugging() {
 	GLCALL(glDisable(GL_DEBUG_OUTPUT));
 	lgr::lout.info("OpenGL debugging disabled");
 }
+
+size_t GLsizeof(unsigned int type) {
+    switch (type) {
+		case GL_BYTE: return sizeof(GLbyte);               // 1
+		case GL_UNSIGNED_BYTE: return sizeof(GLubyte);     // 1
+		case GL_SHORT: return sizeof(GLshort);             // 2
+		case GL_UNSIGNED_SHORT: return sizeof(GLushort);   // 2
+		case GL_INT: return sizeof(GLint);                 // 4
+		case GL_UNSIGNED_INT: return sizeof(GLuint);       // 4
+		case GL_FLOAT: return sizeof(GLfloat);             // 4
+		case GL_DOUBLE: return sizeof(GLdouble);           // 8
+		default: 
+			throw std::runtime_error("Unknown component type in GLTF accessor.");
+	}
+}
