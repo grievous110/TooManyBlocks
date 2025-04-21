@@ -20,7 +20,7 @@ PlayerController::~PlayerController() {
     if (ApplicationContext* context = Application::getContext()) {
         Application::getContext()->io->keyAdapter().detach(this);
 	    Application::getContext()->io->mouseAdapter().detach(this);
-    }    
+    }
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {

@@ -2,9 +2,10 @@
 #define MESHCREATE_H
 
 #include "engine/env/Chunk.h"
-#include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/Mesh.h"
+#include "engine/rendering/RenderData.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <memory>
@@ -109,32 +110,24 @@ struct Vertex {
 	}
 };
 
-struct RawChunkMeshData {
-    std::string name;
-	std::vector<CompactChunkVertex> vertices;
-	std::vector<unsigned int> indices;
-    BoundingBox bounds;
+struct SkeletalVertex {
+    glm::vec3 position;
+    glm::vec2 uv;
+    glm::vec3 normal;
+    glm::uvec4 joints;
+    glm::vec4 weights;
 };
 
-struct RawMeshData {
-    std::string name;
-	std::vector<Vertex> vertices;
-	std::vector<unsigned int> indices;
-    BoundingBox bounds;
-};
+std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data);
 
-std::shared_ptr<MeshRenderData> packToChunkRenderData(const RawChunkMeshData& data);
+std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data);
 
-std::shared_ptr<Mesh> buildFromChunkMeshData(const RawChunkMeshData& data);
+// std::shared_ptr<RenderData> packToRenderData(const CPURenderData<SkeletalVertex>& data);
 
-std::shared_ptr<MeshRenderData> packToRenderData(const RawMeshData& data);
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<Mesh> buildFromMeshData(const RawMeshData& data);
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<RawChunkMeshData> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
-
-std::shared_ptr<RawChunkMeshData> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
-
-std::shared_ptr<RawMeshData> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
+std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
 #endif

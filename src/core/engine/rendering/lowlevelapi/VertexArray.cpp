@@ -22,11 +22,13 @@ void VertexArray::syncBinding() {
 	VertexArray::currentlyBoundVAO = static_cast<unsigned int>(binding);
 }
 
-VertexArray::VertexArray() {
+VertexArray::VertexArray() : m_currAttribIndex(0) {
     GLCALL(glGenVertexArrays(1, &m_rendererId));
 }
 
-VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::move(other)) {}
+VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {
+	other.m_currAttribIndex = 0;
+}
 
 VertexArray::~VertexArray() {
 	if (m_rendererId != 0) {
@@ -42,20 +44,19 @@ VertexArray::~VertexArray() {
 	}
 }
 
-void VertexArray::addBuffer(const VertexBuffer& vb, const VertexBufferLayout& layout) {
+void VertexArray::addBuffer(const VertexBuffer& vb) {
 	bind();
 	vb.bind();
-	const std::vector<BufferLayoutElement>& elements = layout.elements();
 	size_t offset = 0;
-	for (unsigned int i = 0; i < elements.size(); i++) {
-		const BufferLayoutElement& element = elements[i];
-		GLCALL(glEnableVertexAttribArray(i));
+	for (const BufferLayoutElement& element : vb.getLayout().elements()) {
+		GLCALL(glEnableVertexAttribArray(m_currAttribIndex));
 		if (isIntegerBased(element.type)) {
-			GLCALL(glVertexAttribIPointer(i, element.count, element.type, layout.stride(), (const void*) offset));
+			GLCALL(glVertexAttribIPointer(m_currAttribIndex, element.count, element.type, vb.getLayout().stride(), (const void*) offset));
 		} else {
-			GLCALL(glVertexAttribPointer(i, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE, layout.stride(), (const void*) offset));
+			GLCALL(glVertexAttribPointer(m_currAttribIndex, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE, vb.getLayout().stride(), (const void*) offset));
 		}
 		offset += element.count * element.typeSize;
+		m_currAttribIndex++;
 	}
 }
 
@@ -67,6 +68,10 @@ void VertexArray::bind() const {
 		GLCALL(glBindVertexArray(m_rendererId));
 		VertexArray::currentlyBoundVAO = m_rendererId;
 	}
+}
+
+void VertexArray::resetAttribIndex() {
+	m_currAttribIndex = 0;
 }
 
 VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
@@ -83,6 +88,10 @@ VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
 			}
 		}
 		RenderApiObject::operator=(std::move(other));
+
+		m_currAttribIndex = other.m_currAttribIndex;
+
+		other.m_currAttribIndex = 0;
 	}
     return *this;
 }

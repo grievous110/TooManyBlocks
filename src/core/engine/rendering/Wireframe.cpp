@@ -4,11 +4,8 @@
 #include <vector>
 
 void Wireframe::draw() const {
-    m_data->vao.bind();
-	m_data->ibo.bind();
-
     GLCALL(glLineWidth(m_lineWidth));
-	GLCALL(glDrawElements(GL_LINES, m_data->ibo.count(), GL_UNSIGNED_INT, nullptr));
+    m_data->drawAs(GL_LINES);
 }
 
 Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
@@ -33,14 +30,15 @@ Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
     VertexBuffer vbo(&corners[0], 8 * sizeof(glm::vec3));
     // Layout
     VertexBufferLayout layout;
-    layout.push(GL_FLOAT, sizeof(float), 3);
+    layout.push(GL_FLOAT, 3);
+    vbo.setLayout(layout);
     // VAO
     VertexArray vao;
-    vao.addBuffer(vbo, layout);
+    vao.addBuffer(vbo);
     // IBO
     IndexBuffer ibo(indices, 24);
 
-    std::shared_ptr<WireframeRenderData> renderData = std::make_shared<WireframeRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+    std::shared_ptr<IndexedRenderData> renderData = std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 
     return Wireframe(renderData, bbox);
 }

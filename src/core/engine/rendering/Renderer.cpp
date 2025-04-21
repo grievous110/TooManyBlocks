@@ -116,11 +116,12 @@ void Renderer::initialize() {
 	
 	// Create vertex array / buffer for fullscreen quad
 	m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
-	m_fullScreenQuad_vao = std::make_unique<VertexArray>();
 	VertexBufferLayout layout;
-	layout.push(GL_FLOAT, sizeof(float), 2); // Position
-	layout.push(GL_FLOAT, sizeof(float), 2); // Screen UV
-	m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo, layout);
+	layout.push(GL_FLOAT, 2); // Position
+	layout.push(GL_FLOAT, 2); // Screen UV
+	m_fullScreenQuad_vbo->setLayout(layout);
+	m_fullScreenQuad_vao = std::make_unique<VertexArray>();
+	m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo);
 
 	FrameBuffer::bindDefault();
 }

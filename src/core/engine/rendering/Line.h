@@ -2,15 +2,13 @@
 #define LINE_H
 
 #include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/Renderable.h"
+#include "engine/rendering/RenderData.h"
 #include <memory>
 
 class Line : public Renderable {
 private:
-    std::unique_ptr<VertexArray> m_vao;
-    std::unique_ptr<VertexBuffer> m_vbo;
+    std::unique_ptr<RenderData> m_data;
     std::shared_ptr<Material> m_material;
     BoundingBox m_bounds;
     float m_lineWidth;
