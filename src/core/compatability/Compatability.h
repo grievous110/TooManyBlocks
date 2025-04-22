@@ -1,7 +1,7 @@
 #ifndef TOOMANYBLOCKS_COMPATABILITY_H
 #define TOOMANYBLOCKS_COMPATABILITY_H
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include <climits>
 

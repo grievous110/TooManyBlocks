@@ -1,6 +1,6 @@
 #include "FrameBuffer.h"
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include <vector>
 

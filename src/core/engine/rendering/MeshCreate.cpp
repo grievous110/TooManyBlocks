@@ -1,5 +1,7 @@
 #include "MeshCreate.h"
 
+#include  <GL/glew.h>
+
 #include <array>
 #include <cfloat>
 #include <fstream>
@@ -17,7 +19,6 @@
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
-#include "gl/glew.h"
 #include "util/BitOperations.h"
 
 typedef unsigned int** BinaryPlaneArray;
