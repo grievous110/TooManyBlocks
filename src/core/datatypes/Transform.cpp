@@ -6,10 +6,19 @@
 #include "datatypes/DatatypeDefs.h"
 
 void Transform::recalculateModelMatrix() const {
-    m_modelMatrix = glm::mat4(1.0f);
-
-    m_modelMatrix = glm::translate(m_modelMatrix, m_position) * glm::mat4_cast(m_rotation) *
-                    glm::scale(m_modelMatrix, glm::vec3(m_scale));
+    glm::mat3 rot = glm::mat3_cast(m_rotation);
+    rot *= m_scale; // Bake in scale
+    
+    // Directly reassign values in place
+    m_modelMatrix[0] = glm::vec4(rot[0], 0.0f);
+    m_modelMatrix[1] = glm::vec4(rot[1], 0.0f);
+    m_modelMatrix[2] = glm::vec4(rot[2], 0.0f);
+    m_modelMatrix[3] = glm::vec4(m_position, 1.0f);
+    
+    // Commented out original equivalent but slower version cause of matrix multiplications overhead
+    // m_modelMatrix = glm::mat4(1.0f);
+    // m_modelMatrix = glm::translate(m_modelMatrix, m_position) * glm::mat4_cast(m_rotation) *
+    //                 glm::scale(m_modelMatrix, glm::vec3(m_scale));
 
     m_dirty = false;
 }
