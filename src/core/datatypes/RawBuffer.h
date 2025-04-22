@@ -1,5 +1,5 @@
-#ifndef RAWBUFFER_H
-#define RAWBUFFER_H
+#ifndef TOOMANYBLOCKS_RAWBUFFER_H
+#define TOOMANYBLOCKS_RAWBUFFER_H
 
 #include <stdexcept>
 

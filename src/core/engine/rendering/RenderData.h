@@ -1,5 +1,5 @@
-#ifndef RENDERDATA_H
-#define RENDERDATA_H
+#ifndef TOOMANYBLOCKS_RENDERDATA_H
+#define TOOMANYBLOCKS_RENDERDATA_H
 
 #include <vector>
 

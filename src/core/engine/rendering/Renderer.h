@@ -1,5 +1,5 @@
-#ifndef RENDERER_H
-#define RENDERER_H
+#ifndef TOOMANYBLOCKS_RENDERER_H
+#define TOOMANYBLOCKS_RENDERER_H
 
 #include <memory>
 

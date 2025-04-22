@@ -1,5 +1,5 @@
-#ifndef PAUSEMENU_H
-#define PAUSEMENU_H
+#ifndef TOOMANYBLOCKS_PAUSEMENU_H
+#define TOOMANYBLOCKS_PAUSEMENU_H
 
 #include "engine/ui/Ui.h"
 

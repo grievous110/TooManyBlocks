@@ -1,5 +1,5 @@
-#ifndef UIWINDOW_H
-#define UIWINDOW_H
+#ifndef TOOMANYBLOCKS_UIWINDOW_H
+#define TOOMANYBLOCKS_UIWINDOW_H
 
 #include <functional>
 #include <memory>

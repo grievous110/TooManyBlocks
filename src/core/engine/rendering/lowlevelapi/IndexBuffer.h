@@ -1,5 +1,5 @@
-#ifndef INDEXBUFFER_H
-#define INDEXBUFFER_H
+#ifndef TOOMANYBLOCKS_INDEXBUFFER_H
+#define TOOMANYBLOCKS_INDEXBUFFER_H
 
 #include <stddef.h>
 

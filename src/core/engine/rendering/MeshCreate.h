@@ -1,5 +1,5 @@
-#ifndef MESHCREATE_H
-#define MESHCREATE_H
+#ifndef TOOMANYBLOCKS_MESHCREATE_H
+#define TOOMANYBLOCKS_MESHCREATE_H
 
 #include <cstdint>
 #include <glm/glm.hpp>

@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef TOOMANYBLOCKS_CONTROLLER_H
+#define TOOMANYBLOCKS_CONTROLLER_H
 
 #include "engine/Updatable.h"
 

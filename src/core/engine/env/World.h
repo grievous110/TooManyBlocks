@@ -1,5 +1,5 @@
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef TOOMANYBLOCKS_WORLD_H
+#define TOOMANYBLOCKS_WORLD_H
 
 #include <filesystem>
 #include <glm/vec3.hpp>

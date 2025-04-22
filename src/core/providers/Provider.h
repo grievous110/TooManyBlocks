@@ -1,5 +1,5 @@
-#ifndef PROVIDER_H
-#define PROVIDER_H
+#ifndef TOOMANYBLOCKS_PROVIDER_H
+#define TOOMANYBLOCKS_PROVIDER_H
 
 #include <memory>
 #include <string>

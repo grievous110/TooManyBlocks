@@ -1,5 +1,5 @@
-#ifndef LINEMATERIAL_H
-#define LINEMATERIAL_H
+#ifndef TOOMANYBLOCKS_LINEMATERIAL_H
+#define TOOMANYBLOCKS_LINEMATERIAL_H
 
 #include <glm/glm.hpp>
 

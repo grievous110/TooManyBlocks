@@ -1,5 +1,5 @@
-#ifndef SSAOPROCESSOR_H
-#define SSAOPROCESSOR_H
+#ifndef TOOMANYBLOCKS_SSAOPROCESSOR_H
+#define TOOMANYBLOCKS_SSAOPROCESSOR_H
 
 #include <glm/glm.hpp>
 #include <memory>

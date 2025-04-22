@@ -1,5 +1,5 @@
-#ifndef BITOPERTAIONS_H
-#define BITOPERTAIONS_H
+#ifndef TOOMANYBLOCKS_BITOPERTAIONS_H
+#define TOOMANYBLOCKS_BITOPERTAIONS_H
 
 #include <climits>
 #include <iostream>

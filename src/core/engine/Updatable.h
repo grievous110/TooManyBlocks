@@ -1,5 +1,5 @@
-#ifndef UPDATABLE_H
-#define UPDATABLE_H
+#ifndef TOOMANYBLOCKS_UPDATABLE_H
+#define TOOMANYBLOCKS_UPDATABLE_H
 
 class Updatable {
 public:

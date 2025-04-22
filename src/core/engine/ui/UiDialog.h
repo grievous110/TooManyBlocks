@@ -1,5 +1,5 @@
-#ifndef UIDIALOG_H
-#define UIDIALOG_H
+#ifndef TOOMANYBLOCKS_UIDIALOG_H
+#define TOOMANYBLOCKS_UIDIALOG_H
 
 #include <string>
 

@@ -1,5 +1,5 @@
-#ifndef VERTEXARRAY_H
-#define VERTEXARRAY_H
+#ifndef TOOMANYBLOCKS_VERTEXARRAY_H
+#define TOOMANYBLOCKS_VERTEXARRAY_H
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"

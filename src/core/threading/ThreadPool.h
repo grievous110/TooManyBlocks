@@ -1,5 +1,5 @@
-#ifndef THREADPOOL_H
-#define THREADPOOL_H
+#ifndef TOOMANYBLOCKS_THREADPOOL_H
+#define TOOMANYBLOCKS_THREADPOOL_H
 
 #include <condition_variable>
 #include <deque>

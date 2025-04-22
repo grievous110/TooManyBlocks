@@ -1,5 +1,5 @@
-#ifndef RENDERAPIOBJECT_H
-#define RENDERAPIOBJECT_H
+#ifndef TOOMANYBLOCKS_RENDERAPIOBJECT_H
+#define TOOMANYBLOCKS_RENDERAPIOBJECT_H
 
 // Base class wich prevents copying, but allows moving
 class RenderApiObject {

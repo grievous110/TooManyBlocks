@@ -1,5 +1,5 @@
-#ifndef LIGHTPROCESSOR_H
-#define LIGHTPROCESSOR_H
+#ifndef TOOMANYBLOCKS_LIGHTPROCESSOR_H
+#define TOOMANYBLOCKS_LIGHTPROCESSOR_H
 
 #include <array>
 #include <glm/glm.hpp>

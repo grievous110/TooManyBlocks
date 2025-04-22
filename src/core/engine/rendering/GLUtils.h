@@ -1,5 +1,5 @@
-#ifndef GLUTILS_H
-#define GLUTILS_H
+#ifndef TOOMANYBLOCKS_GLUTILS_H
+#define TOOMANYBLOCKS_GLUTILS_H
 
 #include <stddef.h>
 

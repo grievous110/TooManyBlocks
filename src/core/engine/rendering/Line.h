@@ -1,5 +1,5 @@
-#ifndef LINE_H
-#define LINE_H
+#ifndef TOOMANYBLOCKS_LINE_H
+#define TOOMANYBLOCKS_LINE_H
 
 #include <memory>
 

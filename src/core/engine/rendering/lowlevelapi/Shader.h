@@ -1,5 +1,5 @@
-#ifndef SHADER_H
-#define SHADER_H
+#ifndef TOOMANYBLOCKS_SHADER_H
+#define TOOMANYBLOCKS_SHADER_H
 
 #include <glm/glm.hpp>
 #include <string>

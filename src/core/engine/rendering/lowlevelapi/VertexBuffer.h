@@ -1,5 +1,5 @@
-#ifndef VERTEXBUFFER_H
-#define VERTEXBUFFER_H
+#ifndef TOOMANYBLOCKS_VERTEXBUFFER_H
+#define TOOMANYBLOCKS_VERTEXBUFFER_H
 
 #include <stddef.h>
 

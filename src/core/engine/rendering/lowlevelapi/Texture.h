@@ -1,5 +1,5 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#ifndef TOOMANYBLOCKS_TEXTURE_H
+#define TOOMANYBLOCKS_TEXTURE_H
 
 #include <string>
 

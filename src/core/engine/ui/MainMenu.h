@@ -1,5 +1,5 @@
-#ifndef MAINMENU_H
-#define MAINMENU_H
+#ifndef TOOMANYBLOCKS_MAINMENU_H
+#define TOOMANYBLOCKS_MAINMENU_H
 
 #include "engine/ui/Ui.h"
 

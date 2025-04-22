@@ -1,5 +1,5 @@
-#ifndef OBSERVER_H
-#define OBSERVER_H
+#ifndef TOOMANYBLOCKS_OBSERVER_H
+#define TOOMANYBLOCKS_OBSERVER_H
 
 #include <algorithm>
 #include <vector>

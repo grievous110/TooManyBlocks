@@ -1,5 +1,5 @@
-#ifndef LIGHT_H
-#define LIGHT_H
+#ifndef TOOMANYBLOCKS_LIGHT_H
+#define TOOMANYBLOCKS_LIGHT_H
 
 #include <engine/comp/SceneComponent.h>
 

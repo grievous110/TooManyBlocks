@@ -1,5 +1,5 @@
-#ifndef TRANSFORM_H
-#define TRANSFORM_H
+#ifndef TOOMANYBLOCKS_TRANSFORM_H
+#define TOOMANYBLOCKS_TRANSFORM_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
