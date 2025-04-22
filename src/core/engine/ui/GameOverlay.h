@@ -5,15 +5,16 @@
 #include "engine/ui/Ui.h"
 
 namespace UI {
-	class GameOverlay : public Window {
-	private:
-		bool m_showMouse;
-	public:
-		GameOverlay() : m_showMouse(false) {}
-		virtual ~GameOverlay() = default;
+    class GameOverlay : public Window {
+    private:
+        bool m_showMouse;
 
-		void render(ApplicationContext& context) override;
-	};
-}
+    public:
+        GameOverlay() : m_showMouse(false) {}
+        virtual ~GameOverlay() = default;
+
+        void render(ApplicationContext& context) override;
+    };
+}  // namespace UI
 
 #endif

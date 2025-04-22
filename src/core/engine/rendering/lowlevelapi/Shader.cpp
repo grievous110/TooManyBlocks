@@ -1,12 +1,15 @@
-#include "engine/rendering/GLUtils.h"
-#include "Logger.h"
 #include "Shader.h"
-#include <fstream>
+
 #include <gl/glew.h>
+#include <stddef.h>
+
+#include <fstream>
 #include <glm/gtc/type_ptr.hpp>
 #include <sstream>
-#include <stddef.h>
 #include <stdexcept>
+
+#include "Logger.h"
+#include "engine/rendering/GLUtils.h"
 
 struct ShaderSource {
     std::string vertexSource;
@@ -37,18 +40,18 @@ static ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
     std::string vertexShaderCode = readFile(vertFile);
     std::string fragmentShaderCode = readFile(fragFile);
 
-    return { vertexShaderCode, fragmentShaderCode };
+    return {vertexShaderCode, fragmentShaderCode};
 }
 
 static unsigned int compileShader(unsigned int type, const std::string& source, const ShaderDefines& definitions) {
     const char* src = nullptr;
     std::string processedSource;
-    
+
     // Insert optional compile definitions
     if (!definitions.definitions().empty()) {
         size_t versionPos = source.find("#version");
         size_t insertPos = source.find('\n', versionPos);
-        
+
         if (versionPos != std::string::npos && insertPos != std::string::npos) {
             std::string defineBlock;
             for (const auto& define : definitions.definitions()) {
@@ -59,8 +62,8 @@ static unsigned int compileShader(unsigned int type, const std::string& source, 
                 defineBlock += "\n";
             }
 
-            size_t preLength = insertPos + 1; // include newline
-            processedSource.reserve(defineBlock.size() + source.size()); // Preallocate
+            size_t preLength = insertPos + 1;                             // include newline
+            processedSource.reserve(defineBlock.size() + source.size());  // Preallocate
 
             // Build final string in-place
             processedSource.append(source, 0, preLength);
@@ -76,27 +79,28 @@ static unsigned int compileShader(unsigned int type, const std::string& source, 
         src = source.c_str();
     }
 
-	unsigned int id = glCreateShader(type);
-	GLCALL(glShaderSource(id, 1, &src, nullptr));
-	GLCALL(glCompileShader(id));
+    unsigned int id = glCreateShader(type);
+    GLCALL(glShaderSource(id, 1, &src, nullptr));
+    GLCALL(glCompileShader(id));
 
-	int compileSuccess;
-	GLCALL(glGetShaderiv(id, GL_COMPILE_STATUS, &compileSuccess));
-	if (compileSuccess == GL_FALSE) {
-		int length;
-		GLCALL(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
-		char* message = new char[length];
-		GLCALL(glGetShaderInfoLog(id, length, &length, message));
+    int compileSuccess;
+    GLCALL(glGetShaderiv(id, GL_COMPILE_STATUS, &compileSuccess));
+    if (compileSuccess == GL_FALSE) {
+        int length;
+        GLCALL(glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length));
+        char* message = new char[length];
+        GLCALL(glGetShaderInfoLog(id, length, &length, message));
         std::ostringstream ostream;
-		ostream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!" << std::endl;
-		ostream << message << std::endl;
+        ostream << "Failed to compile " << (type == GL_VERTEX_SHADER ? "vertex" : "fragment") << " shader!"
+                << std::endl;
+        ostream << message << std::endl;
         lgr::lout.error(ostream.str());
-		delete[] message;
-		GLCALL(glDeleteShader(id));
-		return 0;
-	}
+        delete[] message;
+        GLCALL(glDeleteShader(id));
+        return 0;
+    }
 
-	return id;
+    return id;
 }
 
 static unsigned int createShader(const ShaderSource& source, const ShaderDefines& definitions) {
@@ -138,7 +142,7 @@ int Shader::getUniformLocation(const std::string& name) {
     }
 
     GLCALL(int location = glGetUniformLocation(m_rendererId, name.c_str()));
-    if (location == -1) { // -1 is not found / can happen for unused uniforms also
+    if (location == -1) {  // -1 is not found / can happen for unused uniforms also
         lgr::lout.warn("Warning: location of '" + std::string(name) + "' uniform was not found!");
     }
 
@@ -179,7 +183,8 @@ Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) 
     m_rendererId = createShader(source, definitions);
 }
 
-Shader::Shader(Shader&& other) noexcept : RenderApiObject(std::move(other)), m_shaderPath(std::move(other.m_shaderPath)) {
+Shader::Shader(Shader&& other) noexcept
+    : RenderApiObject(std::move(other)), m_shaderPath(std::move(other.m_shaderPath)) {
     other.m_uniformLocationCache.clear();
 }
 
@@ -191,15 +196,14 @@ Shader::~Shader() {
                 Shader::currentlyBoundShader = 0;
             }
             GLCALL(glDeleteProgram(m_rendererId));
-		} catch (const std::exception&) {
-			lgr::lout.error("Error during Shader cleanup");
-		}
+        } catch (const std::exception&) {
+            lgr::lout.error("Error during Shader cleanup");
+        }
     }
 }
 
 void Shader::bind() const {
-    if (m_rendererId == 0)
-        throw std::runtime_error("Invalid state of Shader with id 0");
+    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Shader with id 0");
 
     if (Shader::currentlyBoundShader != m_rendererId) {
         GLCALL(glUseProgram(m_rendererId));
@@ -207,7 +211,7 @@ void Shader::bind() const {
     }
 }
 
-void Shader::setAndBindUBO(const std::string& name, const UniformBuffer &ubo, unsigned int bindingPoint) {
+void Shader::setAndBindUBO(const std::string& name, const UniformBuffer& ubo, unsigned int bindingPoint) {
     bind();
     ubo.bind(bindingPoint);
     GLCALL(glUniformBlockBinding(m_rendererId, getUniformBlockIndex(name), bindingPoint));
@@ -386,21 +390,21 @@ void Shader::setUniform(const std::string& name, const glm::mat4* matrices, size
 Shader& Shader::operator=(Shader&& other) noexcept {
     if (this != &other) {
         if (m_rendererId != 0) {
-        try {
-            if (Shader::currentlyBoundShader == m_rendererId) {
-                GLCALL(glUseProgram(0));
-                Shader::currentlyBoundShader = 0;
+            try {
+                if (Shader::currentlyBoundShader == m_rendererId) {
+                    GLCALL(glUseProgram(0));
+                    Shader::currentlyBoundShader = 0;
+                }
+                GLCALL(glDeleteProgram(m_rendererId));
+            } catch (const std::exception&) {
+                lgr::lout.error("Error during Shader cleanup");
             }
-            GLCALL(glDeleteProgram(m_rendererId));
-		} catch (const std::exception&) {
-			lgr::lout.error("Error during Shader cleanup");
-		}
-    }
+        }
         RenderApiObject::operator=(std::move(other));
 
         m_shaderPath = std::move(other.m_shaderPath);
         m_uniformLocationCache.clear();
-        
+
         other.m_uniformLocationCache.clear();
     }
     return *this;

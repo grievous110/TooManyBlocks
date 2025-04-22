@@ -1,11 +1,12 @@
 #ifndef SIMPLEMATERIAL_H
 #define SIMPLEMATERIAL_H
 
+#include <glm/glm.hpp>
+#include <memory>
+
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
-#include <glm/glm.hpp>
-#include <memory>
 
 class SimpleMaterial : public Material {
 private:
@@ -13,7 +14,8 @@ private:
     std::shared_ptr<Texture> m_texture;
 
 public:
-    SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr) : Material(shader), m_color(color), m_texture(texture) {}
+    SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr)
+        : Material(shader), m_color(color), m_texture(texture) {}
 
     virtual ~SimpleMaterial() = default;
 

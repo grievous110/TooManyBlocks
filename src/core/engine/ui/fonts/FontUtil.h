@@ -2,6 +2,7 @@
 #define FONTUTIL_H
 
 #include <imgui.h>
+
 #include <string>
 #include <vector>
 
@@ -26,7 +27,7 @@ private:
     std::string m_fontFilePath;
     std::vector<ImFont*> m_availableFonts;
 
-public:    
+public:
     void loadFontSizes(const std::string& filePath, const std::vector<float>& sizes);
 
     const FontData getFont(float requestedSize) const;

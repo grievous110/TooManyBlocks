@@ -3,7 +3,7 @@
 
 #include <stdexcept>
 
-template<typename T>
+template <typename T>
 class RawBuffer {
 private:
     size_t m_capacity;
@@ -14,15 +14,13 @@ public:
     RawBuffer() noexcept : m_capacity(0), m_size(0), m_data(nullptr) {}
     RawBuffer(size_t capacity) : m_capacity(capacity), m_size(0), m_data(new T[capacity]) {};
     RawBuffer(const RawBuffer& other) = delete;
-    RawBuffer(RawBuffer&& other) noexcept
-        : m_capacity(other.m_capacity), m_size(other.m_size), m_data(other.m_data) {        
+    RawBuffer(RawBuffer&& other) noexcept : m_capacity(other.m_capacity), m_size(other.m_size), m_data(other.m_data) {
         other.m_data = nullptr;
         other.m_size = 0;
         other.m_capacity = 0;
     }
-    ~RawBuffer() { 
-        if (m_data)
-            delete[] m_data;
+    ~RawBuffer() {
+        if (m_data) delete[] m_data;
     }
 
     void push_back(const T& value) {
@@ -76,7 +74,7 @@ public:
     const T* end() const { return m_data + m_size; }
 
     RawBuffer& operator=(const RawBuffer& other) = delete;
-    
+
     RawBuffer& operator=(RawBuffer&& other) noexcept {
         if (this != &other) {
             if (m_data) {

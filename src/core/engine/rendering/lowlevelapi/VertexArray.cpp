@@ -1,97 +1,101 @@
-#include "engine/rendering/GLUtils.h"
-#include "Logger.h"
 #include "VertexArray.h"
+
 #include <gl/glew.h>
+
+#include "Logger.h"
+#include "engine/rendering/GLUtils.h"
 
 thread_local unsigned int VertexArray::currentlyBoundVAO = 0;
 
 constexpr bool isIntegerBased(unsigned int type) {
-	return type == GL_INT || type == GL_UNSIGNED_INT || type == GL_SHORT || type == GL_UNSIGNED_SHORT || type == GL_BYTE || type == GL_UNSIGNED_BYTE;
+    return type == GL_INT || type == GL_UNSIGNED_INT || type == GL_SHORT || type == GL_UNSIGNED_SHORT ||
+           type == GL_BYTE || type == GL_UNSIGNED_BYTE;
 }
 
 void VertexArray::bindDefault() {
-	if (VertexArray::currentlyBoundVAO != 0) {
-		GLCALL(glBindVertexArray(0));
-		VertexArray::currentlyBoundVAO = 0;
-	}
+    if (VertexArray::currentlyBoundVAO != 0) {
+        GLCALL(glBindVertexArray(0));
+        VertexArray::currentlyBoundVAO = 0;
+    }
 }
 
 void VertexArray::syncBinding() {
-	int binding;
-	GLCALL(glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &binding));
-	VertexArray::currentlyBoundVAO = static_cast<unsigned int>(binding);
+    int binding;
+    GLCALL(glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &binding));
+    VertexArray::currentlyBoundVAO = static_cast<unsigned int>(binding);
 }
 
-VertexArray::VertexArray() : m_currAttribIndex(0) {
-    GLCALL(glGenVertexArrays(1, &m_rendererId));
-}
+VertexArray::VertexArray() : m_currAttribIndex(0) { GLCALL(glGenVertexArrays(1, &m_rendererId)); }
 
-VertexArray::VertexArray(VertexArray&& other) noexcept : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {
-	other.m_currAttribIndex = 0;
+VertexArray::VertexArray(VertexArray&& other) noexcept
+    : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {
+    other.m_currAttribIndex = 0;
 }
 
 VertexArray::~VertexArray() {
-	if (m_rendererId != 0) {
-		try {
-			if (VertexArray::currentlyBoundVAO == m_rendererId) {
-				GLCALL(glBindVertexArray(0));
-				VertexArray::currentlyBoundVAO = 0;
-			}
-			GLCALL(glDeleteVertexArrays(1, &m_rendererId));
-		} catch (const std::exception&) {
-			lgr::lout.error("Error during VertexArray cleanup");
-		}
-	}
+    if (m_rendererId != 0) {
+        try {
+            if (VertexArray::currentlyBoundVAO == m_rendererId) {
+                GLCALL(glBindVertexArray(0));
+                VertexArray::currentlyBoundVAO = 0;
+            }
+            GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+        } catch (const std::exception&) {
+            lgr::lout.error("Error during VertexArray cleanup");
+        }
+    }
 }
 
 void VertexArray::addBuffer(const VertexBuffer& vb) {
-	bind();
-	vb.bind();
-	size_t offset = 0;
-	for (const BufferLayoutElement& element : vb.getLayout().elements()) {
-		GLCALL(glEnableVertexAttribArray(m_currAttribIndex));
-		if (isIntegerBased(element.type)) {
-			GLCALL(glVertexAttribIPointer(m_currAttribIndex, element.count, element.type, vb.getLayout().stride(), (const void*) offset));
-		} else {
-			GLCALL(glVertexAttribPointer(m_currAttribIndex, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE, vb.getLayout().stride(), (const void*) offset));
-		}
-		offset += element.count * element.typeSize;
-		m_currAttribIndex++;
-	}
+    bind();
+    vb.bind();
+    size_t offset = 0;
+    for (const BufferLayoutElement& element : vb.getLayout().elements()) {
+        GLCALL(glEnableVertexAttribArray(m_currAttribIndex));
+        if (isIntegerBased(element.type)) {
+            GLCALL(glVertexAttribIPointer(
+                m_currAttribIndex, element.count, element.type, vb.getLayout().stride(), (const void*)offset
+            ));
+        } else {
+            GLCALL(glVertexAttribPointer(
+                m_currAttribIndex, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE,
+                vb.getLayout().stride(), (const void*)offset
+            ));
+        }
+        offset += element.count * element.typeSize;
+        m_currAttribIndex++;
+    }
 }
 
 void VertexArray::bind() const {
-	if (m_rendererId == 0)
-		throw std::runtime_error("Invalid state of VertexArray with id 0");
+    if (m_rendererId == 0) throw std::runtime_error("Invalid state of VertexArray with id 0");
 
-	if (VertexArray::currentlyBoundVAO != m_rendererId) {
-		GLCALL(glBindVertexArray(m_rendererId));
-		VertexArray::currentlyBoundVAO = m_rendererId;
-	}
+    if (VertexArray::currentlyBoundVAO != m_rendererId) {
+        GLCALL(glBindVertexArray(m_rendererId));
+        VertexArray::currentlyBoundVAO = m_rendererId;
+    }
 }
 
-void VertexArray::resetAttribIndex() {
-	m_currAttribIndex = 0;
-}
+void VertexArray::resetAttribIndex() { m_currAttribIndex = 0; }
 
 VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
-	if (this != &other) {
-		if (m_rendererId != 0) {
-			try {
-				if (VertexArray::currentlyBoundVAO == m_rendererId) {
-					GLCALL(glBindVertexArray(0));
-					VertexArray::currentlyBoundVAO = 0;
-				}
-				GLCALL(glDeleteVertexArrays(1, &m_rendererId));
-			} catch (const std::exception&) {
-				lgr::lout.error("Error during VertexArray cleanup");
-			}
-		}
-		RenderApiObject::operator=(std::move(other));
+    if (this != &other) {
+        if (m_rendererId != 0) {
+            try {
+                if (VertexArray::currentlyBoundVAO == m_rendererId) {
+                    GLCALL(glBindVertexArray(0));
+                    VertexArray::currentlyBoundVAO = 0;
+                }
+                GLCALL(glDeleteVertexArrays(1, &m_rendererId));
+            } catch (const std::exception&) {
+                lgr::lout.error("Error during VertexArray cleanup");
+            }
+        }
+        RenderApiObject::operator=(std::move(other));
 
-		m_currAttribIndex = other.m_currAttribIndex;
+        m_currAttribIndex = other.m_currAttribIndex;
 
-		other.m_currAttribIndex = 0;
-	}
+        other.m_currAttribIndex = 0;
+    }
     return *this;
 }

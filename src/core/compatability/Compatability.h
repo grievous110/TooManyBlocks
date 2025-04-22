@@ -1,7 +1,8 @@
 #ifndef COMPATABILITY_H
 #define COMPATABILITY_H
 
-#include "gl/glew.h"
+#include <gl/glew.h>
+
 #include <climits>
 
 // Open GL type compatability

@@ -1,13 +1,14 @@
 #ifndef SSAOPROCESSOR_H
 #define SSAOPROCESSOR_H
 
+#include <glm/glm.hpp>
+#include <memory>
+
 #include "engine/rendering/lowlevelapi/FrameBuffer.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include <glm/glm.hpp>
-#include <memory>
 
 #define SSAO_SAMPLE_COUNT 32
 

@@ -1,8 +1,10 @@
+#include "Line.h"
+
+
 #include "engine/rendering/GLUtils.h"
-#include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include "Line.h"
+#include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include <gl/glew.h>
 
 void Line::draw() const {
@@ -10,13 +12,11 @@ void Line::draw() const {
     m_data->drawAs(GL_LINES);
 }
 
-Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::shared_ptr<Material> material) : m_lineWidth(lineWidth), m_material(material) {
-    float lineVertices[] = {
-        start.x, start.y, start.z,
-        end.x, end.y, end.z
-    };
+Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::shared_ptr<Material> material)
+    : m_lineWidth(lineWidth), m_material(material) {
+    float lineVertices[] = {start.x, start.y, start.z, end.x, end.y, end.z};
 
-    m_bounds = { glm::min(start, end), glm::max(start, end) };
+    m_bounds = {glm::min(start, end), glm::max(start, end)};
 
     VertexBuffer vbo(lineVertices, sizeof(lineVertices));
     VertexBufferLayout layout;

@@ -30,12 +30,7 @@ constexpr Axis allAxis[3] = {
 };
 
 constexpr AxisDirection allAxisDirections[6] = {
-    AxisDirection::PositiveX,
-    AxisDirection::NegativeX,
-    AxisDirection::PositiveY,
-    AxisDirection::NegativeY,
-    AxisDirection::PositiveZ,
-    AxisDirection::NegativeZ,
+    AxisDirection::PositiveX, AxisDirection::NegativeX, AxisDirection::PositiveY, AxisDirection::NegativeY, AxisDirection::PositiveZ, AxisDirection::NegativeZ,
 };
 
 enum Zone {

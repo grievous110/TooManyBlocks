@@ -1,8 +1,9 @@
 #ifndef LINEMATERIAL_H
 #define LINEMATERIAL_H
 
-#include "engine/rendering/mat/Material.h"
 #include <glm/glm.hpp>
+
+#include "engine/rendering/mat/Material.h"
 
 class LineMaterial : public Material {
 private:

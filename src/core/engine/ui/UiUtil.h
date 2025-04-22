@@ -6,6 +6,6 @@ namespace UI::Util {
     void MakeNextWindowFullscreen();
 
     void DrawCrosshair(float crossSize, float thickness);
-}
+}  // namespace UI::Util
 
 #endif
