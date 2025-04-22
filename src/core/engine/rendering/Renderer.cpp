@@ -14,11 +14,6 @@
 #include <sstream>
 #include <vector>
 
-#define SHADOWMAP_ATLAS_RESOLUTION 4096
-#define HIGHPRIO_SHADOWMAP_SIZE 2048
-#define MEDIUMPRIO_SHADOWMAP_SIZE 1024
-#define LOWPRIO_SHADOWMAP_SIZE 512
-
 static constexpr float fullScreenQuadCCW[] = {
 	// Position   // UV-Koordinaten
 	-1.0f,  1.0f,  0.0f, 1.0f,  // Oben-Links
