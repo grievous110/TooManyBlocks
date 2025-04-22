@@ -1,11 +1,11 @@
 #include "Line.h"
 
+#include <GL/glew.h>
 
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
-#include <gl/glew.h>
 
 void Line::draw() const {
     GLCALL(glLineWidth(m_lineWidth));

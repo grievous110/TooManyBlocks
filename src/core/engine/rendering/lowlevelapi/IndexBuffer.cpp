@@ -1,6 +1,6 @@
 #include "IndexBuffer.h"
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"

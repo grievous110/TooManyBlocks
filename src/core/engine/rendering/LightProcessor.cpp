@@ -1,6 +1,6 @@
 #include "LightProcessor.h"
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include "engine/env/lights/Spotlight.h"
 #include "engine/geometry/BoundingVolume.h"

@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include <chrono>
 #include <memory>

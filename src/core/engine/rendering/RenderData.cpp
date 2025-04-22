@@ -1,6 +1,6 @@
 #include "RenderData.h"
 
-#include <gl/glew.h>
+#include <GL/glew.h>
 
 #include "engine/rendering/GLUtils.h"
 
