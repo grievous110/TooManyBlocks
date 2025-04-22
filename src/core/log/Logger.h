@@ -1,5 +1,5 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef TOOMANYBLOCKS_LOGGER_H
+#define TOOMANYBLOCKS_LOGGER_H
 
 #include <fstream>
 #include <mutex>

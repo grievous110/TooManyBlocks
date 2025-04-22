@@ -1,5 +1,5 @@
-#ifndef UIUTIL_H
-#define UIUTIL_H
+#ifndef TOOMANYBLOCKS_UIUTIL_H
+#define TOOMANYBLOCKS_UIUTIL_H
 
 namespace UI::Util {
     void CenterPopup();

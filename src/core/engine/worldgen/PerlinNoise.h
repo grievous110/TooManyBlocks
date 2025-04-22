@@ -1,5 +1,5 @@
-#ifndef PERLINOISE_H
-#define PERLINOISE_H
+#ifndef TOOMANYBLOCKS_PERLINOISE_H
+#define TOOMANYBLOCKS_PERLINOISE_H
 
 #include <memory>
 #include <vector>

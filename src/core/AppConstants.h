@@ -1,5 +1,5 @@
-#ifndef APPCONSTANTS_H
-#define APPCONSTANTS_H
+#ifndef TOOMANYBLOCKS_APPCONSTANTS_H
+#define TOOMANYBLOCKS_APPCONSTANTS_H
 
 namespace Res {
     namespace Shader {

@@ -1,5 +1,5 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#ifndef TOOMANYBLOCKS_APPLICATION_H
+#define TOOMANYBLOCKS_APPLICATION_H
 
 #include "datatypes/KeyMouseIO.h"
 #include "engine/ui/Ui.h"

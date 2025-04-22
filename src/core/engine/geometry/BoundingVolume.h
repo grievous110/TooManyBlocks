@@ -1,5 +1,5 @@
-#ifndef BOUNDINGVOLUME_H
-#define BOUNDINGVOLUME_H
+#ifndef TOOMANYBLOCKS_BOUNDINGVOLUME_H
+#define TOOMANYBLOCKS_BOUNDINGVOLUME_H
 
 #include <array>
 #include <cfloat>

@@ -1,5 +1,5 @@
-#ifndef FONTUTIL_H
-#define FONTUTIL_H
+#ifndef TOOMANYBLOCKS_FONTUTIL_H
+#define TOOMANYBLOCKS_FONTUTIL_H
 
 #include <imgui.h>
 

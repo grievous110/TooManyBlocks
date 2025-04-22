@@ -1,5 +1,5 @@
-#ifndef RENDERABLE_H
-#define RENDERABLE_H
+#ifndef TOOMANYBLOCKS_RENDERABLE_H
+#define TOOMANYBLOCKS_RENDERABLE_H
 
 #include <memory>
 

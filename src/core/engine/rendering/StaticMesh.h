@@ -1,5 +1,5 @@
-#ifndef STATICMESH_H
-#define STATICMESH_H
+#ifndef TOOMANYBLOCKS_STATICMESH_H
+#define TOOMANYBLOCKS_STATICMESH_H
 
 #include <memory>
 

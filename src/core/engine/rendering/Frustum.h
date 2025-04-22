@@ -1,5 +1,5 @@
-#ifndef FRUSTUM_H
-#define FRUSTUM_H
+#ifndef TOOMANYBLOCKS_FRUSTUM_H
+#define TOOMANYBLOCKS_FRUSTUM_H
 
 #include <glm/glm.hpp>
 

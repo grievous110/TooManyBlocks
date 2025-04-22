@@ -1,5 +1,5 @@
-#ifndef SKYBOX_H
-#define SKYBOX_H
+#ifndef TOOMANYBLOCKS_SKYBOX_H
+#define TOOMANYBLOCKS_SKYBOX_H
 
 class SkyBox {};
 

@@ -1,5 +1,5 @@
-#ifndef ENTITY_H
-#define ENTITY_H
+#ifndef TOOMANYBLOCKS_ENTITY_H
+#define TOOMANYBLOCKS_ENTITY_H
 
 #include "datatypes/Transform.h"
 #include "engine/Updatable.h"

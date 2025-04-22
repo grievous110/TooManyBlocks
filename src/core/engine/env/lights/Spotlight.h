@@ -1,5 +1,5 @@
-#ifndef SPOTLIGHT_H
-#define SPOTLIGHT_H
+#ifndef TOOMANYBLOCKS_SPOTLIGHT_H
+#define TOOMANYBLOCKS_SPOTLIGHT_H
 
 #include <algorithm>
 

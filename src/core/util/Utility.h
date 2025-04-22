@@ -1,5 +1,5 @@
-#ifndef UTILITY_H
-#define UTILITY_H
+#ifndef TOOMANYBLOCKS_UTILITY_H
+#define TOOMANYBLOCKS_UTILITY_H
 
 #include <filesystem>
 

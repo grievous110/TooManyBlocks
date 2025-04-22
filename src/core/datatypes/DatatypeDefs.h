@@ -1,5 +1,5 @@
-#ifndef DATATYPEDEFS_H
-#define DATATYPEDEFS_H
+#ifndef TOOMANYBLOCKS_DATATYPEDEFS_H
+#define TOOMANYBLOCKS_DATATYPEDEFS_H
 
 #include <cstdint>
 #include <glm/vec3.hpp>

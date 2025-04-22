@@ -1,5 +1,5 @@
-#ifndef FRAMEBUFFER_H
-#define FRAMEBUFFER_H
+#ifndef TOOMANYBLOCKS_FRAMEBUFFER_H
+#define TOOMANYBLOCKS_FRAMEBUFFER_H
 
 #include <memory>
 #include <vector>

@@ -1,5 +1,5 @@
-#ifndef BLOCKTYPES_H
-#define BLOCKTYPES_H
+#ifndef TOOMANYBLOCKS_BLOCKTYPES_H
+#define TOOMANYBLOCKS_BLOCKTYPES_H
 
 #define AIR                 0U
 #define STONE               1U

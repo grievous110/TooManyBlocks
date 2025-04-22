@@ -1,5 +1,5 @@
-#ifndef CHUNKMATERIAL_H
-#define CHUNKMATERIAL_H
+#ifndef TOOMANYBLOCKS_CHUNKMATERIAL_H
+#define TOOMANYBLOCKS_CHUNKMATERIAL_H
 
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"

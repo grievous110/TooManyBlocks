@@ -1,5 +1,5 @@
-#ifndef CHUNKSTORAGE_H
-#define CHUNKSTORAGE_H
+#ifndef TOOMANYBLOCKS_CHUNKSTORAGE_H
+#define TOOMANYBLOCKS_CHUNKSTORAGE_H
 
 #include <filesystem>
 #include <glm/glm.hpp>

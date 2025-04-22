@@ -1,5 +1,5 @@
-#ifndef WIREFRAME_H
-#define WIREFRAME_H
+#ifndef TOOMANYBLOCKS_WIREFRAME_H
+#define TOOMANYBLOCKS_WIREFRAME_H
 
 #include <memory>
 

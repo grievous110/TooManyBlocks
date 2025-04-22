@@ -1,5 +1,5 @@
-#ifndef GAMEINSTANCE_H
-#define GAMEINSTANCE_H
+#ifndef TOOMANYBLOCKS_GAMEINSTANCE_H
+#define TOOMANYBLOCKS_GAMEINSTANCE_H
 
 #include <glm/glm.hpp>
 #include <memory>

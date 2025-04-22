@@ -1,5 +1,5 @@
-#ifndef COLLISION_H
-#define COLLISION_H
+#ifndef TOOMANYBLOCKS_COLLISION_H
+#define TOOMANYBLOCKS_COLLISION_H
 
 #include "datatypes/DatatypeDefs.h"
 #include "engine/env/World.h"

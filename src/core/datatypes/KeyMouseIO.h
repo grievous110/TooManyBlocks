@@ -1,5 +1,5 @@
-#ifndef KEYMOUSEIO_H
-#define KEYMOUSEIO_H
+#ifndef TOOMANYBLOCKS_KEYMOUSEIO_H
+#define TOOMANYBLOCKS_KEYMOUSEIO_H
 
 #include <vector>
 

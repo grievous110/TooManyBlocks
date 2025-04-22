@@ -1,5 +1,5 @@
-#ifndef ABOUTSCREEN_H
-#define ABOUTSCREEN_H
+#ifndef TOOMANYBLOCKS_ABOUTSCREEN_H
+#define TOOMANYBLOCKS_ABOUTSCREEN_H
 
 #include <mutex>
 

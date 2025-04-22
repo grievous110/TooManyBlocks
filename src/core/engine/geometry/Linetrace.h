@@ -1,5 +1,5 @@
-#ifndef LINETRACE_H
-#define LINETRACE_H
+#ifndef TOOMANYBLOCKS_LINETRACE_H
+#define TOOMANYBLOCKS_LINETRACE_H
 
 #include <glm/glm.hpp>
 

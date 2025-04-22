@@ -1,5 +1,5 @@
-#ifndef SIMPLEMATERIAL_H
-#define SIMPLEMATERIAL_H
+#ifndef TOOMANYBLOCKS_SIMPLEMATERIAL_H
+#define TOOMANYBLOCKS_SIMPLEMATERIAL_H
 
 #include <glm/glm.hpp>
 #include <memory>

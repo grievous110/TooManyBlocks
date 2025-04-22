@@ -1,5 +1,5 @@
-#ifndef PLAYER_H
-#define PLAYER_H
+#ifndef TOOMANYBLOCKS_PLAYER_H
+#define TOOMANYBLOCKS_PLAYER_H
 
 #include <glm/vec3.hpp>
 #include <memory>

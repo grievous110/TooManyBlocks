@@ -1,5 +1,5 @@
-#ifndef GAMEOVERLAY_H
-#define GAMEOVERLAY_H
+#ifndef TOOMANYBLOCKS_GAMEOVERLAY_H
+#define TOOMANYBLOCKS_GAMEOVERLAY_H
 
 #include "engine/GameInstance.h"
 #include "engine/ui/Ui.h"

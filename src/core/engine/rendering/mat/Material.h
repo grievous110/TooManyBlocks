@@ -1,5 +1,5 @@
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef TOOMANYBLOCKS_MATERIAL_H
+#define TOOMANYBLOCKS_MATERIAL_H
 
 #include <array>
 #include <glm/glm.hpp>

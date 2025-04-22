@@ -1,5 +1,5 @@
-#ifndef AICONTROLLER_H
-#define AICONTROLLER_H
+#ifndef TOOMANYBLOCKS_AICONTROLLER_H
+#define TOOMANYBLOCKS_AICONTROLLER_H
 
 #include "engine/controllers/Controller.h"
 

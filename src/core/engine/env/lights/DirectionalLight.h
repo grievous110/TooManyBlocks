@@ -1,5 +1,5 @@
-#ifndef DIRECTIONALLIGHT_H
-#define DIRECTIONALLIGHT_H
+#ifndef TOOMANYBLOCKS_DIRECTIONALLIGHT_H
+#define TOOMANYBLOCKS_DIRECTIONALLIGHT_H
 
 #include "engine/env/lights/Light.h"
 
