@@ -1,18 +1,28 @@
+#include "LightProcessor.h"
+
+#include <gl/glew.h>
+
 #include "engine/env/lights/Spotlight.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/Frustum.h"
 #include "engine/rendering/GLUtils.h"
-#include "LightProcessor.h"
-#include <gl/glew.h>
 
 #define SHADOWMAP_ATLAS_RESOLUTION 4096
-#define HIGHPRIO_SHADOWMAP_SIZE 2048
-#define MEDIUMPRIO_SHADOWMAP_SIZE 1024
-#define LOWPRIO_SHADOWMAP_SIZE 512
+#define HIGHPRIO_SHADOWMAP_SIZE    2048
+#define MEDIUMPRIO_SHADOWMAP_SIZE  1024
+#define LOWPRIO_SHADOWMAP_SIZE     512
 
-void LightProcessor::prioritizeLights(const std::vector<Light*>& lights, RawBuffer<Light*>& outputBuffer, const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority, const RenderContext& context) {
-    struct ScoredLight { Light* valPtr; float score; };
-    
+void LightProcessor::prioritizeLights(
+    const std::vector<Light*>& lights,
+    RawBuffer<Light*>& outputBuffer,
+    const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority,
+    const RenderContext& context
+) {
+    struct ScoredLight {
+        Light* valPtr;
+        float score;
+    };
+
     const Frustum cameraFrustum(context.viewProjection);
 
     // Calculate scores for lights
@@ -20,12 +30,13 @@ void LightProcessor::prioritizeLights(const std::vector<Light*>& lights, RawBuff
     std::vector<ScoredLight> scoredLights;
     for (Light* light : lights) {
         if (!cameraFrustum.isSphereInside(light->getGlobalTransform().getPosition(), light->getRange())) {
-            // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for directional lights
+            // Skip lights outside the cameras view frustum. TODO: isSphereInside() method might be inaccurate for
+            // directional lights
             continue;
         }
         float distance = glm::distance(cameraPosition, light->getGlobalTransform().getPosition());
         float score = (1.0f / (distance + 1.0f)) * light->getRange();
-        scoredLights.push_back({ light, score });
+        scoredLights.push_back({light, score});
     }
 
     // Sort lights by score in descending order
@@ -53,27 +64,45 @@ void LightProcessor::initialize() {
     if (!isInitialized) {
         // Create buffers for shadowmapping
         m_shadowMapAtlases[LightPriority::High] = std::make_unique<FrameBuffer>();
-        m_shadowMapAtlases[LightPriority::High]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
+        m_shadowMapAtlases[LightPriority::High]->attachTexture(
+            std::make_shared<Texture>(
+                TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr,
+                TextureFilter::Nearest, TextureWrap::ClampToEdge
+            )
+        );
         m_shadowMapSizes[LightPriority::High] = HIGHPRIO_SHADOWMAP_SIZE;
         m_shadowMapAtlases[LightPriority::Medium] = std::make_unique<FrameBuffer>();
-        m_shadowMapAtlases[LightPriority::Medium]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
+        m_shadowMapAtlases[LightPriority::Medium]->attachTexture(
+            std::make_shared<Texture>(
+                TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr,
+                TextureFilter::Nearest, TextureWrap::ClampToEdge
+            )
+        );
         m_shadowMapSizes[LightPriority::Medium] = MEDIUMPRIO_SHADOWMAP_SIZE;
         m_shadowMapAtlases[LightPriority::Low] = std::make_unique<FrameBuffer>();
-        m_shadowMapAtlases[LightPriority::Low]->attachTexture(std::make_shared<Texture>(TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr, TextureFilter::Nearest, TextureWrap::ClampToEdge));
+        m_shadowMapAtlases[LightPriority::Low]->attachTexture(
+            std::make_shared<Texture>(
+                TextureType::Depth, SHADOWMAP_ATLAS_RESOLUTION, SHADOWMAP_ATLAS_RESOLUTION, 1, nullptr,
+                TextureFilter::Nearest, TextureWrap::ClampToEdge
+            )
+        );
         m_shadowMapSizes[LightPriority::Low] = LOWPRIO_SHADOWMAP_SIZE;
 
         m_totalSupportedLights = 0;
         for (int i = 0; i < LightPriority::Count; i++) {
-            m_maxShadowMapsPerPriority[i] = m_shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_shadowMapSizes[i];
+            m_maxShadowMapsPerPriority[i] =
+                m_shadowMapAtlases[i]->getAttachedDepthTexture()->width() / m_shadowMapSizes[i];
             m_maxShadowMapsPerPriority[i] *= m_maxShadowMapsPerPriority[i];
             m_totalSupportedLights += m_maxShadowMapsPerPriority[i];
         }
 
         m_lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
-        m_lightUniformBuffer = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
-        
+        m_lightUniformBuffer =
+            std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
+
         m_lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
-        m_lightViewProjectionUniformBuffer = std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
+        m_lightViewProjectionUniformBuffer =
+            std::make_shared<UniformBuffer>(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
 
         isInitialized = true;
     }
@@ -81,9 +110,9 @@ void LightProcessor::initialize() {
 
 void LightProcessor::clearShadowMaps() {
     for (int i = 0; i < LightPriority::Count; i++) {
-		m_shadowMapAtlases[i]->bind();
-		GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
-	}
+        m_shadowMapAtlases[i]->bind();
+        GLCALL(glClear(GL_DEPTH_BUFFER_BIT));
+    }
 }
 
 void LightProcessor::prepareShadowPass(const Light* light) {
@@ -103,7 +132,7 @@ void LightProcessor::prepareShadowPass(const Light* light) {
 }
 
 void LightProcessor::updateBuffers(const RawBuffer<Light*>& activeLights) {
-	if (isInitialized) {
+    if (isInitialized) {
         m_lightBuffer.clear();
         m_lightViewProjectionBuffer.clear();
 
@@ -129,7 +158,9 @@ void LightProcessor::updateBuffers(const RawBuffer<Light*>& activeLights) {
         }
 
         m_lightUniformBuffer->updateData(m_lightBuffer.data(), activeLights.size() * sizeof(ShaderLightStruct));
-        m_lightViewProjectionUniformBuffer->updateData(m_lightViewProjectionBuffer.data(), activeLights.size() * sizeof(glm::mat4));
+        m_lightViewProjectionUniformBuffer->updateData(
+            m_lightViewProjectionBuffer.data(), activeLights.size() * sizeof(glm::mat4)
+        );
     }
 }
 
@@ -138,7 +169,7 @@ std::array<std::weak_ptr<Texture>, LightPriority::Count> LightProcessor::getShad
     if (isInitialized) {
         for (int i = 0; i < LightPriority::Count; i++) {
             shadowMapsTextures[i] = std::weak_ptr<Texture>(m_shadowMapAtlases[i]->getAttachedDepthTexture());
-        }    
+        }
     }
     return shadowMapsTextures;
 }

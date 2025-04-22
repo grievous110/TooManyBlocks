@@ -2,9 +2,10 @@
 #define LIGHT_H
 
 #include <engine/comp/SceneComponent.h>
+
 #include <glm/glm.hpp>
 
-#define MAX_LIGHTS 84 // TODO: Replace with dynamic stuff
+#define MAX_LIGHTS 84  // TODO: Replace with dynamic stuff
 
 enum LightPriority {
     High = 0,
@@ -27,12 +28,12 @@ struct ShaderLightStruct {
     glm::vec3 lightPosition;
     float padding2;
     glm::vec3 direction;
-    float padding3;  
+    float padding3;
     glm::vec3 color;
     float intensity;
-    float range; // Used by point- / spotlight
-    float fovy; // Used by spotlicht
-    float innerCutoffAngle; // Used by spotlicht
+    float range;             // Used by point- / spotlight
+    float fovy;              // Used by spotlicht
+    float innerCutoffAngle;  // Used by spotlicht
     float padding4;
 };
 
@@ -45,7 +46,8 @@ protected:
     int m_shadowAtlasIndex;
 
 public:
-    Light(const glm::vec3& color, float intensity, float range) : m_color(color), m_intensity(intensity), m_range(range) {}
+    Light(const glm::vec3& color, float intensity, float range)
+        : m_color(color), m_intensity(intensity), m_range(range) {}
     virtual ~Light() = default;
 
     inline glm::vec3 getColor() const { return m_color; }

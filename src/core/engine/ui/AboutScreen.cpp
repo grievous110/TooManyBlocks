@@ -1,10 +1,13 @@
 #include "AboutScreen.h"
-#include "Application.h"
-#include "engine/ui/fonts/FontUtil.h"
-#include "Logger.h"
-#include "threading/ThreadPool.h"
-#include <fstream>
+
 #include <imgui.h>
+
+#include <fstream>
+
+#include "Application.h"
+#include "Logger.h"
+#include "engine/ui/fonts/FontUtil.h"
+#include "threading/ThreadPool.h"
 
 namespace UI {
     void AboutScreen::loadContent() {
@@ -21,7 +24,8 @@ namespace UI {
                     return;
                 }
 
-                std::string content = std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                std::string content =
+                    std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
 
                 {
                     std::lock_guard<std::mutex> lock(m_mtx);
@@ -31,35 +35,30 @@ namespace UI {
         }
     }
 
-    void AboutScreen::render(ApplicationContext& context){
+    void AboutScreen::render(ApplicationContext& context) {
         loadContent();
 
         std::lock_guard<std::mutex> lock(m_mtx);
 
         ImGuiIO& io = ImGui::GetIO();
-        
-		ImGuiWindowFlags window_flags =
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoBringToFrontOnFocus |
-        ImGuiWindowFlags_NoNavFocus;
-        
-		
+
+        ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+                                        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                                        ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+
         UI::Util::MakeNextWindowFullscreen();
         ImGui::Begin("About", NULL, window_flags);
         {
             ScopedFont font(context.fontPool->getFont(25));
             ImVec2 titleSize = ImGui::CalcTextSize("About TooManyBlocks");
-            
-            ImGui::SetCursorPosX((io.DisplaySize.x - titleSize.x) * 0.5f); // Center horizontally
+
+            ImGui::SetCursorPosX((io.DisplaySize.x - titleSize.x) * 0.5f);  // Center horizontally
             ImGui::Text("About TooManyBlocks");
             ImGui::Dummy(ImVec2(0, 20));
 
             float availableHeight = ImGui::GetContentRegionAvail().y;
             float buttonHeight = 45.0f;
-            float padding = 20.0f; // Space between text and button
+            float padding = 20.0f;  // Space between text and button
             float textHeight = availableHeight - buttonHeight - padding - padding;
             ImGui::BeginChild("TextRegion", ImVec2(0, textHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
             if (ImGui::CollapsingHeader("Third Party Licenses")) {
@@ -77,16 +76,16 @@ namespace UI {
                 }
             }
             ImGui::EndChild();
-            
+
             ImGui::Dummy(ImVec2(0, padding));
 
             float buttonWidth = 350.0f;
             float centerX = (io.DisplaySize.x - buttonWidth) * 0.5f;
             ImGui::SetCursorPosX(centerX);
-            if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight ))) {
+            if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
                 navigateToWindow(context, "MainMenu");
             }
         }
         ImGui::End();
     }
-}
+}  // namespace UI

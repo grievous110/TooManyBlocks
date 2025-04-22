@@ -1,23 +1,22 @@
+#include "GameOverlay.h"
+
+#include <GLFW/glfw3.h>
+#include <imgui.h>
+
+#include <glm/vec3.hpp>
+
 #include "Application.h"
 #include "datatypes/Transform.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/entity/Entity.h"
 #include "engine/ui/fonts/FontUtil.h"
-#include "GameOverlay.h"
-#include <GLFW/glfw3.h>
-#include <glm/vec3.hpp>
-#include <imgui.h>
 
 void UI::GameOverlay::render(ApplicationContext& context) {
     ImGuiIO& io = ImGui::GetIO();
-    
-    ImGuiWindowFlags window_flags =
-    ImGuiWindowFlags_NoResize |
-    ImGuiWindowFlags_NoMove |
-    ImGuiWindowFlags_NoCollapse |
-    ImGuiWindowFlags_NoBackground |
-    ImGuiWindowFlags_NoTitleBar;
-    
+
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
+                                    ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar;
+
     UI::Util::MakeNextWindowFullscreen();
     ImGui::Begin("Game Overlay", nullptr, window_flags);
     {
@@ -34,13 +33,12 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
         ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
-        
-        ImVec2 pos(io.DisplaySize.x - 110, 10); // Adjust X for width
-        ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
-        ImGui::SetNextWindowBgAlpha(0.0f); // transparent background
 
-        if (ImGui::BeginCombo("##Dropdown", "Movement Mode", ImGuiComboFlags_NoArrowButton))
-        {
+        ImVec2 pos(io.DisplaySize.x - 110, 10);  // Adjust X for width
+        ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+        ImGui::SetNextWindowBgAlpha(0.0f);  // transparent background
+
+        if (ImGui::BeginCombo("##Dropdown", "Movement Mode", ImGuiComboFlags_NoArrowButton)) {
             if (ImGui::Button("Walk")) {
                 context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Walk);
             }
@@ -63,8 +61,12 @@ void UI::GameOverlay::render(ApplicationContext& context) {
 
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
             context.instance->gameState.gamePaused = true;
-            context.io->keyAdapter().detach(static_cast<PlayerController*>(context.instance->m_player->getController()));
-            context.io->mouseAdapter().detach(static_cast<PlayerController*>(context.instance->m_player->getController()));
+            context.io->keyAdapter().detach(
+                static_cast<PlayerController*>(context.instance->m_player->getController())
+            );
+            context.io->mouseAdapter().detach(
+                static_cast<PlayerController*>(context.instance->m_player->getController())
+            );
             glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             navigateToWindow(context, "PauseMenu");
         }

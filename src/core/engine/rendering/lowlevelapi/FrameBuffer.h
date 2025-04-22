@@ -1,10 +1,11 @@
 #ifndef FRAMEBUFFER_H
 #define FRAMEBUFFER_H
 
-#include "engine/rendering/lowlevelapi/RenderApiObject.h"
-#include "engine/rendering/lowlevelapi/Texture.h"
 #include <memory>
 #include <vector>
+
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/Texture.h"
 
 class FrameBuffer : public RenderApiObject {
 private:
@@ -16,14 +17,14 @@ private:
 
 public:
     static void bindDefault();
-	static void syncBinding();
+    static void syncBinding();
 
     FrameBuffer();
     FrameBuffer(FrameBuffer&& other) noexcept;
     virtual ~FrameBuffer();
 
     void bind() const;
-    
+
     void attachTexture(std::shared_ptr<Texture> texture);
 
     void clearAttachedTextures();

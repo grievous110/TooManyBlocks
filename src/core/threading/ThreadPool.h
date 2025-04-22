@@ -11,41 +11,41 @@
 
 class ThreadPool {
 private:
-	struct Job {
-		const void* owner;
-		std::function<void()> task;
-	};
+    struct Job {
+        const void* owner;
+        std::function<void()> task;
+    };
 
-	bool m_terminateFlag;
-	std::mutex m_mtx;
-	std::condition_variable m_taskAvailableCvar;
-	std::condition_variable m_globalWaitCvar;
-	std::vector<std::thread> m_threads;
-	std::deque<Job> m_jobs;
-	std::unordered_map<const void*, size_t> m_ownerTaskCount;
-	std::unordered_map<const void*, std::condition_variable> m_ownerWaitCvars;
-	std::unordered_map<const void*, size_t> m_ownerWaitingThreads;
-	size_t m_totalTaskCount;
+    bool m_terminateFlag;
+    std::mutex m_mtx;
+    std::condition_variable m_taskAvailableCvar;
+    std::condition_variable m_globalWaitCvar;
+    std::vector<std::thread> m_threads;
+    std::deque<Job> m_jobs;
+    std::unordered_map<const void*, size_t> m_ownerTaskCount;
+    std::unordered_map<const void*, std::condition_variable> m_ownerWaitCvars;
+    std::unordered_map<const void*, size_t> m_ownerWaitingThreads;
+    size_t m_totalTaskCount;
 
-	void loop();
+    void loop();
 
-	void erasePerOwnerEntrys(const void* owner);
+    void erasePerOwnerEntrys(const void* owner);
 
 public:
-	ThreadPool(size_t numThreads);
-	~ThreadPool();
+    ThreadPool(size_t numThreads);
+    ~ThreadPool();
 
-	inline size_t threadCount() const { return m_threads.size(); };
+    inline size_t threadCount() const { return m_threads.size(); };
 
-	void waitForCompletion();
+    void waitForCompletion();
 
-	void waitForOwnerCompletion(const void* owner);
+    void waitForOwnerCompletion(const void* owner);
 
-	void pushJob(const void* owner, std::function<void()> job);
+    void pushJob(const void* owner, std::function<void()> job);
 
-	void cancelJobs(const void* owner);
+    void cancelJobs(const void* owner);
 
-	void forceCancelAllJobs();
+    void forceCancelAllJobs();
 };
 
 #endif

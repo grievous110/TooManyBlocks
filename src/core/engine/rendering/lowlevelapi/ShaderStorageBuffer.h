@@ -1,27 +1,28 @@
 #ifndef SHADERSTORAGEBUFFER_H
 #define SHADERSTORAGEBUFFER_H
 
-#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include <stddef.h>
+
+#include "engine/rendering/lowlevelapi/RenderApiObject.h"
 
 class ShaderStorageBuffer : public RenderApiObject {
 private:
-	size_t m_size;
-	
+    size_t m_size;
+
 public:
-	static void bindDefault();
+    static void bindDefault();
 
-	ShaderStorageBuffer(const void* data, size_t size); // size is in bytes
-	ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept;
-	virtual ~ShaderStorageBuffer();
+    ShaderStorageBuffer(const void* data, size_t size);  // size is in bytes
+    ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept;
+    virtual ~ShaderStorageBuffer();
 
-	void updateData(const void* data, size_t size, size_t offset = 0) const;
+    void updateData(const void* data, size_t size, size_t offset = 0) const;
 
-	void bind(unsigned int bindingPoint) const;
+    void bind(unsigned int bindingPoint) const;
 
-	inline size_t getByteSize() const { return m_size; };
+    inline size_t getByteSize() const { return m_size; };
 
-	ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other) noexcept;
+    ShaderStorageBuffer& operator=(ShaderStorageBuffer&& other) noexcept;
 };
 
 #endif

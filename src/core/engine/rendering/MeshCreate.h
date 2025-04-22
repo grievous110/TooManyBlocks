@@ -1,44 +1,51 @@
 #ifndef MESHCREATE_H
 #define MESHCREATE_H
 
-#include "engine/env/Chunk.h"
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/BlockToTextureMapping.h"
-#include "engine/rendering/StaticMesh.h"
-#include "engine/rendering/RenderData.h"
 #include <cstdint>
 #include <glm/glm.hpp>
 #include <memory>
 
-#define POSITION_BITMASK 0x3FF
+#include "engine/env/Chunk.h"
+#include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/BlockToTextureMapping.h"
+#include "engine/rendering/RenderData.h"
+#include "engine/rendering/StaticMesh.h"
+
+#define POSITION_BITMASK  0x3FF
 #define X_POSITION_OFFSET 20
 #define Y_POSITION_OFFSET 10
 #define Z_POSITION_OFFSET 0
 
-#define TEXINDEX_BITMASK 0xFF
-#define TEXINDEX_OFFSET 16
+#define TEXINDEX_BITMASK  0xFF
+#define TEXINDEX_OFFSET   16
 
-#define X_UV_BITMASK 0x3F
-#define Y_UV_BITMASK 0x3F
-#define X_UV_OFFSET 10
-#define Y_UV_OFFSET 4
+#define X_UV_BITMASK      0x3F
+#define Y_UV_BITMASK      0x3F
+#define X_UV_OFFSET       10
+#define Y_UV_OFFSET       4
 
-#define NORMAL_BITMASK 0x07
-#define NORMAL_OFFSET 0
+#define NORMAL_BITMASK    0x07
+#define NORMAL_OFFSET     0
 
-#define SET_BITS(target, value, bitmask, position) (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
+#define SET_BITS(target, value, bitmask, position) \
+    (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
 #define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
 
 struct UVCoord {
     uint8_t x : 6;
-    uint8_t y : 6; 
+    uint8_t y : 6;
 };
 
 struct CompactChunkVertex {
-    uint32_t position;      // 4 bytes compressed for 10bit positions (x, y, z)
-    uint32_t packedData;    // 4 bytes for compressed data (texIndex, normal, uv)
+    uint32_t position;    // 4 bytes compressed for 10bit positions (x, y, z)
+    uint32_t packedData;  // 4 bytes for compressed data (texIndex, normal, uv)
 
-    CompactChunkVertex(const glm::ivec3& pos = glm::ivec3(0), uint16_t texIndex = 0, UVCoord uv = {0, 0}, AxisDirection normal = AxisDirection::PositiveX) {
+    CompactChunkVertex(
+        const glm::ivec3& pos = glm::ivec3(0),
+        uint16_t texIndex = 0,
+        UVCoord uv = {0, 0},
+        AxisDirection normal = AxisDirection::PositiveX
+    ) {
         setPosition(pos);
         setTexIndex(texIndex);
         setUV(uv);
@@ -46,22 +53,30 @@ struct CompactChunkVertex {
     }
 
     inline void setPosition(const glm::ivec3& pos) {
-        SET_BITS(position, static_cast<uint32_t>(pos.x), POSITION_BITMASK, X_POSITION_OFFSET);      // 10 bit x coord [0 - 1023]
-        SET_BITS(position, static_cast<uint32_t>(pos.y), POSITION_BITMASK, Y_POSITION_OFFSET);      // 10 bit y coord [0 - 1023]
-        SET_BITS(position, static_cast<uint32_t>(pos.z), POSITION_BITMASK, Z_POSITION_OFFSET);      // 10 bit z coord [0 - 1023]
+        SET_BITS(
+            position, static_cast<uint32_t>(pos.x), POSITION_BITMASK, X_POSITION_OFFSET
+        );  // 10 bit x coord [0 - 1023]
+        SET_BITS(
+            position, static_cast<uint32_t>(pos.y), POSITION_BITMASK, Y_POSITION_OFFSET
+        );  // 10 bit y coord [0 - 1023]
+        SET_BITS(
+            position, static_cast<uint32_t>(pos.z), POSITION_BITMASK, Z_POSITION_OFFSET
+        );  // 10 bit z coord [0 - 1023]
     }
 
     inline void setTexIndex(uint16_t texIndex) {
-        SET_BITS(packedData, static_cast<uint32_t>(texIndex), TEXINDEX_BITMASK, TEXINDEX_OFFSET);   // 16 bit texture index [0 - 65535]
+        SET_BITS(
+            packedData, static_cast<uint32_t>(texIndex), TEXINDEX_BITMASK, TEXINDEX_OFFSET
+        );  // 16 bit texture index [0 - 65535]
     }
 
     inline void setUV(UVCoord uv) {
-        SET_BITS(packedData, static_cast<uint32_t>(uv.x), X_UV_BITMASK, X_UV_OFFSET);   // 6 bit x uv coord [0 - 63]
-        SET_BITS(packedData, static_cast<uint32_t>(uv.y), Y_UV_BITMASK, Y_UV_OFFSET);   // 6 bit y uv coord [0 - 63]
+        SET_BITS(packedData, static_cast<uint32_t>(uv.x), X_UV_BITMASK, X_UV_OFFSET);  // 6 bit x uv coord [0 - 63]
+        SET_BITS(packedData, static_cast<uint32_t>(uv.y), Y_UV_BITMASK, Y_UV_OFFSET);  // 6 bit y uv coord [0 - 63]
     }
 
     inline void setNormal(AxisDirection normal) {
-        SET_BITS(packedData, static_cast<uint32_t>(normal), NORMAL_BITMASK, NORMAL_OFFSET);     // Compressed in 3 bit
+        SET_BITS(packedData, static_cast<uint32_t>(normal), NORMAL_BITMASK, NORMAL_OFFSET);  // Compressed in 3 bit
     }
 
     inline glm::ivec3 getPosition() const {
@@ -73,7 +88,7 @@ struct CompactChunkVertex {
     }
 
     inline glm::vec3 getNormal() const {
-            switch (getNormalEnum()) {
+        switch (getNormalEnum()) {
             case AxisDirection::PositiveX: return glm::vec3(1.0f, 0.0f, 0.0f);
             case AxisDirection::NegativeX: return glm::vec3(-1.0f, 0.0f, 0.0f);
             case AxisDirection::PositiveY: return glm::vec3(0.0f, 1.0f, 0.0f);
@@ -106,8 +121,8 @@ struct Vertex {
     glm::vec3 normal;
 
     bool operator==(const Vertex& other) const {
-		return position == other.position && uv == other.uv && normal == other.normal;
-	}
+        return position == other.position && uv == other.uv && normal == other.normal;
+    }
 };
 
 struct SkeletalVertex {
@@ -124,9 +139,13 @@ std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data);
 
 // std::shared_ptr<RenderData> packToRenderData(const CPURenderData<SkeletalVertex>& data);
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
+    const Block* blocks, const BlockToTextureMap& texMap
+);
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
+    const Block* blocks, const BlockToTextureMap& texMap
+);
 
 std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 

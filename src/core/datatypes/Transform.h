@@ -8,10 +8,10 @@ class Transform {
 private:
     glm::vec3 m_position;
     glm::quat m_rotation;
-    float m_scale; // Uniform scaling to avoid skew
+    float m_scale;  // Uniform scaling to avoid skew
 
     mutable glm::mat4 m_modelMatrix;
-    mutable bool m_dirty; // Tracks whether the model matrix needs recalculation
+    mutable bool m_dirty;  // Tracks whether the model matrix needs recalculation
 
     void recalculateModelMatrix() const;
 
@@ -20,7 +20,9 @@ public:
 
     Transform();
     Transform(const glm::vec3& position, const glm::vec3& eulerAngles = glm::vec3(0.0f), float scale = 1.0f);
-    Transform(const glm::vec3& position, const glm::quat& rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f), float scale = 1.0f);
+    Transform(
+        const glm::vec3& position, const glm::quat& rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f), float scale = 1.0f
+    );
 
     void rotate(float angle, const glm::vec3& axis);
     void rotate(const glm::vec3& eulerAngles);

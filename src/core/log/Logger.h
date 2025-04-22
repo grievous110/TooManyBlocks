@@ -2,12 +2,12 @@
 #define LOGGER_H
 
 #include <fstream>
-#include <string>
 #include <mutex>
+#include <string>
 
 namespace lgr {
     class Logger {
-    private:    
+    private:
         enum LogLevel { DEBUG, INFO, WARNING, ERR };
 
         bool m_consoleAvailable;
@@ -32,6 +32,6 @@ namespace lgr {
     };
 
     extern Logger lout;
-}
+}  // namespace lgr
 
 #endif

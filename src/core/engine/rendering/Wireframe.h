@@ -1,10 +1,11 @@
 #ifndef WIREFRAME_H
 #define WIREFRAME_H
 
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/Renderable.h"
-#include "engine/rendering/RenderData.h"
 #include <memory>
+
+#include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/RenderData.h"
+#include "engine/rendering/Renderable.h"
 
 class Wireframe : public Renderable {
 private:
@@ -15,10 +16,16 @@ private:
 
     void draw() const override;
 
-public:    
+public:
     static Wireframe fromBoundigBox(const BoundingBox& bbox);
 
-    Wireframe(std::shared_ptr<RenderData> renderData, const BoundingBox& bounds, float lineWidth = 2.0f, std::shared_ptr<Material> material = nullptr) : m_data(renderData), m_material(material), m_bounds(bounds), m_lineWidth(lineWidth) {}
+    Wireframe(
+        std::shared_ptr<RenderData> renderData,
+        const BoundingBox& bounds,
+        float lineWidth = 2.0f,
+        std::shared_ptr<Material> material = nullptr
+    )
+        : m_data(renderData), m_material(material), m_bounds(bounds), m_lineWidth(lineWidth) {}
     virtual ~Wireframe() = default;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }

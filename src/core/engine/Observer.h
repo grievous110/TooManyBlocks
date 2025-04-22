@@ -1,8 +1,8 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 template <typename... Args>
 class Observer {
@@ -15,6 +15,7 @@ template <typename... Args>
 class Observable {
 private:
     std::vector<Observer<Args...>*> m_observers;
+
 public:
     virtual ~Observable() = default;
 

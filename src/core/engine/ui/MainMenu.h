@@ -4,10 +4,10 @@
 #include "engine/ui/Ui.h"
 
 namespace UI {
-	class MainMenu : public Window {
-	public:
-		void render(ApplicationContext& context) override;
-	};
-}
+    class MainMenu : public Window {
+    public:
+        void render(ApplicationContext& context) override;
+    };
+}  // namespace UI
 
 #endif

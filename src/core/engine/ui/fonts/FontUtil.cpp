@@ -1,10 +1,12 @@
 #include "FontUtil.h"
-#include <algorithm>
+
 #include <imgui_impl_opengl3.h>
 #include <imgui_internal.h>
+
+#include <algorithm>
 #include <stdexcept>
 
-ScopedFont::ScopedFont(const FontData fontData): m_fontData(fontData) {
+ScopedFont::ScopedFont(const FontData fontData) : m_fontData(fontData) {
     if (m_fontData.fontPtr) {
         ImGui::PushFont(m_fontData.fontPtr);
         ImGui::SetWindowFontScale(m_fontData.scale);
@@ -31,14 +33,16 @@ void FontPool::loadFontSizes(const std::string& filePath, const std::vector<floa
         }
         m_availableFonts.push_back(fontPtr);
     }
-    std::sort(m_availableFonts.begin(), m_availableFonts.end(), [](ImFont* a, ImFont* b) { return a->FontSize < b->FontSize; });
+    std::sort(m_availableFonts.begin(), m_availableFonts.end(), [](ImFont* a, ImFont* b) {
+        return a->FontSize < b->FontSize;
+    });
 
     io.Fonts->Build();
     ImGui_ImplOpenGL3_CreateFontsTexture();
 }
 
 const FontData FontPool::getFont(float requestedSize) const {
-    if (m_availableFonts.empty()) return { nullptr, 1.0f };
+    if (m_availableFonts.empty()) return {nullptr, 1.0f};
 
     ImFont* bestFont = nullptr;
     for (ImFont* font : m_availableFonts) {
@@ -49,5 +53,5 @@ const FontData FontPool::getFont(float requestedSize) const {
         }
     }
 
-    return { bestFont, requestedSize / bestFont->FontSize };
+    return {bestFont, requestedSize / bestFont->FontSize};
 }

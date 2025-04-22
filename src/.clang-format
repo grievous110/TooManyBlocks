@@ -1,0 +1,25 @@
+BasedOnStyle: Google
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+SortIncludes: true
+IncludeBlocks: Regroup
+
+DerivePointerAlignment: false
+PointerAlignment: Left
+BreakBeforeBraces: Attach
+AccessModifierOffset: -4
+
+AlignAfterOpenBracket: BlockIndent
+AlignConsecutiveMacros: AcrossEmptyLinesAndComments
+
+NamespaceIndentation: All
+
+BinPackParameters: false
+
+ColumnLimit: 120
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowShortEnumsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true

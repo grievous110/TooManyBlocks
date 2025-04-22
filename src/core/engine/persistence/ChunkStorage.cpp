@@ -1,10 +1,12 @@
 #include "ChunkStorage.h"
-#include "datatypes/BlockTypes.h"
+
 #include <climits>
 #include <cstring>
 #include <fstream>
 #include <stdexcept>
 #include <string>
+
+#include "datatypes/BlockTypes.h"
 
 std::shared_ptr<std::mutex> ChunkStorage::getChunkMutex(const glm::ivec3& pos) {
     std::lock_guard<std::mutex> lock(m_lockMapMutex);
@@ -31,7 +33,7 @@ std::shared_ptr<std::mutex> ChunkStorage::getChunkMutex(const glm::ivec3& pos) {
     return newMutex;
 }
 
-ChunkStorage::ChunkStorage(const std::filesystem::path &worldPath) : m_chunkStoragePath(worldPath / "chunks") {
+ChunkStorage::ChunkStorage(const std::filesystem::path& worldPath) : m_chunkStoragePath(worldPath / "chunks") {
     if (!std::filesystem::exists(m_chunkStoragePath)) {
         std::filesystem::create_directories(m_chunkStoragePath);
     }
@@ -40,8 +42,9 @@ ChunkStorage::ChunkStorage(const std::filesystem::path &worldPath) : m_chunkStor
 bool ChunkStorage::hasChunk(const glm::ivec3& chunkPos) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
-    
-    std::string chunkFileName = "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);    
+
+    std::string chunkFileName =
+        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
     return std::filesystem::exists(m_chunkStoragePath / chunkFileName);
 }
 
@@ -49,7 +52,8 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
-    std::string chunkFileName = "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
+    std::string chunkFileName =
+        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
     std::filesystem::path chunkFilePath = m_chunkStoragePath / chunkFileName;
 
     std::ifstream file(chunkFilePath.c_str(), std::ios::binary);
@@ -81,24 +85,26 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
         throw std::runtime_error("Failed to read flags byte from chunk file: " + chunkFilePath.string());
     }
 
-    size_t blockIndex  = 0;
+    size_t blockIndex = 0;
     std::shared_ptr<Block[]> blocks(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
 
     while (file && blockIndex < BLOCKS_PER_CHUNK) {
         uint16_t rlePair[2];
 
         file.read(reinterpret_cast<char*>(rlePair), sizeof(rlePair));
-        if (file.gcount() != sizeof(rlePair))
-            break;
+        if (file.gcount() != sizeof(rlePair)) break;
 
         uint16_t blockType = rlePair[0];
         uint16_t runLength = rlePair[1];
 
         if (blockIndex + runLength > BLOCKS_PER_CHUNK) {
-            throw std::runtime_error("RLE run length of " + std::to_string(runLength) + " exceeds chunk size at index " + std::to_string(blockIndex));
+            throw std::runtime_error(
+                "RLE run length of " + std::to_string(runLength) + " exceeds chunk size at index " +
+                std::to_string(blockIndex)
+            );
         }
 
-        Block fillBlock = { blockType, blockType != AIR };
+        Block fillBlock = {blockType, blockType != AIR};
         for (uint16_t i = 0; i < runLength; i++) {
             blocks[blockIndex++] = fillBlock;
         }
@@ -106,8 +112,7 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
 
     if (blockIndex != BLOCKS_PER_CHUNK) {
         throw std::runtime_error(
-            "Chunk RLE decoding ended prematurely. Expected " + 
-            std::to_string(BLOCKS_PER_CHUNK) + " blocks, but got " + 
+            "Chunk RLE decoding ended prematurely. Expected " + std::to_string(BLOCKS_PER_CHUNK) + " blocks, but got " +
             std::to_string(blockIndex)
         );
     }
@@ -119,7 +124,8 @@ void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
-    std::string chunkFileName = "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
+    std::string chunkFileName =
+        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
     std::filesystem::path chunkFilePath = m_chunkStoragePath / chunkFileName;
 
     std::ofstream file(chunkFilePath.c_str(), std::ios::binary);
@@ -127,9 +133,9 @@ void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks
         throw std::runtime_error("Could not open chunk file for writing: " + chunkFilePath.string());
     }
 
-    file.write("CHNK", 4); // Magic number
-    uint8_t version = 1; // Version
-    uint8_t flags = 0; // Reserved for now
+    file.write("CHNK", 4);  // Magic number
+    uint8_t version = 1;    // Version
+    uint8_t flags = 0;      // Reserved for now
     file.write(reinterpret_cast<char*>(&version), 1);
     file.write(reinterpret_cast<char*>(&flags), 1);
 

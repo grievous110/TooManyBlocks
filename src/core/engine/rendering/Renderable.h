@@ -1,9 +1,10 @@
 #ifndef RENDERABLE_H
 #define RENDERABLE_H
 
+#include <memory>
+
 #include "engine/comp/SceneComponent.h"
 #include "engine/rendering/mat/Material.h"
-#include <memory>
 
 struct BoundingBox;
 

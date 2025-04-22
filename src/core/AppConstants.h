@@ -11,21 +11,21 @@ namespace Res {
         constexpr const char* LINE = "res/shaders/lineShader";
         constexpr const char* SSAO_PASS = "res/shaders/SSAO_PassShader";
         constexpr const char* SSAO_BLUR = "res/shaders/SSAO_BlurShader";
-    }
+    }  // namespace Shader
 
     namespace Texture {
         constexpr const char* BLOCK_TEX_ATLAS = "res/textures/blockTexAtlas.png";
         constexpr const char* TESTBLOCK_TEXTURE = "res/textures/testTexture.png";
-    }
+    }  // namespace Texture
 
     namespace Font {
         constexpr const char* PROGGY_CLEAN = "res/fonts/ProggyClean.ttf";
         constexpr const char* PROGGY_TINY = "res/fonts/ProggyTiny.ttf";
-    }
+    }  // namespace Font
 
     namespace Model {
         constexpr const char* TEST_UNIT_BLOCK = "res/models/testUnitBlock.obj";
     }
-};
+};  // namespace Res
 
 #endif

@@ -1,3 +1,13 @@
+#include "MeshCreate.h"
+
+#include <array>
+#include <cfloat>
+#include <fstream>
+#include <sstream>
+#include <unordered_map>
+#include <vector>
+
+#include "Logger.h"
 #include "compatability/Compatability.h"
 #include "datatypes/BlockTypes.h"
 #include "datatypes/DatatypeDefs.h"
@@ -8,15 +18,7 @@
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include "gl/glew.h"
-#include "Logger.h"
-#include "MeshCreate.h"
 #include "util/BitOperations.h"
-#include <array>
-#include <cfloat>
-#include <fstream>
-#include <sstream>
-#include <unordered_map>
-#include <vector>
 
 typedef unsigned int** BinaryPlaneArray;
 typedef unsigned int* BinaryPlane;
@@ -37,7 +39,7 @@ static void zeroFillPlanes(BinaryPlaneArray planes, size_t size) {
 static BinaryPlaneArray allocateBinaryPlanes(size_t size) {
     BinaryPlaneArray planes = new BinaryPlane[size];
     for (size_t slice = 0; slice < size; slice++) {
-       planes[slice] = new unsigned int[size];
+        planes[slice] = new unsigned int[size];
     }
     zeroFillPlanes(planes, size);
     return planes;
@@ -45,19 +47,20 @@ static BinaryPlaneArray allocateBinaryPlanes(size_t size) {
 
 static void freeBinaryPlanes(BinaryPlaneArray planes, size_t size) {
     for (size_t slice = 0; slice < size; slice++) {
-       delete[] planes[slice];
+        delete[] planes[slice];
     }
     delete[] planes;
 }
 
 static glm::ivec3 axisToCoord(Axis axis, int slice, int row, int column) {
     // Utility for greedy meshing.
-    // Look onto the axis from the positive, then pick the positiv axis as height (rowindexed) wich has the other positive axis imediatly 90° clockwise.
+    // Look onto the axis from the positive, then pick the positiv axis as height (rowindexed) wich has the other
+    // positive axis imediatly 90° clockwise.
     switch (axis) {
-        case Axis::X:  return glm::ivec3(slice, column, row);
-        case Axis::Y:  return glm::ivec3(row, slice, column);
-        case Axis::Z:  return glm::ivec3(column, row, slice);
-        default: return glm::ivec3(0); // Unhandled case
+        case Axis::X: return glm::ivec3(slice, column, row);
+        case Axis::Y: return glm::ivec3(row, slice, column);
+        case Axis::Z: return glm::ivec3(column, row, slice);
+        default: return glm::ivec3(0);  // Unhandled case
     }
 }
 
@@ -80,17 +83,19 @@ static BoundingBox calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) 
 }
 
 static size_t getNumComponents(const std::string& accessorType) {
-	if (accessorType == "SCALAR") return 1;
-	if (accessorType == "VEC2")   return 2;
-	if (accessorType == "VEC3")   return 3;
-	if (accessorType == "VEC4")   return 4;
-	if (accessorType == "MAT2")   return 4;
-	if (accessorType == "MAT3")   return 9;
-	if (accessorType == "MAT4")   return 16;
-	throw std::runtime_error("Unknown accessor type: " + accessorType);
+    if (accessorType == "SCALAR") return 1;
+    if (accessorType == "VEC2") return 2;
+    if (accessorType == "VEC3") return 3;
+    if (accessorType == "VEC4") return 4;
+    if (accessorType == "MAT2") return 4;
+    if (accessorType == "MAT3") return 9;
+    if (accessorType == "MAT4") return 16;
+    throw std::runtime_error("Unknown accessor type: " + accessorType);
 }
 
-static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1) {
+static CompactChunkFace generateCompactChunkFace(
+    const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1
+) {
     // Vertices for a specific face
     glm::ivec3 v0 = glm::ivec3(0);
     glm::ivec3 v1 = glm::ivec3(0);
@@ -99,42 +104,42 @@ static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisD
 
     // Generate the appropriate face based on FaceDirection
     switch (faceDirection) {
-    case AxisDirection::PositiveX: // RIGHT
-        v0 = origin + glm::ivec3(1, width, height); // Front Top Right
-        v1 = origin + glm::ivec3(1, width, 0);     // Back Top Right
-        v2 = origin + glm::ivec3(1, 0, 0);          // Back Bottom Right
-        v3 = origin + glm::ivec3(1, 0, height);      // Front Bottom Right
-        break;
-    case AxisDirection::NegativeX: // LEFT
-        v0 = origin + glm::ivec3(0, width, 0);      // Back Top Left
-        v1 = origin + glm::ivec3(0, width, height);  // Front Top Left
-        v2 = origin + glm::ivec3(0, 0, height);       // Front Bottom Left
-        v3 = origin + glm::ivec3(0, 0, 0);           // Back Bottom Left
-        break;
-    case AxisDirection::PositiveY: // TOP
-        v0 = origin + glm::ivec3(0, 1, 0);      // Back Top Left
-        v1 = origin + glm::ivec3(height, 1, 0);  // Back Top Right
-        v2 = origin + glm::ivec3(height, 1, width); // Front Top Right
-        v3 = origin + glm::ivec3(0, 1, width);  // Front Top Left
-        break;
-    case AxisDirection::NegativeY: // BOTTOM
-        v0 = origin + glm::ivec3(0, 0, width);       // Front Bottom Left
-        v1 = origin + glm::ivec3(height, 0, width);   // Front Bottom Right
-        v2 = origin + glm::ivec3(height, 0, 0);       // Back Bottom Right
-        v3 = origin + glm::ivec3(0, 0, 0);           // Back Bottom Left
-        break;
-    case AxisDirection::PositiveZ: // FRONT
-        v0 = origin + glm::ivec3(0, height, 1);      // Top Left
-        v1 = origin + glm::ivec3(width, height, 1);  // Top Right
-        v2 = origin + glm::ivec3(width, 0, 1);       // Bottom Right
-        v3 = origin + glm::ivec3(0, 0, 1);           // Bottom Left
-        break;
-    case AxisDirection::NegativeZ: // BACK
-        v0 = origin + glm::ivec3(width, height, 0);  // Top Right
-        v1 = origin + glm::ivec3(0, height, 0);      // Top Left
-        v2 = origin + glm::ivec3(0, 0, 0);           // Bottom Left
-        v3 = origin + glm::ivec3(width, 0, 0);       // Bottom Right
-        break;
+        case AxisDirection::PositiveX:                   // RIGHT
+            v0 = origin + glm::ivec3(1, width, height);  // Front Top Right
+            v1 = origin + glm::ivec3(1, width, 0);       // Back Top Right
+            v2 = origin + glm::ivec3(1, 0, 0);           // Back Bottom Right
+            v3 = origin + glm::ivec3(1, 0, height);      // Front Bottom Right
+            break;
+        case AxisDirection::NegativeX:                   // LEFT
+            v0 = origin + glm::ivec3(0, width, 0);       // Back Top Left
+            v1 = origin + glm::ivec3(0, width, height);  // Front Top Left
+            v2 = origin + glm::ivec3(0, 0, height);      // Front Bottom Left
+            v3 = origin + glm::ivec3(0, 0, 0);           // Back Bottom Left
+            break;
+        case AxisDirection::PositiveY:                   // TOP
+            v0 = origin + glm::ivec3(0, 1, 0);           // Back Top Left
+            v1 = origin + glm::ivec3(height, 1, 0);      // Back Top Right
+            v2 = origin + glm::ivec3(height, 1, width);  // Front Top Right
+            v3 = origin + glm::ivec3(0, 1, width);       // Front Top Left
+            break;
+        case AxisDirection::NegativeY:                   // BOTTOM
+            v0 = origin + glm::ivec3(0, 0, width);       // Front Bottom Left
+            v1 = origin + glm::ivec3(height, 0, width);  // Front Bottom Right
+            v2 = origin + glm::ivec3(height, 0, 0);      // Back Bottom Right
+            v3 = origin + glm::ivec3(0, 0, 0);           // Back Bottom Left
+            break;
+        case AxisDirection::PositiveZ:                   // FRONT
+            v0 = origin + glm::ivec3(0, height, 1);      // Top Left
+            v1 = origin + glm::ivec3(width, height, 1);  // Top Right
+            v2 = origin + glm::ivec3(width, 0, 1);       // Bottom Right
+            v3 = origin + glm::ivec3(0, 0, 1);           // Bottom Left
+            break;
+        case AxisDirection::NegativeZ:                   // BACK
+            v0 = origin + glm::ivec3(width, height, 0);  // Top Right
+            v1 = origin + glm::ivec3(0, height, 0);      // Top Left
+            v2 = origin + glm::ivec3(0, 0, 0);           // Bottom Left
+            v3 = origin + glm::ivec3(width, 0, 0);       // Bottom Right
+            break;
     }
 
     // Quickfix for wrong uvs
@@ -151,17 +156,13 @@ static CompactChunkFace generateCompactChunkFace(const glm::ivec3& origin, AxisD
     UVCoord uv11 = {static_cast<uint8_t>(height), static_cast<uint8_t>(width)};
 
     CompactChunkFace face = {
+        {CompactChunkVertex(v0, texIndex, uv00, faceDirection), CompactChunkVertex(v1, texIndex, uv10, faceDirection),
+         CompactChunkVertex(v2, texIndex, uv11, faceDirection), CompactChunkVertex(v3, texIndex, uv01, faceDirection)},
         {
-            CompactChunkVertex(v0, texIndex, uv00, faceDirection),
-            CompactChunkVertex(v1, texIndex, uv10, faceDirection),
-            CompactChunkVertex(v2, texIndex, uv11, faceDirection),
-            CompactChunkVertex(v3, texIndex, uv01, faceDirection)
-        },
-        {
-            0, 1, 2, 2, 3, 0    // indices
+            0, 1, 2, 2, 3, 0  // indices
         }
     };
-    
+
     return face;
 }
 
@@ -191,9 +192,9 @@ std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) 
 
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
-    layout.push(GL_FLOAT, 3); // Position
-    layout.push(GL_FLOAT, 2); // UV
-    layout.push(GL_FLOAT, 3); // Normal
+    layout.push(GL_FLOAT, 3);  // Position
+    layout.push(GL_FLOAT, 2);  // UV
+    layout.push(GL_FLOAT, 3);  // Normal
     vbo.setLayout(layout);
 
     // Vertex Array Object (VAO)
@@ -205,11 +206,13 @@ std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) 
     return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 }
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
-	std::vector<CompactChunkVertex> vertexBuffer;
-	std::vector<unsigned int> indexBuffer;
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
+    const Block* blocks, const BlockToTextureMap& texMap
+) {
+    std::vector<CompactChunkVertex> vertexBuffer;
+    std::vector<unsigned int> indexBuffer;
 
-	unsigned int currentIndexOffset = 0;
+    unsigned int currentIndexOffset = 0;
 
     glm::ivec3 origin;
     for (origin.x = 0; origin.x < CHUNK_WIDTH; origin.x++) {
@@ -217,11 +220,11 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Bl
             for (origin.z = 0; origin.z < CHUNK_DEPTH; origin.z++) {
                 const Block& blockRef = blocks[chunkBlockIndex(origin.x, origin.y, origin.z)];
                 if (blockRef.isSolid) {
-
                     // Check each face and add the appropriate face to the buffer if visible
                     for (AxisDirection dir : allAxisDirections) {
                         if (isBlockFaceVisible(blocks, origin.x, origin.y, origin.z, dir)) {
-                            CompactChunkFace face = generateCompactChunkFace(origin, dir, texMap.getTexIndex(blockRef.type, dir));
+                            CompactChunkFace face =
+                                generateCompactChunkFace(origin, dir, texMap.getTexIndex(blockRef.type, dir));
                             // Add face vertices to the global vertex buffer
                             for (int i = 0; i < 4; i++) {
                                 vertexBuffer.push_back(face.vertices[i]);
@@ -231,14 +234,14 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Bl
                             for (int i = 0; i < 6; i++) {
                                 indexBuffer.push_back(face.indices[i] + currentIndexOffset);
                             }
-                            currentIndexOffset += 4; // Update the index offset (each face has 4 vertices)
+                            currentIndexOffset += 4;  // Update the index offset (each face has 4 vertices)
                         }
                     }
                 }
             }
         }
     }
-    
+
     std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
@@ -247,7 +250,9 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(const Bl
     return data;
 }
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
+std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
+    const Block* blocks, const BlockToTextureMap& texMap
+) {
     // Hold for each blocktype cullplanes for all 3 axes
     std::unordered_map<uint16_t, BinaryPlaneArray[3]> blockTypeCullPlanes;
 
@@ -258,12 +263,12 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                 const Block& blockRef = blocks[chunkBlockIndex(x, y, z)];
                 if (blockRef.isSolid) {
                     BinaryPlaneArray* planes = nullptr;
-                    
+
                     // Check if axis planes for blocktype exist
                     auto it = blockTypeCullPlanes.find(blockRef.type);
                     if (it == blockTypeCullPlanes.end()) {
-                        planes = blockTypeCullPlanes[blockRef.type]; // operator[] creates new value at key location
-                        
+                        planes = blockTypeCullPlanes[blockRef.type];  // operator[] creates new value at key location
+
                         // Allocate Planes
                         for (Axis axis : {Axis::X, Axis::Y, Axis::Z}) {
                             planes[axis] = allocateBinaryPlanes(CHUNK_SIZE);
@@ -271,20 +276,20 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                     } else {
                         planes = it->second;
                     }
-                    
+
                     // Set value in all axis
-                    planes[Axis::X][z][y] |= 1U << x; // X-Cullplane
-                    planes[Axis::Y][x][z] |= 1U << y; // Y-Cullplane
-                    planes[Axis::Z][y][x] |= 1U << z; // Z-Cullplane
+                    planes[Axis::X][z][y] |= 1U << x;  // X-Cullplane
+                    planes[Axis::Y][x][z] |= 1U << y;  // Y-Cullplane
+                    planes[Axis::Z][y][x] |= 1U << z;  // Z-Cullplane
                 }
             }
         }
     }
 
-	std::vector<CompactChunkVertex> vertexBuffer;
-	std::vector<unsigned int> indexBuffer;
+    std::vector<CompactChunkVertex> vertexBuffer;
+    std::vector<unsigned int> indexBuffer;
 
-	unsigned int currentIndexOffset = 0;
+    unsigned int currentIndexOffset = 0;
 
     // Two greedy meshing planes because forward and backwards direction can be face culled in a single iteration
     BinaryPlaneArray forwardGreedyMeshingPlanes = allocateBinaryPlanes(CHUNK_SIZE);
@@ -320,18 +325,18 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                     // Cull forward and backwards faces
                     unsigned int culledForwardMask = cullPlanes[slice][row] & ~(cullPlanes[slice][row] >> 1U);
                     unsigned int culledBackwardMask = cullPlanes[slice][row] & ~(cullPlanes[slice][row] << 1U);
-                    
+
                     // Insert culled values into greedy meshing planes
                     while (culledForwardMask != 0) {
                         unsigned int column = trailing_zeros(culledForwardMask);
-                        culledForwardMask &= culledForwardMask - 1; // Clear least significant bit
-                        forwardGreedyMeshingPlanes[column][slice] |= (1U << row); // Culling operation
+                        culledForwardMask &= culledForwardMask - 1;                // Clear least significant bit
+                        forwardGreedyMeshingPlanes[column][slice] |= (1U << row);  // Culling operation
                     }
 
                     while (culledBackwardMask != 0) {
                         unsigned int column = trailing_zeros(culledBackwardMask);
-                        culledBackwardMask &= culledBackwardMask - 1; // Clear least significant bit
-                        backwardGreedyMeshingPlanes[column][slice] |= (1U << row); // Culling operation
+                        culledBackwardMask &= culledBackwardMask - 1;               // Clear least significant bit
+                        backwardGreedyMeshingPlanes[column][slice] |= (1U << row);  // Culling operation
                     }
                 }
             }
@@ -340,10 +345,10 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
             for (int dir = 0; dir < 2; dir++) {
                 AxisDirection currentDirection;
                 BinaryPlaneArray greedyMeshingPlanes;
-                if (dir == 0) { // Forward
+                if (dir == 0) {  // Forward
                     currentDirection = forward;
                     greedyMeshingPlanes = forwardGreedyMeshingPlanes;
-                } else { //  Backward
+                } else {  //  Backward
                     currentDirection = backward;
                     greedyMeshingPlanes = backwardGreedyMeshingPlanes;
                 }
@@ -354,29 +359,29 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                         while (column < CHUNK_SIZE) {
                             column += trailing_zeros(greedyMeshingPlanes[slice][row] >> column);
 
-                            if (column >= CHUNK_SIZE)
-                                break; // Row processed
+                            if (column >= CHUNK_SIZE) break;  // Row processed
 
-                            unsigned int w = trailing_ones(greedyMeshingPlanes[slice][row] >> column); // Width in row
+                            unsigned int w = trailing_ones(greedyMeshingPlanes[slice][row] >> column);  // Width in row
 
-                            if (w <= 0)
-                                break; // No more blocks to process
+                            if (w <= 0) break;  // No more blocks to process
 
                             unsigned int mask = createMask(w) << column;
 
                             unsigned int h = 1;
                             while (row + h < CHUNK_SIZE) {
                                 if ((greedyMeshingPlanes[slice][row + h] & mask) != mask) {
-                                    break; // Can no longer expand in height
+                                    break;  // Can no longer expand in height
                                 }
-                                greedyMeshingPlanes[slice][row + h] &= ~mask; // Nuke bits that have been expanded too
+                                greedyMeshingPlanes[slice][row + h] &= ~mask;  // Nuke bits that have been expanded too
                                 h++;
                             }
 
                             glm::ivec3 coord = axisToCoord(axis, slice, row, column);
 
                             // ##### Adding face #####
-                            CompactChunkFace face = generateCompactChunkFace(coord, currentDirection, texMap.getTexIndex(element.first, currentDirection), w, h);
+                            CompactChunkFace face = generateCompactChunkFace(
+                                coord, currentDirection, texMap.getTexIndex(element.first, currentDirection), w, h
+                            );
                             // Add face vertices to the global vertex buffer
                             for (int i = 0; i < 4; i++) {
                                 vertexBuffer.push_back(face.vertices[i]);
@@ -386,7 +391,7 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                             for (int i = 0; i < 6; i++) {
                                 indexBuffer.push_back(face.indices[i] + currentIndexOffset);
                             }
-                            currentIndexOffset += 4; // Update the index offset (each face has 4 vertices)
+                            currentIndexOffset += 4;  // Update the index offset (each face has 4 vertices)
                             // ##### End Adding face #####
 
                             column += w;
@@ -394,7 +399,7 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(co
                     }
                 }
             }
-            
+
             // Free allocated plane of this blocktype and axis since thats no longer needed now
             freeBinaryPlanes(element.second[axis], CHUNK_SIZE);
         }
@@ -415,13 +420,15 @@ namespace std {
     template <>
     struct hash<Vertex> {
         size_t operator()(const Vertex& vertex) const {
-            size_t hash1 = hash<float>()(vertex.position.x) ^ (hash<float>()(vertex.position.y) << 1) ^ (hash<float>()(vertex.position.z) << 2);
+            size_t hash1 = hash<float>()(vertex.position.x) ^ (hash<float>()(vertex.position.y) << 1) ^
+                           (hash<float>()(vertex.position.z) << 2);
             size_t hash2 = hash<float>()(vertex.uv.x) ^ (hash<float>()(vertex.uv.y) << 1);
-            size_t hash3 = hash<float>()(vertex.normal.x) ^ (hash<float>()(vertex.normal.y) << 1) ^ (hash<float>()(vertex.normal.z) << 2);
+            size_t hash3 = hash<float>()(vertex.normal.x) ^ (hash<float>()(vertex.normal.y) << 1) ^
+                           (hash<float>()(vertex.normal.z) << 2);
             return hash1 ^ hash2 ^ hash3;
         }
     };
-}
+}  // namespace std
 
 std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
     std::vector<CPURenderData<Vertex>> meshes;
@@ -431,9 +438,9 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
         std::vector<glm::vec3> normals;
 
         CPURenderData<Vertex> currentMesh;
-        currentMesh.name = "default"; // Default name in case none is provided
+        currentMesh.name = "default";  // Default name in case none is provided
 
-        std::unordered_map<Vertex, unsigned int> vertexMap; // Map to indices to reuse vertices
+        std::unordered_map<Vertex, unsigned int> vertexMap;  // Map to indices to reuse vertices
 
         std::ifstream file(filePath);
         if (!file.is_open()) {
@@ -446,15 +453,15 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
             std::string prefix;
             ss >> prefix;
 
-            if (prefix == "v") { // Parse position
+            if (prefix == "v") {  // Parse position
                 glm::vec3 pos;
                 ss >> pos.x >> pos.y >> pos.z;
                 positions.push_back(pos);
-            } else if (prefix == "vt") { // Parse texture coordinate
+            } else if (prefix == "vt") {  // Parse texture coordinate
                 glm::vec2 tex;
                 ss >> tex.x >> tex.y;
                 uvs.push_back(tex);
-            } else if (prefix == "vn") { // Parse normal
+            } else if (prefix == "vn") {  // Parse normal
                 glm::vec3 normal;
                 ss >> normal.x >> normal.y >> normal.z;
                 normals.push_back(normal);
@@ -469,14 +476,16 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
                     unsigned int vIdx = 0, vtIdx = 0, vnIdx = 0;
 
                     // Parse indices v/vt/vn (Vertex / UV /Normal)
-                    std::getline(vs, indexStr, '/'); vIdx = std::stoi(indexStr) - 1;
-                    std::getline(vs, indexStr, '/'); vtIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
-                    std::getline(vs, indexStr, '/'); vnIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
+                    std::getline(vs, indexStr, '/');
+                    vIdx = std::stoi(indexStr) - 1;
+                    std::getline(vs, indexStr, '/');
+                    vtIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
+                    std::getline(vs, indexStr, '/');
+                    vnIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
 
                     // Create vertex and push it to the vertex array
                     Vertex vertex = {
-                        positions[vIdx],
-                        uvs.size() > vtIdx ? uvs[vtIdx] : glm::vec2(0.0f),
+                        positions[vIdx], uvs.size() > vtIdx ? uvs[vtIdx] : glm::vec2(0.0f),
                         normals.size() > vnIdx ? normals[vnIdx] : glm::vec3(0.0f)
                     };
 
@@ -493,7 +502,7 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
                 // Triangulate the face (convert to triangles)
                 if (faceIndices.size() >= 3) {
                     for (size_t i = 1; i < faceIndices.size() - 1; i++) {
-                        currentMesh.indices.push_back(faceIndices[0]); // Base vertex
+                        currentMesh.indices.push_back(faceIndices[0]);  // Base vertex
                         if (flipWinding) {
                             currentMesh.indices.push_back(faceIndices[i + 1]);
                             currentMesh.indices.push_back(faceIndices[i]);
@@ -507,7 +516,7 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
                 }
             } else if (prefix == "o" || prefix == "g") {
                 // Parse new object or group
-                if(!currentMesh.vertices.empty()) {
+                if (!currentMesh.vertices.empty()) {
                     meshes.push_back(std::move(currentMesh));
                     currentMesh = CPURenderData<Vertex>();
                     vertexMap.clear();

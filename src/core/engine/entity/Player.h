@@ -1,38 +1,39 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "engine/comp/SceneComponent.h"
-#include "engine/entity/Entity.h"
-#include "engine/rendering/Camera.h"
 #include <glm/vec3.hpp>
 #include <memory>
 
+#include "engine/comp/SceneComponent.h"
+#include "engine/entity/Entity.h"
+#include "engine/rendering/Camera.h"
+
 class Player : public Entity {
 private:
-	std::shared_ptr<Camera> m_camera;
-	glm::ivec3 m_focusedBlock;
-	bool m_isFocusingBlock;
-	float m_reach;
+    std::shared_ptr<Camera> m_camera;
+    glm::ivec3 m_focusedBlock;
+    bool m_isFocusingBlock;
+    float m_reach;
 
 public:
-	Player();
-	virtual ~Player() = default;
+    Player();
+    virtual ~Player() = default;
 
-	inline std::shared_ptr<Camera> getCamera() const { return m_camera; }
+    inline std::shared_ptr<Camera> getCamera() const { return m_camera; }
 
-	inline void setReachDistance(float reach) { m_reach = reach; }
+    inline void setReachDistance(float reach) { m_reach = reach; }
 
-	inline float getReachDistance() const { return m_reach; }
+    inline float getReachDistance() const { return m_reach; }
 
-	inline void setFocusedBlock(const glm::ivec3& focusedBlock) { m_focusedBlock = focusedBlock; }
+    inline void setFocusedBlock(const glm::ivec3& focusedBlock) { m_focusedBlock = focusedBlock; }
 
-	inline glm::ivec3 getFocusedBlock() const { return m_focusedBlock; }
+    inline glm::ivec3 getFocusedBlock() const { return m_focusedBlock; }
 
-	inline void setIsFocusingBlock(bool isBlockFocused) { m_isFocusingBlock = isBlockFocused; }
+    inline void setIsFocusingBlock(bool isBlockFocused) { m_isFocusingBlock = isBlockFocused; }
 
-	inline bool isFocusingBlock() const { return m_isFocusingBlock; }
+    inline bool isFocusingBlock() const { return m_isFocusingBlock; }
 
-	void update(float deltaTime) override;
+    void update(float deltaTime) override;
 };
 
 #endif

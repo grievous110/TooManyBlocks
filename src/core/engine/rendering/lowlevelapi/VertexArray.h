@@ -6,22 +6,22 @@
 
 class VertexArray : public RenderApiObject {
 private:
-	static thread_local unsigned int currentlyBoundVAO;
-	unsigned int m_currAttribIndex;
+    static thread_local unsigned int currentlyBoundVAO;
+    unsigned int m_currAttribIndex;
 
 public:
-	static void bindDefault();
-	static void syncBinding();
+    static void bindDefault();
+    static void syncBinding();
 
-	VertexArray();
-	VertexArray(VertexArray&& other) noexcept;
-	virtual ~VertexArray();
+    VertexArray();
+    VertexArray(VertexArray&& other) noexcept;
+    virtual ~VertexArray();
 
-	void addBuffer(const VertexBuffer& vb);
+    void addBuffer(const VertexBuffer& vb);
 
-	void bind() const;
+    void bind() const;
 
-	void resetAttribIndex();
+    void resetAttribIndex();
 
     VertexArray& operator=(VertexArray&& other) noexcept;
 };

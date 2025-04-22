@@ -1,28 +1,32 @@
 #ifndef STATICMESH_H
 #define STATICMESH_H
 
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/Renderable.h"
-#include "engine/rendering/RenderData.h"
 #include <memory>
+
+#include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/RenderData.h"
+#include "engine/rendering/Renderable.h"
 
 class StaticMesh : public Renderable {
 private:
-	std::shared_ptr<RenderData> m_data;
-	std::shared_ptr<Material> m_material;
-	BoundingBox m_bounds;
-	
-	void draw() const override;
+    std::shared_ptr<RenderData> m_data;
+    std::shared_ptr<Material> m_material;
+    BoundingBox m_bounds;
+
+    void draw() const override;
 
 public:
-	StaticMesh(std::shared_ptr<RenderData> data, const BoundingBox& bounds, std::shared_ptr<Material> material = nullptr) : m_data(data), m_material(material), m_bounds(bounds) {}
-	virtual ~StaticMesh() = default;
+    StaticMesh(
+        std::shared_ptr<RenderData> data, const BoundingBox& bounds, std::shared_ptr<Material> material = nullptr
+    )
+        : m_data(data), m_material(material), m_bounds(bounds) {}
+    virtual ~StaticMesh() = default;
 
-	inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
+    inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
 
-	std::shared_ptr<Material> getMaterial() const override { return m_material; }
+    std::shared_ptr<Material> getMaterial() const override { return m_material; }
 
-	BoundingBox getBoundingBox() const override { return m_bounds; }
+    BoundingBox getBoundingBox() const override { return m_bounds; }
 };
 
 #endif

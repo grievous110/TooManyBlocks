@@ -1,11 +1,12 @@
 #ifndef RENDERDATA_H
 #define RENDERDATA_H
 
+#include <vector>
+
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
-#include "engine/geometry/BoundingVolume.h"
-#include <vector>
 
 class RenderData {
 public:
@@ -31,13 +32,14 @@ protected:
     IndexBuffer m_ibo;
 
 public:
-    IndexedRenderData(VertexArray&& vao, VertexBuffer&& vbo, IndexBuffer&& ibo) : NonIndexedRenderData(std::move(vao), std::move(vbo)), m_ibo(std::move(ibo)) {}
+    IndexedRenderData(VertexArray&& vao, VertexBuffer&& vbo, IndexBuffer&& ibo)
+        : NonIndexedRenderData(std::move(vao), std::move(vbo)), m_ibo(std::move(ibo)) {}
     virtual ~IndexedRenderData() = default;
 
     virtual void drawAs(unsigned int type) const override;
 };
 
-template<typename T>
+template <typename T>
 struct CPURenderData {
     std::string name;
     std::vector<T> vertices;

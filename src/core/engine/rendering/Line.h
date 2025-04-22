@@ -1,10 +1,11 @@
 #ifndef LINE_H
 #define LINE_H
 
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/Renderable.h"
-#include "engine/rendering/RenderData.h"
 #include <memory>
+
+#include "engine/geometry/BoundingVolume.h"
+#include "engine/rendering/RenderData.h"
+#include "engine/rendering/Renderable.h"
 
 class Line : public Renderable {
 private:
@@ -16,7 +17,12 @@ private:
     void draw() const override;
 
 public:
-    Line(const glm::vec3& start, const glm::vec3& end, float lineWidth = 2.0f, std::shared_ptr<Material> material = nullptr);
+    Line(
+        const glm::vec3& start,
+        const glm::vec3& end,
+        float lineWidth = 2.0f,
+        std::shared_ptr<Material> material = nullptr
+    );
     virtual ~Line() = default;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }

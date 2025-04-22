@@ -4,16 +4,16 @@
 #include "engine/ui/Ui.h"
 
 namespace UI {
-	class PauseMenu : public Window {
-	private:
-		bool m_escWasReleased;
+    class PauseMenu : public Window {
+    private:
+        bool m_escWasReleased;
 
-	public:
-		PauseMenu() : m_escWasReleased(false) {}
+    public:
+        PauseMenu() : m_escWasReleased(false) {}
         virtual ~PauseMenu() = default;
 
-		void render(ApplicationContext& context) override;
-	};
-}
+        void render(ApplicationContext& context) override;
+    };
+}  // namespace UI
 
 #endif

@@ -2,8 +2,8 @@
 #define COLLISION_H
 
 #include "datatypes/DatatypeDefs.h"
-#include "engine/geometry/BoundingVolume.h"
 #include "engine/env/World.h"
+#include "engine/geometry/BoundingVolume.h"
 
 bool aabbIntersects(const BoundingBox& a, const BoundingBox& b);
 

@@ -1,6 +1,8 @@
 #include "ThreadPool.h"
-#include "Logger.h"
+
 #include <stdexcept>
+
+#include "Logger.h"
 
 void ThreadPool::loop() {
     while (true) {
@@ -16,7 +18,7 @@ void ThreadPool::loop() {
             m_jobs.pop_front();
         }
         // Execute job + Release lock
-        
+
         try {
             job.task();
         } catch (const std::exception& e) {
@@ -28,7 +30,7 @@ void ThreadPool::loop() {
                 if (m_ownerWaitingThreads[job.owner] == 0) {
                     erasePerOwnerEntrys(job.owner);
                 } else {
-                    m_ownerWaitCvars[job.owner].notify_all(); // Notify any waiting threads for this owner
+                    m_ownerWaitCvars[job.owner].notify_all();  // Notify any waiting threads for this owner
                 }
             }
 
@@ -76,14 +78,14 @@ void ThreadPool::waitForOwnerCompletion(const void* owner) {
     m_ownerWaitingThreads[owner]++;
     m_ownerWaitCvars[owner].wait(lock, [this, owner] { return m_ownerTaskCount[owner] == 0; });
     if (--m_ownerWaitingThreads[owner] == 0) {
-        erasePerOwnerEntrys(owner); // Last waiting thread cleans up per owner entrys
+        erasePerOwnerEntrys(owner);  // Last waiting thread cleans up per owner entrys
     }
 }
 
 void ThreadPool::pushJob(const void* owner, std::function<void()> job) {
     {
         std::lock_guard<std::mutex> lock(m_mtx);
-        m_jobs.push_back({ owner, std::move(job) });
+        m_jobs.push_back({owner, std::move(job)});
         m_ownerTaskCount[owner]++;
         m_totalTaskCount++;
     }

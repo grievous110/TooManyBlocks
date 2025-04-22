@@ -1,12 +1,13 @@
 #ifndef CHUNKSTORAGE_H
 #define CHUNKSTORAGE_H
 
-#include "engine/env/Chunk.h"
 #include <filesystem>
 #include <glm/glm.hpp>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+
+#include "engine/env/Chunk.h"
 
 class ChunkStorage {
 private:
@@ -18,7 +19,7 @@ private:
 
 public:
     ChunkStorage(const std::filesystem::path& worldPath);
-    
+
     bool hasChunk(const glm::ivec3& chunkPos);
 
     std::shared_ptr<Block[]> loadChunkData(const glm::ivec3& chunkPos);

@@ -1,6 +1,8 @@
-#include "engine/rendering/GLUtils.h"
 #include "RenderData.h"
+
 #include <gl/glew.h>
+
+#include "engine/rendering/GLUtils.h"
 
 void NonIndexedRenderData::drawAs(unsigned int type) const {
     m_vao.bind();

@@ -3,8 +3,7 @@
 static constexpr float SWEEP_TOLERANCE = 0.0001f;
 
 bool aabbIntersects(const BoundingBox& a, const BoundingBox& b) {
-    return (a.min.x < b.max.x && a.max.x > b.min.x) &&
-           (a.min.y < b.max.y && a.max.y > b.min.y) &&
+    return (a.min.x < b.max.x && a.max.x > b.min.x) && (a.min.y < b.max.y && a.max.y > b.min.y) &&
            (a.min.z < b.max.z && a.max.z > b.min.z);
 }
 
@@ -27,21 +26,18 @@ float sweepAndResolveAxis(const BoundingBox& box, glm::vec3 delta, Axis axis, Wo
                 glm::ivec3 bpos(x, y, z);
                 glm::ivec3 chunkPos = Chunk::worldToChunkOrigin(bpos);
                 Chunk* chunk = world->getChunk(chunkPos);
-                if (!chunk) continue; // Skip if chunk is not loaded
-        
+                if (!chunk) continue;  // Skip if chunk is not loaded
+
                 glm::ivec3 rel = Chunk::worldToChunkLocal(chunkPos, bpos);
                 const Block& block = chunk->blocks()[chunkBlockIndex(rel.x, rel.y, rel.z)];
-                if (!block.isSolid) continue; // Skip non solid blocks
+                if (!block.isSolid) continue;  // Skip non solid blocks
 
-                BoundingBox blockBox = {
-                    glm::vec3(x, y, z),
-                    glm::vec3(x + 1, y + 1, z + 1)
-                };
+                BoundingBox blockBox = {glm::vec3(x, y, z), glm::vec3(x + 1, y + 1, z + 1)};
 
                 // Fix for getting stuck at specific edges / walls (probably a float rounding artifact)
                 blockBox.min[axis] -= SWEEP_TOLERANCE;
                 blockBox.max[axis] += SWEEP_TOLERANCE;
-        
+
                 if (aabbIntersects(movedBox, blockBox)) {
                     if (adjustedDelta > 0.0f) {
                         // Moving in positive direction — clamp to the near face of the block
@@ -58,7 +54,7 @@ float sweepAndResolveAxis(const BoundingBox& box, glm::vec3 delta, Axis axis, Wo
             }
         }
     }
-    
+
     // Return the corrected delta, which is guranteed to not overlap smth on this axis
     return adjustedDelta;
 }

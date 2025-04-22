@@ -9,7 +9,8 @@ protected:
     float m_height;
 
 public:
-    DirectionalLight(const glm::vec3& color, float intensity, float range, float width, float height) : Light(color, intensity, range), m_width(width), m_height(height) {}
+    DirectionalLight(const glm::vec3& color, float intensity, float range, float width, float height)
+        : Light(color, intensity, range), m_width(width), m_height(height) {}
     virtual ~DirectionalLight() = default;
 
     inline float getWidth() const { return m_width; }
@@ -17,7 +18,7 @@ public:
 
     inline void setWidth(float width) { m_width = width; }
     inline void setHeight(float height) { m_height = height; }
- 
+
     glm::mat4 getProjectionMatrix() const override;
     glm::mat4 getViewMatrix() const override;
 };

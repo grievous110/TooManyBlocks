@@ -1,8 +1,9 @@
 #include "log/Logger.h"
+
 #include <ctime>
-#include <sstream>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <sstream>
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -22,7 +23,7 @@ namespace lgr {
 
     std::string Logger::getCurrentTime() const noexcept {
         std::time_t now = std::time(nullptr);
-        std::tm localTime {};
+        std::tm localTime{};
         localtime_s(&localTime, &now);
         std::ostringstream oss;
         oss << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
@@ -34,7 +35,7 @@ namespace lgr {
         std::string color;
 
         switch (llevel) {
-            case DEBUG: 
+            case DEBUG:
                 color = GREEN;
                 tag = "DEBUG";
                 break;
@@ -60,14 +61,14 @@ namespace lgr {
         if (m_consoleAvailable) {
             std::cout << timeStampedMessage << std::endl;
         } else {
-            if(m_logFile.is_open()) {
+            if (m_logFile.is_open()) {
                 m_logFile << timeStampedMessage << std::endl;
             }
         }
     }
 
     Logger::Logger() noexcept {
-    #ifdef _WIN32
+#ifdef _WIN32
         // Check if console is available on windows
         if (GetConsoleWindow() != nullptr) {
             m_consoleAvailable = true;
@@ -85,15 +86,15 @@ namespace lgr {
             m_consoleAvailable = false;
             m_logFile.open("log.txt", std::ios::out | std::ios::trunc);
         }
-    #else
+#else
         // Check if console is available on other platform
         if (isatty(fileno(stdout))) {
             consoleAvailable = true;
         } else {
             consoleAvailable = false;
-            logFile.open("log.txt",  std::ios::out | std::ios::trunc);
+            logFile.open("log.txt", std::ios::out | std::ios::trunc);
         }
-    #endif
+#endif
     }
 
     Logger::~Logger() noexcept {
@@ -102,19 +103,11 @@ namespace lgr {
         }
     }
 
-    void lgr::Logger::debug(const std::string& msg) noexcept {
-        log(Logger::LogLevel::DEBUG, msg);
-    }
+    void lgr::Logger::debug(const std::string& msg) noexcept { log(Logger::LogLevel::DEBUG, msg); }
 
-     void lgr::Logger::info(const std::string& msg) noexcept {
-        log(Logger::LogLevel::INFO, msg);
-    }
+    void lgr::Logger::info(const std::string& msg) noexcept { log(Logger::LogLevel::INFO, msg); }
 
-     void lgr::Logger::warn(const std::string& msg) noexcept {
-        log(Logger::LogLevel::WARNING, msg);
-    }
+    void lgr::Logger::warn(const std::string& msg) noexcept { log(Logger::LogLevel::WARNING, msg); }
 
-     void lgr::Logger::error(const std::string& msg) noexcept {
-        log(Logger::LogLevel::ERR, msg);
-    }
-}
+    void lgr::Logger::error(const std::string& msg) noexcept { log(Logger::LogLevel::ERR, msg); }
+}  // namespace lgr

@@ -1,29 +1,22 @@
-#include "datatypes/DatatypeDefs.h"
 #include "Transform.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
+
+#include "datatypes/DatatypeDefs.h"
 
 void Transform::recalculateModelMatrix() const {
     m_modelMatrix = glm::mat4(1.0f);
 
-    m_modelMatrix = glm::translate(m_modelMatrix, m_position) *
-                    glm::mat4_cast(m_rotation) *
+    m_modelMatrix = glm::translate(m_modelMatrix, m_position) * glm::mat4_cast(m_rotation) *
                     glm::scale(m_modelMatrix, glm::vec3(m_scale));
 
     m_dirty = false;
 }
 
-Transform Transform::fromMatrix(const glm::mat4 &matrix) {
-    glm::vec3 scale(
-        glm::length(matrix[0]),
-        glm::length(matrix[1]),
-        glm::length(matrix[2])
-    );
-    return Transform(
-        glm::vec3(matrix[3]),
-        glm::normalize(glm::quat_cast(glm::mat3(matrix))),
-        scale.x
-    );
+Transform Transform::fromMatrix(const glm::mat4& matrix) {
+    glm::vec3 scale(glm::length(matrix[0]), glm::length(matrix[1]), glm::length(matrix[2]));
+    return Transform(glm::vec3(matrix[3]), glm::normalize(glm::quat_cast(glm::mat3(matrix))), scale.x);
 }
 
 Transform::Transform()
@@ -34,20 +27,10 @@ Transform::Transform()
       m_dirty(true) {}
 
 Transform::Transform(const glm::vec3& position, const glm::vec3& eulerAngles, float scale)
-    : m_position(position),
-    m_rotation(glm::radians(eulerAngles)),
-    m_scale(scale),
-    m_modelMatrix(1.0f),
-    m_dirty(true) {
-}
+    : m_position(position), m_rotation(glm::radians(eulerAngles)), m_scale(scale), m_modelMatrix(1.0f), m_dirty(true) {}
 
 Transform::Transform(const glm::vec3& position, const glm::quat& rotation, float scale)
-    : m_position(position),
-    m_rotation(rotation),
-    m_scale(scale),
-    m_modelMatrix(1.0f),
-    m_dirty(true) {
-}
+    : m_position(position), m_rotation(rotation), m_scale(scale), m_modelMatrix(1.0f), m_dirty(true) {}
 
 void Transform::rotate(float angle, const glm::vec3& axis) {
     glm::quat rotationQuat = glm::angleAxis(glm::radians(angle), glm::normalize(axis));
@@ -110,11 +93,11 @@ void Transform::setScale(float scale) {
 }
 
 glm::vec3 Transform::getForward() const {
-    return glm::normalize(m_rotation * WorldForward); // Forward is -Z in local space
+    return glm::normalize(m_rotation * WorldForward);  // Forward is -Z in local space
 }
 
 glm::vec3 Transform::getRight() const {
-    return glm::normalize(m_rotation * WorldRight); // Right is +X in local space
+    return glm::normalize(m_rotation * WorldRight);  // Right is +X in local space
 }
 
 glm::vec3 Transform::getUp() const {
@@ -145,7 +128,9 @@ glm::mat4 Transform::getModelMatrix() const {
 Transform Transform::interpolate(const Transform& other, float a) const {
     Transform result;
     result.setPosition(glm::mix(getPosition(), other.getPosition(), a));
-    result.setRotation(glm::slerp(getRotationQuat(), other.getRotationQuat(), a)); // Spherical linear interpolation for quaternions
+    result.setRotation(
+        glm::slerp(getRotationQuat(), other.getRotationQuat(), a)
+    );  // Spherical linear interpolation for quaternions
     result.setScale(glm::mix(getScale(), other.getScale(), a));
     return result;
 }
@@ -181,11 +166,7 @@ Transform& Transform::operator*=(const Transform& other) {
 }
 
 bool Transform::operator==(const Transform& other) const {
-    return m_position == other.m_position &&
-           m_rotation == other.m_rotation &&
-           m_scale == other.m_scale;
+    return m_position == other.m_position && m_rotation == other.m_rotation && m_scale == other.m_scale;
 }
 
-bool Transform::operator!=(const Transform& other) const {
-    return !(*this == other);
-}
+bool Transform::operator!=(const Transform& other) const { return !(*this == other); }

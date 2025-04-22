@@ -8,7 +8,7 @@ glm::mat4 DirectionalLight::getProjectionMatrix() const {
 
 glm::mat4 DirectionalLight::getViewMatrix() const {
     Transform tr = getGlobalTransform();
-	glm::vec3 position = tr.getPosition();
+    glm::vec3 position = tr.getPosition();
 
     return glm::lookAt(position, position + tr.getForward(), tr.getUp());
 }
