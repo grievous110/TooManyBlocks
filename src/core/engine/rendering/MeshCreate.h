@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
+#include "engine/blueprints/Blueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/BlockToTextureMapping.h"
@@ -139,5 +140,6 @@ std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, cons
 
 std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
+std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath);
 
 #endif

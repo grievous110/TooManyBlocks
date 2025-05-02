@@ -18,6 +18,7 @@ struct RenderContext {
     RawBuffer<Light*> lights;
     std::weak_ptr<UniformBuffer> lightBuff;
     std::weak_ptr<UniformBuffer> lightViewProjectionBuff;
+    std::weak_ptr<UniformBuffer> jointMatrices;
     glm::mat4 viewProjection;
     glm::mat4 projection;
     glm::mat4 view;

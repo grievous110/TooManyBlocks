@@ -29,6 +29,32 @@ void Provider::processWorkerResults() {
             }
         }
     }
+
+    {
+        std::lock_guard<std::mutex> lock(m_loadedSkeletalMeshMtx);
+        while (!m_loadedSkeletalMeshBps.empty()) {
+            WorkerResult result = m_loadedSkeletalMeshBps.front();
+            m_loadedSkeletalMeshBps.pop();
+    
+            result.bp->bake();                                 // Upload to gpu
+            m_skeletalMeshBpCache[result.meshPath] = result.bp;  // Cache blueprint
+    
+            auto it = m_waitingSkeletalMeshHandles.find(result.meshPath);
+            if (it != m_waitingSkeletalMeshHandles.end()) {
+                // Pass asset to all waiting handles
+                for (const auto& ptr : it->second) {
+                    if (std::shared_ptr<AssetHandle<SkeletalMesh::Internal>> handlePtr = ptr.lock()) {
+                        handlePtr->asset = std::static_pointer_cast<SkeletalMesh::Internal>(result.bp->createInstance());
+                        handlePtr->ready.store(true);
+                    }
+                }
+                // Erase waiting queue of this asset
+                m_waitingSkeletalMeshHandles.erase(it);
+            }
+        }
+    }
+}
+
 void Provider::putMaterial(const std::string& name, std::shared_ptr<Material> material) {
     m_materialCache[name] = material;
 }
@@ -91,6 +117,36 @@ std::shared_ptr<StaticMesh> Provider::getStaticMeshFromFile(const std::string& m
             {
                 std::lock_guard<std::mutex> lock(m_loadedStaticMeshMtx);
                 m_loadedStaticMeshBps.push({std::move(meshPath), meshBlueprint});
+            }
+        });
+
+        return emptyMesh;
+    } else {
+        lgr::lout.warn("Missing context when trying to dispatch task to worker for async loading of: " + meshPath);
+        return nullptr;
+    }
+}
+
+std::shared_ptr<SkeletalMesh> Provider::getSkeletalMeshFromFile(const std::string& meshPath) {
+    auto it = m_skeletalMeshBpCache.find(meshPath);
+    if (it != m_skeletalMeshBpCache.end()) {
+        return std::make_shared<SkeletalMesh>(
+            std::static_pointer_cast<SkeletalMesh::Internal>(it->second->createInstance())
+        );
+    }
+
+    if (ApplicationContext* context = Application::getContext()) {
+        // Use the provided creator function to create the new object
+        std::shared_ptr<SkeletalMesh> emptyMesh = std::make_shared<SkeletalMesh>();
+        m_waitingSkeletalMeshHandles[meshPath].push_back(emptyMesh->getAssetHandle());
+
+        // Async creation of mesh blueprint
+        context->workerPool->pushJob(this, [this, meshPath] {
+            std::shared_ptr<IBlueprint> meshBlueprint = readSkeletalMeshFromGlbFile(meshPath);
+            // !No baking in seperate thread since this must be done on the opengl thread!
+            {
+                std::lock_guard<std::mutex> lock(m_loadedSkeletalMeshMtx);
+                m_loadedSkeletalMeshBps.push({std::move(meshPath), meshBlueprint});
             }
         });
 
