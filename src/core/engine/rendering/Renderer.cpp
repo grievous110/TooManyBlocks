@@ -90,14 +90,11 @@ void Renderer::beginMainpass(const ApplicationContext& context) {
     m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
     m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
     m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-
-    GLCALL(glDisable(GL_CULL_FACE));
 }
 
 void Renderer::endMainpass(const ApplicationContext& context) {
     m_lightsToRender.clear();
     m_objectsToRender.clear();
-    GLCALL(glEnable(GL_CULL_FACE));
 }
 
 void Renderer::initialize() {
