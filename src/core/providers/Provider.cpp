@@ -142,7 +142,7 @@ std::shared_ptr<SkeletalMesh> Provider::getSkeletalMeshFromFile(const std::strin
 
         // Async creation of mesh blueprint
         context->workerPool->pushJob(this, [this, meshPath] {
-            std::shared_ptr<IBlueprint> meshBlueprint = readSkeletalMeshFromGlbFile(meshPath);
+            std::shared_ptr<IBlueprint> meshBlueprint = readSkeletalMeshFromGlbFile(meshPath, true);
             // !No baking in seperate thread since this must be done on the opengl thread!
             {
                 std::lock_guard<std::mutex> lock(m_loadedSkeletalMeshMtx);

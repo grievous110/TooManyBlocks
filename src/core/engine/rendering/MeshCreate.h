@@ -140,6 +140,6 @@ std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, cons
 
 std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
-std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath);
+std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding = false);
 
 #endif

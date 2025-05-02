@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include "AppConstants.h"
@@ -505,20 +506,7 @@ std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
 #define BIN_CHUNK        0x004E4942
 #define GLB_MAGIC_NUMBER 0x46546C67
 
-constexpr const char* LINEAR_INTERPOLATION = "LINEAR";
-
-static size_t getNumComponents(const std::string& accessorType) {
-    if (accessorType == "SCALAR") return 1;
-    if (accessorType == "VEC2") return 2;
-    if (accessorType == "VEC3") return 3;
-    if (accessorType == "VEC4") return 4;
-    if (accessorType == "MAT2") return 4;
-    if (accessorType == "MAT3") return 9;
-    if (accessorType == "MAT4") return 16;
-    throw std::runtime_error("Unknown accessor type: " + accessorType);
-}
-
-std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath) {
+std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding) {
     std::vector<Json::JsonValue> jsonChunks;
     std::vector<std::vector<char>> binaryChunks;
 
@@ -851,6 +839,12 @@ std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                                 }
                             } else {
                                 throw std::runtime_error("Unsupported component type for joints attribute");
+                            }
+
+                            if (flipWinding) { // Flip winding for vertex indexing
+                                for (size_t i = 0; i < skData->meshData.indices.size(); i += 3) {
+                                    std::swap(skData->meshData.indices[i + 1], skData->meshData.indices[i + 2]);
+                                }
                             }
                         }
 
