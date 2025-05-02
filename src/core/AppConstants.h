@@ -17,6 +17,7 @@ namespace Res {
     namespace Texture {
         constexpr const char* BLOCK_TEX_ATLAS = "res/textures/blockTexAtlas.png";
         constexpr const char* TESTBLOCK_TEXTURE = "res/textures/testTexture.png";
+        constexpr const char* TESTFLY_TEXTURE = "res/textures/flyTexture.png";
     }  // namespace Texture
 
     namespace Font {
@@ -26,6 +27,7 @@ namespace Res {
 
     namespace Model {
         constexpr const char* TEST_UNIT_BLOCK = "res/models/testUnitBlock.obj";
+        constexpr const char* TESTFLY = "res/models/testFly.glb";
     }
 };  // namespace Res
 
