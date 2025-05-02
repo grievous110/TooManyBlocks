@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "datatypes/DatatypeDefs.h"
+#include "engine/rendering/StaticMesh.h"
 
 constexpr int CHUNK_SIZE = 32;
 constexpr int CHUNK_WIDTH = CHUNK_SIZE;
@@ -14,8 +15,6 @@ constexpr int CHUNK_HEIGHT = CHUNK_SIZE;
 constexpr int CHUNK_SLICE_SIZE = CHUNK_WIDTH * CHUNK_HEIGHT;  // Vertical slice size in a chunk
 constexpr int CHUNK_PLANE_SIZE = CHUNK_WIDTH * CHUNK_DEPTH;   // Horizontal plane size in a chunk
 constexpr int BLOCKS_PER_CHUNK = CHUNK_WIDTH * CHUNK_DEPTH * CHUNK_HEIGHT;
-
-class StaticMesh;
 
 struct coord_hash {
     size_t operator()(const glm::ivec3& v) const {
@@ -39,8 +38,8 @@ private:
     bool m_isBeingRebuild;   // true if a worker is currently building its mesh
     bool m_changed;          // If any block has been changed since the last rebuild started
     bool m_isMarkedForSave;  // If there are changes that need to be written back chunk file
-    std::shared_ptr<Block[]> m_blocks;
-    std::shared_ptr<StaticMesh> m_mesh;
+    std::unique_ptr<Block[]> m_blocks;
+    std::unique_ptr<StaticMesh> m_mesh;
 
 public:
     static glm::ivec3 worldToChunkOrigin(const glm::vec3& worldPos);

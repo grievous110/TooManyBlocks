@@ -20,16 +20,16 @@ class World {
 private:
     struct WorkerResult {
         glm::ivec3 chunkPos;
-        std::shared_ptr<Block[]> blockData;  // nullptr if just rebuild
-        std::shared_ptr<IBlueprint> meshBlueprint;
+        std::unique_ptr<Block[]> blockData;  // nullptr if just rebuild
+        std::unique_ptr<IBlueprint> meshBlueprint;
     };
 
     uint32_t m_seed;
     const std::filesystem::path m_worldDir;
     ChunkStorage m_cStorage;
     std::unordered_map<glm::ivec3, Chunk, coord_hash> m_loadedChunks;
-    std::queue<WorkerResult> m_workerResultQueue;
     std::unordered_map<glm::ivec3, uint16_t, coord_hash> m_pendingChanges;
+    std::queue<WorkerResult> m_workerResultQueue;
     std::mutex m_chunkGenQueueMtx;
 
     std::unordered_set<glm::ivec3, coord_hash> determineActiveChunks(const glm::ivec3& position, int renderDistance);

@@ -48,7 +48,7 @@ bool ChunkStorage::hasChunk(const glm::ivec3& chunkPos) {
     return std::filesystem::exists(m_chunkStoragePath / chunkFileName);
 }
 
-std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos) {
+std::unique_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
@@ -86,7 +86,7 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
     }
 
     size_t blockIndex = 0;
-    std::shared_ptr<Block[]> blocks(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
+    std::unique_ptr<Block[]> blocks(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
 
     while (file && blockIndex < BLOCKS_PER_CHUNK) {
         uint16_t rlePair[2];
@@ -117,7 +117,7 @@ std::shared_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
         );
     }
 
-    return blocks;
+    return std::move(blocks);
 }
 
 void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks) {

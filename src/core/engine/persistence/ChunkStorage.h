@@ -22,7 +22,7 @@ public:
 
     bool hasChunk(const glm::ivec3& chunkPos);
 
-    std::shared_ptr<Block[]> loadChunkData(const glm::ivec3& chunkPos);
+    std::unique_ptr<Block[]> loadChunkData(const glm::ivec3& chunkPos);
 
     void saveChunkData(const glm::ivec3& chunkPos, const Block* blocks);
 };

@@ -104,7 +104,7 @@ void World::processDataFromWorkers() {
         }
 
         while (!m_workerResultQueue.empty()) {
-            WorkerResult data = m_workerResultQueue.front();
+            WorkerResult data = std::move(m_workerResultQueue.front());
             m_workerResultQueue.pop();
 
             auto it = m_loadedChunks.find(data.chunkPos);
@@ -114,8 +114,8 @@ void World::processDataFromWorkers() {
                 data.meshBlueprint->bake();  // Upload meshdata to gpu
                 if (!chunk.isLoaded()) {
                     // 1. Case: Chunk has been initially loaded (blocks + mesh must be set)
-                    chunk.m_blocks = data.blockData;
-                    chunk.m_mesh = std::make_shared<StaticMesh>(
+                    chunk.m_blocks = std::move(data.blockData);
+                    chunk.m_mesh = std::make_unique<StaticMesh>(
                         std::static_pointer_cast<StaticMesh::Internal>(data.meshBlueprint->createInstance()), material
                     );
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
@@ -124,7 +124,7 @@ void World::processDataFromWorkers() {
                     chunk.m_isBeingRebuild = false;
 
                     // *No need to set blocks*
-                    chunk.m_mesh = std::make_shared<StaticMesh>(
+                    chunk.m_mesh = std::make_unique<StaticMesh>(
                         std::static_pointer_cast<StaticMesh::Internal>(data.meshBlueprint->createInstance()), material
                     );
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
@@ -165,7 +165,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                 ThreadPool* tPool = Application::getContext()->workerPool;
 
                 glm::ivec3 chunkPos = it->first;
-                std::shared_ptr<Block[]> blockData = it->second.m_blocks;
+                std::shared_ptr<Block[]> blockData = std::move(it->second.m_blocks);
                 tPool->pushJob(this, [this, chunkPos, blockData] {
                     try {
                         m_cStorage.saveChunkData(chunkPos, blockData.get());
@@ -203,19 +203,19 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             // Create new one
             ThreadPool* tPool = Application::getContext()->workerPool;
             tPool->pushJob(this, [this, chunkPos] {
-                std::shared_ptr<Block[]> blocks = nullptr;
+                std::unique_ptr<Block[]> blocks;
                 if (m_cStorage.hasChunk(chunkPos)) {
                     blocks = m_cStorage.loadChunkData(chunkPos);
                 } else {
-                    blocks = std::shared_ptr<Block[]>(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
+                    blocks = std::unique_ptr<Block[]>(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
                     generateChunkBlocks(blocks.get(), chunkPos, m_seed);
                 }
 
-                std::shared_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocks.get(), texMap);
+                std::unique_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocks.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_workerResultQueue.push({chunkPos, blocks, meshBp});
+                    m_workerResultQueue.push({chunkPos, std::move(blocks), std::move(meshBp)});
                 }
             });
         } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
@@ -231,11 +231,11 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             it->second.m_isBeingRebuild = true;
             it->second.m_changed = false;
             tPool->pushJob(this, [this, chunkPos, blocksCopy] {
-                std::shared_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
+                std::unique_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_workerResultQueue.push({chunkPos, nullptr, meshBp});
+                    m_workerResultQueue.push({chunkPos, nullptr, std::move(meshBp)});
                 }
             });
         }
