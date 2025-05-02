@@ -9,7 +9,7 @@
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
 
-class SkeletalMesh : public Renderable {
+class SkeletalMesh : public Renderable, public Updatable {
 public:
     struct Internal {
         std::shared_ptr<RenderData> meshData;
@@ -25,19 +25,26 @@ public:
 
 private:
     std::shared_ptr<AssetHandle<Internal>> m_assetHandle;
+    Animation* m_activeAnim;
 
     void draw() const override;
 
 public:
-    SkeletalMesh() : m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {}
+    SkeletalMesh() : m_assetHandle(std::make_shared<AssetHandle<Internal>>()), m_activeAnim(nullptr) {}
     SkeletalMesh(std::shared_ptr<Internal> internalAsset, std::shared_ptr<Material> material = nullptr)
-        : Renderable(material), m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {
+        : Renderable(material), m_assetHandle(std::make_shared<AssetHandle<Internal>>()), m_activeAnim(nullptr) {
         if (internalAsset) {
             m_assetHandle->asset = internalAsset;
             m_assetHandle->ready.store(true);
         }
     }
     virtual ~SkeletalMesh() = default;
+
+    bool playAnimation(const std::string& animation, bool loop = false, bool restart = true);
+
+    void stopAnimation();
+
+    inline const Animation* getActiveAnimation() const { return m_activeAnim; }
 
     inline std::weak_ptr<AssetHandle<Internal>> getAssetHandle() const { return m_assetHandle; }
 
@@ -46,6 +53,8 @@ public:
     Transform getRenderableTransform() const override;
 
     virtual BoundingBox getBoundingBox() const override;
+
+    void update(float deltaTime) override;
 };
 
 #endif

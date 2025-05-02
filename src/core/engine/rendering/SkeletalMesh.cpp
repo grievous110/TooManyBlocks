@@ -8,6 +8,24 @@ void SkeletalMesh::draw() const {
     }
 }
 
+bool SkeletalMesh::playAnimation(const std::string& animName, bool loop, bool restart) {
+    if (m_assetHandle->ready.load()) {
+        for (Animation& anim : m_assetHandle->asset->animations) {
+            if (anim.getName() == animName) {
+                if (restart) {
+                    anim.reset();
+                }
+                anim.setLooping(loop);
+                m_activeAnim = &anim;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void SkeletalMesh::stopAnimation() { m_activeAnim = nullptr; }
+
 std::weak_ptr<UniformBuffer> SkeletalMesh::getJointMatrices() const {
     if (m_assetHandle->ready.load()) {
         std::vector<glm::mat4> jointMatrices;
@@ -40,4 +58,10 @@ BoundingBox SkeletalMesh::getBoundingBox() const {
         return m_assetHandle->asset->bounds;
     }
     return Renderable::getBoundingBox();
+}
+
+void SkeletalMesh::update(float deltaTime) {
+    if (m_activeAnim) {
+        m_activeAnim->update(deltaTime);
+    }
 }
