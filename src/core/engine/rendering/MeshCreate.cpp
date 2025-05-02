@@ -840,10 +840,18 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                             } else {
                                 throw std::runtime_error("Unsupported component type for joints attribute");
                             }
+                        }
 
-                            if (flipWinding) { // Flip winding for vertex indexing
+                        if (flipWinding) {  // Flip winding for vertex indexing
+                            if (!skData->meshData.indices.empty()) {
+                                // If indexed flip the winding there
                                 for (size_t i = 0; i < skData->meshData.indices.size(); i += 3) {
                                     std::swap(skData->meshData.indices[i + 1], skData->meshData.indices[i + 2]);
+                                }
+                            } else {
+                                // Otherwise reorder the vertices directly
+                                for (size_t i = 0; i < skData->meshData.vertices.size(); i += 3) {
+                                    std::swap(skData->meshData.vertices[i + 1], skData->meshData.vertices[i + 2]);
                                 }
                             }
                         }
