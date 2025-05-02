@@ -12,6 +12,7 @@
 #include "engine/env/lights/Spotlight.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Line.h"
+#include "engine/rendering/SkeletalMesh.h"
 #include "engine/rendering/Wireframe.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
@@ -28,6 +29,7 @@ public:
     Player* m_player;
     World* m_world;
     std::shared_ptr<Line> m_line;
+    std::shared_ptr<SkeletalMesh> m_skeletalMesh;
     std::shared_ptr<StaticMesh> m_mesh1;
     std::shared_ptr<StaticMesh> m_mesh2;
     std::shared_ptr<Wireframe> m_focusedBlockOutline;
