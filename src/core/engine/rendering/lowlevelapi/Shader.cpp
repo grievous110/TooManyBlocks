@@ -16,12 +16,6 @@ struct ShaderSource {
     std::string fragmentSource;
 };
 
-enum CurrentlyReading {
-    VERTEX,
-    FRAGMENT,
-    NOTHING
-};
-
 thread_local unsigned int Shader::currentlyBoundShader = 0;
 
 static std::string readFile(const std::string& filepath) {

@@ -11,11 +11,13 @@ namespace Res {
         constexpr const char* LINE = "res/shaders/lineShader";
         constexpr const char* SSAO_PASS = "res/shaders/SSAO_PassShader";
         constexpr const char* SSAO_BLUR = "res/shaders/SSAO_BlurShader";
+        constexpr const char* SKELETAL_MESH = "res/shaders/skeletalMeshShader";
     }  // namespace Shader
 
     namespace Texture {
         constexpr const char* BLOCK_TEX_ATLAS = "res/textures/blockTexAtlas.png";
         constexpr const char* TESTBLOCK_TEXTURE = "res/textures/testTexture.png";
+        constexpr const char* TESTFLY_TEXTURE = "res/textures/flyTexture.png";
     }  // namespace Texture
 
     namespace Font {
@@ -25,6 +27,7 @@ namespace Res {
 
     namespace Model {
         constexpr const char* TEST_UNIT_BLOCK = "res/models/testUnitBlock.obj";
+        constexpr const char* TESTFLY = "res/models/testFly.glb";
     }
 };  // namespace Res
 

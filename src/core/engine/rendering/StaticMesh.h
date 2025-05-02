@@ -3,30 +3,37 @@
 
 #include <memory>
 
+#include "datatypes/AssetHandle.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
 
 class StaticMesh : public Renderable {
+public:
+    struct Internal {
+        std::shared_ptr<RenderData> renderData;
+        BoundingBox bounds;
+    };
+
 private:
-    std::shared_ptr<RenderData> m_data;
-    std::shared_ptr<Material> m_material;
-    BoundingBox m_bounds;
+    std::shared_ptr<AssetHandle<Internal>> m_assetHandle;
 
     void draw() const override;
 
 public:
-    StaticMesh(
-        std::shared_ptr<RenderData> data, const BoundingBox& bounds, std::shared_ptr<Material> material = nullptr
-    )
-        : m_data(data), m_material(material), m_bounds(bounds) {}
+    StaticMesh() : m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {}
+    StaticMesh(std::shared_ptr<Internal> internalAsset, std::shared_ptr<Material> material = nullptr)
+        : Renderable(material), m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {
+        if (internalAsset) {
+            m_assetHandle->asset = internalAsset;
+            m_assetHandle->ready.store(true);
+        }
+    }
     virtual ~StaticMesh() = default;
 
-    inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
+    inline std::weak_ptr<AssetHandle<Internal>> getAssetHandle() const { return m_assetHandle; }
 
-    std::shared_ptr<Material> getMaterial() const override { return m_material; }
-
-    BoundingBox getBoundingBox() const override { return m_bounds; }
+    virtual BoundingBox getBoundingBox() const override;
 };
 
 #endif

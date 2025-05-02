@@ -215,6 +215,7 @@ void Application::run() {
                 if (context->instance->isWorldInitialized()) {
                     if (!context->instance->gameState.gamePaused) {
                         context->instance->update(deltaTime);
+                        context->provider->processWorkerResults(); // Does this need to be paused?
                     }
                     context->instance->pushWorldRenderData();
                     context->renderer->render(*context);

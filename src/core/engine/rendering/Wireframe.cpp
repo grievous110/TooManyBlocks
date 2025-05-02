@@ -46,3 +46,5 @@ Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
 
     return Wireframe(renderData, bbox);
 }
+
+BoundingBox Wireframe::getBoundingBox() const { return m_bounds; }

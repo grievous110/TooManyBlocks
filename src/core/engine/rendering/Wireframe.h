@@ -10,7 +10,6 @@
 class Wireframe : public Renderable {
 private:
     std::shared_ptr<RenderData> m_data;
-    std::shared_ptr<Material> m_material;
     BoundingBox m_bounds;
     float m_lineWidth;
 
@@ -25,18 +24,14 @@ public:
         float lineWidth = 2.0f,
         std::shared_ptr<Material> material = nullptr
     )
-        : m_data(renderData), m_material(material), m_bounds(bounds), m_lineWidth(lineWidth) {}
+        : Renderable(material), m_data(renderData), m_bounds(bounds), m_lineWidth(lineWidth) {}
     virtual ~Wireframe() = default;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }
 
     inline float getLineWidht() const { return m_lineWidth; }
 
-    inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
-
-    std::shared_ptr<Material> getMaterial() const override { return m_material; }
-
-    BoundingBox getBoundingBox() const override { return m_bounds; }
+    virtual BoundingBox getBoundingBox() const override;
 };
 
 #endif

@@ -7,7 +7,6 @@
 
 #include "datatypes/RawBuffer.h"
 #include "engine/env/lights/Light.h"
-#include "engine/rendering/Renderable.h"
 
 // Axis Aligned Bounding Box
 struct BoundingBox {

@@ -130,7 +130,7 @@ Texture::Texture(const std::string& path)
       m_mipmapFilter(TextureFilter::Nearest),
       m_wrapMode(TextureWrap::Repeat),
       m_hasMipmaps(false) {
-    stbi_set_flip_vertically_on_load(1);
+    stbi_set_flip_vertically_on_load(1); // TODO: This may cause enourmous issues with other textures
     int width;
     int height;
     unsigned char* buffer = stbi_load(path.c_str(), &width, &height, &m_channels, 4);
