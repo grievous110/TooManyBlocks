@@ -1,5 +1,7 @@
 #include "Provider.h"
 
+#include <stb_image.h>
+
 #include "Application.h"
 #include "Logger.h"
 #include "engine/rendering/MeshCreate.h"
@@ -11,9 +13,9 @@ void Provider::processWorkerResults() {
         while (!m_loadedStaticMeshBps.empty()) {
             WorkerResult result = std::move(m_loadedStaticMeshBps.front());
             m_loadedStaticMeshBps.pop();
-    
-            result.bp->bake();                                 // Upload to gpu
-            
+
+            result.bp->bake();  // Upload to gpu
+
             auto it = m_waitingStaticMeshHandles.find(result.meshPath);
             if (it != m_waitingStaticMeshHandles.end()) {
                 // Pass asset to all waiting handles
@@ -37,15 +39,16 @@ void Provider::processWorkerResults() {
         while (!m_loadedSkeletalMeshBps.empty()) {
             WorkerResult result = std::move(m_loadedSkeletalMeshBps.front());
             m_loadedSkeletalMeshBps.pop();
-    
-            result.bp->bake();                                 // Upload to gpu
-            
+
+            result.bp->bake();  // Upload to gpu
+
             auto it = m_waitingSkeletalMeshHandles.find(result.meshPath);
             if (it != m_waitingSkeletalMeshHandles.end()) {
                 // Pass asset to all waiting handles
                 for (const auto& ptr : it->second) {
                     if (std::shared_ptr<AssetHandle<SkeletalMesh::Internal>> handlePtr = ptr.lock()) {
-                        handlePtr->asset = std::static_pointer_cast<SkeletalMesh::Internal>(result.bp->createInstance());
+                        handlePtr->asset =
+                            std::static_pointer_cast<SkeletalMesh::Internal>(result.bp->createInstance());
                         handlePtr->ready.store(true);
                     }
                 }
@@ -82,7 +85,7 @@ std::shared_ptr<Shader> Provider::getShaderFromFile(const std::string& shaderPat
         }
     }
 
-    // Use the provided creator function to create the new object
+    // Create the new object and cache it
     std::shared_ptr<Shader> newShader = std::make_shared<Shader>(shaderPath);
     m_shaderCache[shaderPath] = newShader;
     return newShader;
@@ -96,10 +99,24 @@ std::shared_ptr<Texture> Provider::getTextureFromFile(const std::string& texture
         }
     }
 
-    // Use the provided creator function to create the new object
-    std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(texturePath);
-    m_textureCache[texturePath] = newTexture;
-    return newTexture;
+    int width;
+    int height;
+    int channelsInFile;
+    unsigned char* buffer = stbi_load(texturePath.c_str(), &width, &height, &channelsInFile, 4);
+
+    if (buffer) {
+        // Create the new object and cache it
+        std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(
+            TextureType::Color, static_cast<unsigned int>(width), static_cast<unsigned int>(height), channelsInFile,
+            buffer
+        );
+        stbi_image_free(buffer);
+        m_textureCache[texturePath] = newTexture;
+        return newTexture;
+    } else {
+        lgr::lout.error("Could not load Texture: " + texturePath);
+        return nullptr;
+    }
 }
 
 std::shared_ptr<StaticMesh> Provider::getStaticMeshFromFile(const std::string& meshPath) {

@@ -1,7 +1,6 @@
 #include "Texture.h"
 
 #include <GL/glew.h>
-#include <stb_image.h>
 
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
@@ -120,43 +119,6 @@ static constexpr GLenum toOpenGLWrapMode(TextureWrap wrapMode) {
 }
 
 void Texture::bindDefault() { GLCALL(glBindTexture(GL_TEXTURE_2D, 0)); }
-
-Texture::Texture(const std::string& path)
-    : m_type(TextureType::Color),
-      m_width(0),
-      m_height(0),
-      m_channels(4),
-      m_baseFilter(TextureFilter::Nearest),
-      m_mipmapFilter(TextureFilter::Nearest),
-      m_wrapMode(TextureWrap::Repeat),
-      m_hasMipmaps(false) {
-    stbi_set_flip_vertically_on_load(1); // TODO: This may cause enourmous issues with other textures
-    int width;
-    int height;
-    unsigned char* buffer = stbi_load(path.c_str(), &width, &height, &m_channels, 4);
-    m_width = static_cast<unsigned int>(width);
-    m_height = static_cast<unsigned int>(height);
-
-    GLCALL(glGenTextures(1, &m_rendererId));
-    GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
-
-    // Configure texture
-    TextureFormat format = toOpenGLTexFormat(m_type, m_channels);
-    GLCALL(glTexImage2D(
-        GL_TEXTURE_2D, 0, format.internalFormat, m_width, m_height, 0, format.inputFormat, format.type, buffer
-    ));
-    // Default filter and wrap mode
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT));
-
-    if (buffer) {
-        stbi_image_free(buffer);
-    } else {
-        lgr::lout.error("Could not load Texture: " + std::string(path));
-    }
-}
 
 Texture::Texture(
     TextureType type,
