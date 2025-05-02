@@ -1,6 +1,7 @@
 #include "MeshCreate.h"
 
-#include  <GL/glew.h>
+#include <GL/glew.h>
+#include <json/JsonParser.h>
 
 #include <array>
 #include <cfloat>
@@ -13,8 +14,10 @@
 #include "compatability/Compatability.h"
 #include "datatypes/BlockTypes.h"
 #include "datatypes/DatatypeDefs.h"
+#include "engine/blueprints/StaticMeshBlueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/rendering/BlockToTextureMapping.h"
+#include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
@@ -167,49 +170,7 @@ static CompactChunkFace generateCompactChunkFace(
     return face;
 }
 
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
-
-    // Vertex Attribute Pointer
-    VertexBufferLayout layout;
-    // Compressed data
-    layout.push(GL_UNSIGNED_INT, 1);
-    layout.push(GL_UNSIGNED_INT, 1);
-    vbo.setLayout(layout);
-
-    // Vertex Array Object (VAO)
-    VertexArray vao;
-    vao.addBuffer(vbo);
-
-    // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-}
-
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
-
-    // Vertex Attribute Pointer
-    VertexBufferLayout layout;
-    layout.push(GL_FLOAT, 3);  // Position
-    layout.push(GL_FLOAT, 2);  // UV
-    layout.push(GL_FLOAT, 3);  // Normal
-    vbo.setLayout(layout);
-
-    // Vertex Array Object (VAO)
-    VertexArray vao;
-    vao.addBuffer(vbo);
-
-    // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-}
-
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
-    const Block* blocks, const BlockToTextureMap& texMap
-) {
+std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
     std::vector<CompactChunkVertex> vertexBuffer;
     std::vector<unsigned int> indexBuffer;
 
@@ -243,17 +204,15 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
         }
     }
 
-    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
+    std::unique_ptr<CPURenderData<CompactChunkVertex>> data = std::make_unique<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return data;
+    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
 }
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
-    const Block* blocks, const BlockToTextureMap& texMap
-) {
+std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
     // Hold for each blocktype cullplanes for all 3 axes
     std::unordered_map<uint16_t, BinaryPlaneArray[3]> blockTypeCullPlanes;
 
@@ -409,12 +368,12 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
     freeBinaryPlanes(forwardGreedyMeshingPlanes, CHUNK_SIZE);
     freeBinaryPlanes(backwardGreedyMeshingPlanes, CHUNK_SIZE);
 
-    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
+    std::unique_ptr<CPURenderData<CompactChunkVertex>> data = std::make_unique<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return data;
+    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
 }
 
 namespace std {
@@ -431,7 +390,7 @@ namespace std {
     };
 }  // namespace std
 
-std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
+std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
     std::vector<CPURenderData<Vertex>> meshes;
     {
         std::vector<glm::vec3> positions;
@@ -542,10 +501,10 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
     }
 
     CPURenderData<Vertex>& obj = meshes[0];
-    std::shared_ptr<CPURenderData<Vertex>> meshData = std::make_shared<CPURenderData<Vertex>>();
+    std::unique_ptr<CPURenderData<Vertex>> meshData = std::make_unique<CPURenderData<Vertex>>();
     meshData->name = std::move(obj.name);
     meshData->vertices = std::move(obj.vertices);
     meshData->indices = std::move(obj.indices);
     meshData->bounds = calculateMeshBounds(meshData->vertices);
-    return meshData;
+    return std::make_shared<StaticMeshBlueprint>(std::move(meshData));
 }

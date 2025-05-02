@@ -4,4 +4,15 @@
 
 #include "engine/rendering/GLUtils.h"
 
-void StaticMesh::draw() const { m_data->drawAs(GL_TRIANGLES); }
+void StaticMesh::draw() const {
+    if (m_assetHandle->ready.load()) {
+        m_assetHandle->asset->renderData->drawAs(GL_TRIANGLES);
+    }
+}
+
+BoundingBox StaticMesh::getBoundingBox() const {
+    if (m_assetHandle->ready.load()) {
+        return m_assetHandle->asset->bounds;
+    }
+    return Renderable::getBoundingBox();
+}

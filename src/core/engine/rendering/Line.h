@@ -10,7 +10,6 @@
 class Line : public Renderable {
 private:
     std::unique_ptr<RenderData> m_data;
-    std::shared_ptr<Material> m_material;
     BoundingBox m_bounds;
     float m_lineWidth;
 
@@ -29,11 +28,7 @@ public:
 
     inline float getLineWidht() const { return m_lineWidth; }
 
-    inline void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
-
-    std::shared_ptr<Material> getMaterial() const override { return m_material; }
-
-    BoundingBox getBoundingBox() const override { return m_bounds; }
+    virtual BoundingBox getBoundingBox() const override;
 };
 
 #endif
