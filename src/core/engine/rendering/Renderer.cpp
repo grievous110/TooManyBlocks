@@ -14,6 +14,7 @@
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Frustum.h"
 #include "engine/rendering/GLUtils.h"
+#include "engine/rendering/SkeletalMesh.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 
@@ -89,11 +90,14 @@ void Renderer::beginMainpass(const ApplicationContext& context) {
     m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
     m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
     m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+
+    GLCALL(glDisable(GL_CULL_FACE));
 }
 
 void Renderer::endMainpass(const ApplicationContext& context) {
     m_lightsToRender.clear();
     m_objectsToRender.clear();
+    GLCALL(glEnable(GL_CULL_FACE));
 }
 
 void Renderer::initialize() {
@@ -164,7 +168,7 @@ void Renderer::render(const ApplicationContext& context) {
             batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::ShadowPass, m_currentRenderContext);
                 obj->draw();
             }
@@ -186,7 +190,7 @@ void Renderer::render(const ApplicationContext& context) {
             batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::AmbientOcclusion, m_currentRenderContext);
                 obj->draw();
             }
@@ -213,7 +217,11 @@ void Renderer::render(const ApplicationContext& context) {
         batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
 
         for (const Renderable* obj : batch.second) {
-            m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+            if (const SkeletalMesh* sMesh = dynamic_cast<const SkeletalMesh*>(obj)) {
+                // TODO: Remove this quick test
+                m_currentRenderContext.jointMatrices = sMesh->getJointMatrices();
+            }
+            m_currentRenderContext.meshTransform = obj->getRenderableTransform();
             batch.first->bindForObjectDraw(PassType::MainPass, m_currentRenderContext);
             obj->draw();
         }

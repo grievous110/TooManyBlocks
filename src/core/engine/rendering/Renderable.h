@@ -26,6 +26,7 @@ public:
 
     virtual BoundingBox getBoundingBox() const { return BoundingBox::invalid(); };
 
+    virtual Transform getRenderableTransform() const { return getGlobalTransform(); }
 };
 
 #endif
