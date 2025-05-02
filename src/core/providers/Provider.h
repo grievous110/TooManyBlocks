@@ -31,6 +31,7 @@ private:
         m_waitingStaticMeshHandles;
     std::unordered_map<std::string, std::vector<std::weak_ptr<AssetHandle<SkeletalMesh::Internal>>>>
         m_waitingSkeletalMeshHandles;
+    std::unordered_map<std::string, bool> m_isLoading;
 
     std::mutex m_loadedStaticMeshMtx;
     std::queue<WorkerResult> m_loadedStaticMeshBps;
