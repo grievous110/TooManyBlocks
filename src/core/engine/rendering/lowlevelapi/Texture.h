@@ -45,7 +45,6 @@ private:
 public:
     static void bindDefault();
 
-    Texture(const std::string& path);
     Texture(
         TextureType type,
         unsigned int width,
