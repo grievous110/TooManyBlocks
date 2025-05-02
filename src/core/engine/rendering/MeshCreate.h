@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <memory>
 
+#include "engine/blueprints/Blueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/BlockToTextureMapping.h"
@@ -133,20 +134,12 @@ struct SkeletalVertex {
     glm::vec4 weights;
 };
 
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data);
+std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data);
+std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
 
-// std::shared_ptr<RenderData> packToRenderData(const CPURenderData<SkeletalVertex>& data);
+std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
-    const Block* blocks, const BlockToTextureMap& texMap
-);
-
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
-    const Block* blocks, const BlockToTextureMap& texMap
-);
-
-std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
+std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding = false);
 
 #endif

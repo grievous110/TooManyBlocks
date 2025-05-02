@@ -3,6 +3,7 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <chrono>
 #include <random>
 #include <vector>
 
@@ -17,6 +18,7 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/LineMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
+#include "engine/rendering/mat/SkeletalMaterial.h"
 #include "providers/Provider.h"
 #include "rendering/StaticMesh.h"
 #include "threading/ThreadPool.h"
@@ -59,9 +61,9 @@ void GameInstance::initializeWorld(World* newWorld) {
         std::shared_ptr<Texture> texture = provider->getTextureFromFile(Res::Texture::TESTBLOCK_TEXTURE);
         std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
         std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
-        m_mesh1 = provider->getMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
+        m_mesh1 = provider->getStaticMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
         m_mesh1->assignMaterial(testMaterial1);
-        m_mesh2 = provider->getMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
+        m_mesh2 = provider->getStaticMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
         m_mesh2->assignMaterial(testMaterial2);
 
         m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
@@ -74,6 +76,17 @@ void GameInstance::initializeWorld(World* newWorld) {
             std::make_shared<Wireframe>(Wireframe::fromBoundigBox({glm::vec3(-0.005), glm::vec3(1.005)}));
         m_focusedBlockOutline->assignMaterial(std::make_shared<LineMaterial>(lineShader, glm::vec3(0.05, 0.05, 0.05)));
         m_focusedBlockOutline->setLineWidth(3.5f);
+
+        std::shared_ptr<Shader> skeletalShader = provider->getShaderFromFile(Res::Shader::SKELETAL_MESH);
+        auto start = std::chrono::high_resolution_clock::now();
+        std::shared_ptr<Texture> skeletalTexture = provider->getTextureFromFile(Res::Texture::TESTFLY_TEXTURE);
+        auto end = std::chrono::high_resolution_clock::now();
+        m_skeletalMesh = provider->getSkeletalMeshFromFile(Res::Model::TESTFLY);
+        m_skeletalMesh->assignMaterial(std::make_shared<SkeletalMaterial>(skeletalShader, skeletalTexture));
+        m_skeletalMesh->getLocalTransform().setPosition(glm::vec3(10.0f, 8.0f, 5.0f));
+
+        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+        lgr::lout.debug("Loaded world in: " + std::to_string(dur.count()) + " ms");
     }
 }
 
@@ -115,6 +128,7 @@ void GameInstance::pushWorldRenderData() const {
         }
         renderer->submitRenderable(m_mesh1.get());
         renderer->submitRenderable(m_mesh2.get());
+        renderer->submitRenderable(m_skeletalMesh.get());
 
         if (m_player->isFocusingBlock()) {
             m_focusedBlockOutline->getLocalTransform().setPosition(m_player->getFocusedBlock());
@@ -132,4 +146,9 @@ void GameInstance::update(float deltaTime) {
     Transform& mehs1Tr = m_mesh1->getLocalTransform();
     mehs1Tr.rotate(10.0f * deltaTime, WorldUp);
     m_world->updateChunks(m_player->getTransform().getPosition(), 2);
+
+    if (!m_skeletalMesh->getActiveAnimation()) {
+        m_skeletalMesh->playAnimation("Idle", true);
+    }
+    m_skeletalMesh->update(deltaTime);
 }

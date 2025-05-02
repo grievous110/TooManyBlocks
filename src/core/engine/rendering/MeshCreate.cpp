@@ -1,20 +1,27 @@
 #include "MeshCreate.h"
 
-#include  <GL/glew.h>
+#include <GL/glew.h>
+#include <json/JsonParser.h>
 
 #include <array>
 #include <cfloat>
+#include <cstring>
 #include <fstream>
 #include <sstream>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
+#include "AppConstants.h"
 #include "Logger.h"
 #include "compatability/Compatability.h"
 #include "datatypes/BlockTypes.h"
 #include "datatypes/DatatypeDefs.h"
+#include "engine/blueprints/SkeletalMeshBlueprint.h"
+#include "engine/blueprints/StaticMeshBlueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/rendering/BlockToTextureMapping.h"
+#include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/IndexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
@@ -81,17 +88,6 @@ static BoundingBox calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) 
         bounds.max = glm::max(bounds.max, vertex.position);
     }
     return bounds;
-}
-
-static size_t getNumComponents(const std::string& accessorType) {
-    if (accessorType == "SCALAR") return 1;
-    if (accessorType == "VEC2") return 2;
-    if (accessorType == "VEC3") return 3;
-    if (accessorType == "VEC4") return 4;
-    if (accessorType == "MAT2") return 4;
-    if (accessorType == "MAT3") return 9;
-    if (accessorType == "MAT4") return 16;
-    throw std::runtime_error("Unknown accessor type: " + accessorType);
 }
 
 static CompactChunkFace generateCompactChunkFace(
@@ -167,49 +163,7 @@ static CompactChunkFace generateCompactChunkFace(
     return face;
 }
 
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
-
-    // Vertex Attribute Pointer
-    VertexBufferLayout layout;
-    // Compressed data
-    layout.push(GL_UNSIGNED_INT, 1);
-    layout.push(GL_UNSIGNED_INT, 1);
-    vbo.setLayout(layout);
-
-    // Vertex Array Object (VAO)
-    VertexArray vao;
-    vao.addBuffer(vbo);
-
-    // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-}
-
-std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
-
-    // Vertex Attribute Pointer
-    VertexBufferLayout layout;
-    layout.push(GL_FLOAT, 3);  // Position
-    layout.push(GL_FLOAT, 2);  // UV
-    layout.push(GL_FLOAT, 3);  // Normal
-    vbo.setLayout(layout);
-
-    // Vertex Array Object (VAO)
-    VertexArray vao;
-    vao.addBuffer(vbo);
-
-    // Index Buffer Object (IBO)
-    IndexBuffer ibo(data.indices.data(), data.indices.size());
-    return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-}
-
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
-    const Block* blocks, const BlockToTextureMap& texMap
-) {
+std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
     std::vector<CompactChunkVertex> vertexBuffer;
     std::vector<unsigned int> indexBuffer;
 
@@ -243,17 +197,15 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunk(
         }
     }
 
-    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
+    std::unique_ptr<CPURenderData<CompactChunkVertex>> data = std::make_unique<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return data;
+    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
 }
 
-std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
-    const Block* blocks, const BlockToTextureMap& texMap
-) {
+std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
     // Hold for each blocktype cullplanes for all 3 axes
     std::unordered_map<uint16_t, BinaryPlaneArray[3]> blockTypeCullPlanes;
 
@@ -409,12 +361,12 @@ std::shared_ptr<CPURenderData<CompactChunkVertex>> generateMeshForChunkGreedy(
     freeBinaryPlanes(forwardGreedyMeshingPlanes, CHUNK_SIZE);
     freeBinaryPlanes(backwardGreedyMeshingPlanes, CHUNK_SIZE);
 
-    std::shared_ptr<CPURenderData<CompactChunkVertex>> data = std::make_shared<CPURenderData<CompactChunkVertex>>();
+    std::unique_ptr<CPURenderData<CompactChunkVertex>> data = std::make_unique<CPURenderData<CompactChunkVertex>>();
     data->name = "Chunk";
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return data;
+    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
 }
 
 namespace std {
@@ -431,7 +383,7 @@ namespace std {
     };
 }  // namespace std
 
-std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
+std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
     std::vector<CPURenderData<Vertex>> meshes;
     {
         std::vector<glm::vec3> positions;
@@ -542,10 +494,522 @@ std::shared_ptr<CPURenderData<Vertex>> readMeshDataFromObjFile(const std::string
     }
 
     CPURenderData<Vertex>& obj = meshes[0];
-    std::shared_ptr<CPURenderData<Vertex>> meshData = std::make_shared<CPURenderData<Vertex>>();
+    std::unique_ptr<CPURenderData<Vertex>> meshData = std::make_unique<CPURenderData<Vertex>>();
     meshData->name = std::move(obj.name);
     meshData->vertices = std::move(obj.vertices);
     meshData->indices = std::move(obj.indices);
     meshData->bounds = calculateMeshBounds(meshData->vertices);
-    return meshData;
+    return std::make_shared<StaticMeshBlueprint>(std::move(meshData));
+}
+
+#define JSON_CHUNK       0x4E4F534A
+#define BIN_CHUNK        0x004E4942
+#define GLB_MAGIC_NUMBER 0x46546C67
+
+std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding) {
+    std::vector<Json::JsonValue> jsonChunks;
+    std::vector<std::vector<char>> binaryChunks;
+
+    std::ifstream file(filePath, std::ios::binary);
+    if (file.is_open()) {
+        uint32_t magicNumber = 0;
+        file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
+        if (file.gcount() != sizeof(magicNumber) || magicNumber != GLB_MAGIC_NUMBER) {
+            throw std::runtime_error("Error reading magic number from glb file " + filePath);
+        }
+
+        uint32_t version = 0;
+        file.read(reinterpret_cast<char*>(&version), sizeof(version));
+        if (file.gcount() != sizeof(version)) {
+            throw std::runtime_error("Error reading version from glb file " + filePath);
+        }
+
+        uint32_t length = 0;
+        file.read(reinterpret_cast<char*>(&length), sizeof(length));
+        if (file.gcount() != sizeof(length)) {
+            throw std::runtime_error("Error reading the total length of file " + filePath);
+        }
+
+        uint32_t bytesRead = 12;  // already read magic, version, length
+        while (bytesRead < length) {
+            uint32_t chunkLength, chunkType;
+            file.read(reinterpret_cast<char*>(&chunkLength), sizeof(uint32_t));
+            file.read(reinterpret_cast<char*>(&chunkType), sizeof(uint32_t));
+            bytesRead += 2 * sizeof(uint32_t);
+
+            std::vector<char> chunkData(chunkLength);
+            file.read(chunkData.data(), chunkLength);
+            bytesRead += chunkLength;
+
+            if (chunkType == JSON_CHUNK) {
+                std::string json(chunkData.data(), chunkLength);
+                jsonChunks.push_back(std::move(Json::parseJson(json)));
+            } else if (chunkType == BIN_CHUNK) {
+                binaryChunks.push_back(std::move(chunkData));
+            } else {
+                throw std::runtime_error("Encountered unknown glb chunk identifier");
+            }
+        }
+    } else {
+        throw std::runtime_error("Could not open file: " + filePath);
+    }
+
+    // Parse data in application blueprints
+    std::unique_ptr<SkeletalMeshBlueprint::CPUSkeletalMeshData> skData =
+        std::make_unique<SkeletalMeshBlueprint::CPUSkeletalMeshData>();
+    skData->animatedMeshNodeIndex = -1;
+    for (const Json::JsonValue& jsonChunkObj : jsonChunks) {
+        try {
+            const Json::JsonValue& activeScene = jsonChunkObj["scenes"][jsonChunkObj["scene"].toInt()];
+            std::vector<SkeletalMeshBlueprint::Node> nodesArray;
+            int index = 0;
+            for (const Json::JsonValue& nodeVal : jsonChunkObj["nodes"].toArray()) {
+                const Json::JsonObject& nodeObj = nodeVal.toObject();
+                SkeletalMeshBlueprint::Node node;
+
+                // Get name
+                auto it = nodeObj.find("name");
+                if (it != nodeObj.end()) {
+                    node.name = it->second.toString();
+                } else {
+                    node.name = "";
+                }
+                node.parentIndex = -1;
+
+                // Get optional translation
+                it = nodeObj.find("translation");
+                if (it != nodeObj.end()) {
+                    glm::vec3 pos(0.0f);
+                    const Json::JsonArray& translation = it->second.toArray();
+                    for (int i = 0; i < translation.size(); i++) {
+                        if (translation[i].isInt()) {
+                            pos[i] = static_cast<float>(translation[i].toInt());
+                        } else if (translation[i].isDouble()) {
+                            pos[i] = static_cast<float>(translation[i].toDouble());
+                        }
+                    }
+                    node.localTransform.setPosition(pos);
+                }
+
+                // Get optional rotation
+                it = nodeObj.find("rotation");
+                if (it != nodeObj.end()) {
+                    glm::quat rot;
+                    const Json::JsonArray& rotation = it->second.toArray();
+                    for (int i = 0; i < rotation.size(); i++) {
+                        if (rotation[i].isInt()) {
+                            rot[i] = static_cast<float>(rotation[i].toInt());
+                        } else if (rotation[i].isDouble()) {
+                            rot[i] = static_cast<float>(rotation[i].toDouble());
+                        }
+                    }
+                    node.localTransform.setRotation(rot);
+                }
+
+                // Get optional scale
+                it = nodeObj.find("scale");
+                if (it != nodeObj.end()) {
+                    float factor = 0.0f;
+                    const Json::JsonArray& scale = it->second.toArray();
+                    for (int i = 0; i < scale.size(); i++) {
+                        if (scale[i].isInt()) {
+                            factor += static_cast<float>(scale[i].toInt());
+                        } else if (scale[i].isDouble()) {
+                            factor += static_cast<float>(scale[i].toDouble());
+                        }
+                    }
+                    factor /= scale.size();  // Normalize to uniform scale
+                    node.localTransform.setScale(factor);
+                }
+
+                // Parse child indices
+                it = nodeObj.find("children");
+                if (it != nodeObj.end()) {
+                    const Json::JsonArray& children = it->second.toArray();
+                    node.childIndices.reserve(children.size());
+                    for (const Json::JsonValue& childIndex : children) {
+                        node.childIndices.push_back(childIndex.toInt());
+                    }
+                }
+
+                it = nodeObj.find("mesh");
+                if (it != nodeObj.end()) {
+                    int meshIndex = it->second.toInt();
+                    it = nodeObj.find("skin");
+                    if (it != nodeObj.end()) {
+                        // This is the animated mesh node
+                        if (skData->animatedMeshNodeIndex != -1) {
+                            throw std::runtime_error(
+                                "More then one valid skinned mesh encountered in file: " + filePath
+                            );
+                        }
+                        int skinIndex = it->second.toInt();
+                        skData->animatedMeshNodeIndex = index;
+
+                        // ########################### Parsing mesh stuff ################################
+                        const Json::JsonValue& mesh = jsonChunkObj["meshes"][meshIndex];
+                        if (mesh["primitives"].toArray().size() > 1) {
+                            lgr::lout.warn("Multiple values in primitive array for mesh, defaulting to first entry...");
+                        }
+
+                        const Json::JsonValue& primitivesEntry = mesh["primitives"][0];
+                        const Json::JsonValue& attributes = primitivesEntry["attributes"];
+
+                        // Parse position
+                        const Json::JsonValue& positionAccessor =
+                            jsonChunkObj["accessors"][attributes.at("POSITION").toInt()];
+                        unsigned int compType = static_cast<unsigned int>(positionAccessor["componentType"].toInt());
+                        if (compType != GL_FLOAT) {
+                            throw std::runtime_error("POSITION is not of component type float");
+                        } else if (positionAccessor["type"].toString() != "VEC3") {
+                            throw std::runtime_error("POSITION is not of type VEC3");
+                        }
+
+                        int vertexCount = positionAccessor["count"].toInt();
+                        skData->meshData.vertices.resize(vertexCount);
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][positionAccessor["bufferView"].toInt()];
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+
+                            const glm::vec3* src =
+                                reinterpret_cast<const glm::vec3*>(binData.data() + bufferView["byteOffset"].toInt());
+                            for (size_t i = 0; i < vertexCount; i++) {
+                                skData->meshData.vertices[i].position = src[i];
+                            }
+                        }
+
+                        // Parse UV
+                        const Json::JsonValue& uvAccessor =
+                            jsonChunkObj["accessors"][attributes.at("TEXCOORD_0").toInt()];
+                        compType = static_cast<unsigned int>(uvAccessor["componentType"].toInt());
+                        if (compType != GL_FLOAT) {
+                            throw std::runtime_error("TEXCOORD_0 is not of component type float");
+                        } else if (uvAccessor["type"].toString() != "VEC2") {
+                            throw std::runtime_error("TEXCOORD_0 is not of type VEC2");
+                        } else if (uvAccessor["count"].toInt() != vertexCount) {
+                            throw std::runtime_error("Vertex attrib count mismatch");
+                        }
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][uvAccessor["bufferView"].toInt()];
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+
+                            const glm::vec2* src =
+                                reinterpret_cast<const glm::vec2*>(binData.data() + bufferView["byteOffset"].toInt());
+                            for (size_t i = 0; i < vertexCount; i++) {
+                                skData->meshData.vertices[i].uv = src[i];
+                            }
+                        }
+
+                        // Parse Normal
+                        const Json::JsonValue& normalAccessor =
+                            jsonChunkObj["accessors"][attributes.at("NORMAL").toInt()];
+                        compType = static_cast<unsigned int>(normalAccessor["componentType"].toInt());
+                        if (compType != GL_FLOAT) {
+                            throw std::runtime_error("NORMAL is not of component type float");
+                        } else if (normalAccessor["type"].toString() != "VEC3") {
+                            throw std::runtime_error("NORMAL is not of type VEC3");
+                        } else if (normalAccessor["count"].toInt() != vertexCount) {
+                            throw std::runtime_error("Vertex attrib count mismatch");
+                        }
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][normalAccessor["bufferView"].toInt()];
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+
+                            const glm::vec3* src =
+                                reinterpret_cast<const glm::vec3*>(binData.data() + bufferView["byteOffset"].toInt());
+                            for (size_t i = 0; i < vertexCount; i++) {
+                                skData->meshData.vertices[i].normal = src[i];
+                            }
+                        }
+
+                        // Parse joint indices attrib
+                        const Json::JsonValue& jointIdxAccessor =
+                            jsonChunkObj["accessors"][attributes.at("JOINTS_0").toInt()];
+                        compType = static_cast<unsigned int>(jointIdxAccessor["componentType"].toInt());
+                        if (compType != GL_UNSIGNED_BYTE && compType != GL_UNSIGNED_SHORT &&
+                            compType != GL_UNSIGNED_INT) {
+                            throw std::runtime_error("JOINTS_0 is not of compatible type");
+                        } else if (jointIdxAccessor["type"].toString() != "VEC4") {
+                            throw std::runtime_error("JOINTS_0 is not of type VEC4");
+                        } else if (jointIdxAccessor["count"].toInt() != vertexCount) {
+                            throw std::runtime_error("Vertex attrib count mismatch");
+                        }
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][jointIdxAccessor["bufferView"].toInt()];
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+
+                            // Broadcast to larger type
+                            if (compType == GL_UNSIGNED_BYTE) {
+                                const glm::u8vec4* src = reinterpret_cast<const glm::u8vec4*>(
+                                    binData.data() + bufferView["byteOffset"].toInt()
+                                );
+                                for (size_t i = 0; i < vertexCount; i++) {
+                                    skData->meshData.vertices[i].joints = glm::uvec4(src[i]);
+                                }
+                            } else if (compType == GL_UNSIGNED_SHORT) {
+                                const glm::u16vec4* src = reinterpret_cast<const glm::u16vec4*>(
+                                    binData.data() + bufferView["byteOffset"].toInt()
+                                );
+                                for (size_t i = 0; i < vertexCount; i++) {
+                                    skData->meshData.vertices[i].joints = glm::uvec4(src[i]);
+                                }
+                            } else if (compType == GL_UNSIGNED_INT) {
+                                const glm::uvec4* src = reinterpret_cast<const glm::uvec4*>(
+                                    binData.data() + bufferView["byteOffset"].toInt()
+                                );
+                                for (size_t i = 0; i < vertexCount; i++) {
+                                    skData->meshData.vertices[i].joints = src[i];  // already uvec4
+                                }
+                            } else {
+                                throw std::runtime_error("Unsupported component type for joints attribute");
+                            }
+                        }
+
+                        // Parse weights
+                        const Json::JsonValue& weightAccessor =
+                            jsonChunkObj["accessors"][attributes.at("WEIGHTS_0").toInt()];
+                        compType = static_cast<unsigned int>(weightAccessor["componentType"].toInt());
+                        if (compType != GL_FLOAT) {
+                            throw std::runtime_error("WEIGHTS_0 is not of component type float");
+                        } else if (weightAccessor["type"].toString() != "VEC4") {
+                            throw std::runtime_error("WEIGHTS_0 is not of type VEC4");
+                        } else if (weightAccessor["count"].toInt() != vertexCount) {
+                            throw std::runtime_error("Vertex attrib count mismatch");
+                        }
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][weightAccessor["bufferView"].toInt()];
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+
+                            const glm::vec4* src =
+                                reinterpret_cast<const glm::vec4*>(binData.data() + bufferView["byteOffset"].toInt());
+                            for (size_t i = 0; i < vertexCount; i++) {
+                                skData->meshData.vertices[i].weights = src[i];
+                            }
+                        }
+
+                        // Optional: Parse indices
+                        auto it = primitivesEntry.toObject().find("indices");
+                        if (it != primitivesEntry.toObject().end()) {
+                            const Json::JsonValue& indexAccessor = jsonChunkObj["accessors"][it->second.toInt()];
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][indexAccessor["bufferView"].toInt()];
+
+                            compType = static_cast<unsigned int>(indexAccessor["componentType"].toInt());
+                            if (indexAccessor["type"].toString() != "SCALAR") {
+                                throw std::runtime_error("Indexbuffer accessor type is not SCALAR");
+                            } else if (compType != GL_UNSIGNED_BYTE && compType != GL_UNSIGNED_SHORT &&
+                                       compType != GL_UNSIGNED_INT) {
+                                throw std::runtime_error("Indexbuffer accessor component type is not supported");
+                            }
+
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+                            int indexCount = indexAccessor["count"].toInt();
+                            skData->meshData.indices.reserve(indexCount);
+
+                            // Broadcast to larger type
+                            if (compType == GL_UNSIGNED_BYTE) {
+                                const uint8_t* src =
+                                    reinterpret_cast<const uint8_t*>(binData.data() + bufferView["byteOffset"].toInt());
+                                for (size_t i = 0; i < indexCount; i++) {
+                                    skData->meshData.indices.push_back(static_cast<uint32_t>(src[i]));
+                                }
+                            } else if (compType == GL_UNSIGNED_SHORT) {
+                                const uint16_t* src = reinterpret_cast<const uint16_t*>(
+                                    binData.data() + bufferView["byteOffset"].toInt()
+                                );
+                                for (size_t i = 0; i < indexCount; i++) {
+                                    skData->meshData.indices.push_back(static_cast<uint32_t>(src[i]));
+                                }
+                            } else if (compType == GL_UNSIGNED_INT) {
+                                const uint32_t* src = reinterpret_cast<const uint32_t*>(
+                                    binData.data() + bufferView["byteOffset"].toInt()
+                                );
+                                for (size_t i = 0; i < indexCount; i++) {
+                                    skData->meshData.indices.push_back(src[i]);  // Already unsigned int
+                                }
+                            } else {
+                                throw std::runtime_error("Unsupported component type for joints attribute");
+                            }
+
+                            if (flipWinding) { // Flip winding for vertex indexing
+                                for (size_t i = 0; i < skData->meshData.indices.size(); i += 3) {
+                                    std::swap(skData->meshData.indices[i + 1], skData->meshData.indices[i + 2]);
+                                }
+                            }
+                        }
+
+                        // ######################### Parsing skin stuff ################################
+                        const Json::JsonValue& skin = jsonChunkObj["skins"][skinIndex];
+
+                        // Parse joint indices
+                        const Json::JsonArray& joints = skin.at("joints").toArray();
+                        skData->jointNodeIndices.reserve(joints.size());
+                        for (const Json::JsonValue& jointIdx : joints) {
+                            skData->jointNodeIndices.push_back(jointIdx.toInt());
+                        }
+
+                        // Read inverse bind matrices
+                        const Json::JsonValue& inverseBinMatrixAccessor =
+                            jsonChunkObj["accessors"][skin["inverseBindMatrices"].toInt()];
+                        compType = static_cast<unsigned int>(inverseBinMatrixAccessor["componentType"].toInt());
+                        if (compType != GL_FLOAT) {
+                            throw std::runtime_error("inverseBindMatrices is not of component type float");
+                        } else if (inverseBinMatrixAccessor["type"].toString() != "MAT4") {
+                            throw std::runtime_error("inverseBindMatrices is not of type MAT4");
+                        }
+
+                        {
+                            const Json::JsonValue& bufferView =
+                                jsonChunkObj["bufferViews"][inverseBinMatrixAccessor["bufferView"].toInt()];
+
+                            int elementCount = inverseBinMatrixAccessor["count"].toInt();
+                            skData->inverseBindMatrices.resize(elementCount);
+
+                            const std::vector<char>& binData = binaryChunks[bufferView["buffer"].toInt()];
+                            int byteLength = bufferView["byteLength"].toInt();
+                            int byteOffset = bufferView["byteOffset"].toInt();
+
+                            std::memcpy(skData->inverseBindMatrices.data(), binData.data() + byteOffset, byteLength);
+                        }
+                    }
+                }
+
+                nodesArray.push_back(std::move(node));
+                index++;
+            }
+
+            if (skData->animatedMeshNodeIndex == -1) {
+                throw std::runtime_error("Could not find mesh node in glb file");
+            }
+
+            // Parse animations
+            skData->animations.reserve(jsonChunkObj["animations"].toArray().size());
+            for (const Json::JsonValue& animation : jsonChunkObj["animations"].toArray()) {
+                SkeletalMeshBlueprint::AnimationdDeclare animBlueprint;
+                animBlueprint.name = animation.at("name").toString();
+                animBlueprint.channels.reserve(animation["channels"].toArray().size());
+
+                for (const Json::JsonValue& channel : animation["channels"].toArray()) {
+                    int targetNode = channel["target"]["node"].toInt();
+                    const Json::JsonValue& sampler = animation["samplers"][channel["sampler"].toInt()];
+
+                    // Note: Only supports LINEAR and STEP currently
+                    const std::string& interpolatioString = sampler["interpolation"].toString();
+                    Interpolation interpolation =
+                        interpolatioString == "LINEAR" ? Interpolation::LINEAR : Interpolation::STEP;
+                    if (interpolatioString != "LINEAR" && interpolatioString != "STEP") {
+                        throw std::runtime_error(
+                            "Currently unsupported animation interpolation: " + interpolatioString
+                        );
+                    }
+
+                    const Json::JsonValue& inputAccessor = jsonChunkObj["accessors"][sampler["input"].toInt()];
+                    const Json::JsonValue& inputBufferView =
+                        jsonChunkObj["bufferViews"][inputAccessor["bufferView"].toInt()];
+
+                    const Json::JsonValue& outputAccessor = jsonChunkObj["accessors"][sampler["output"].toInt()];
+                    const Json::JsonValue& outputBufferView =
+                        jsonChunkObj["bufferViews"][outputAccessor["bufferView"].toInt()];
+
+                    int elementCount = inputAccessor["count"].toInt();
+                    if (elementCount != outputAccessor["count"].toInt()) {
+                        throw std::runtime_error("Animation input element count differs from ouput count");
+                    } else if (static_cast<unsigned int>(inputAccessor["componentType"].toInt()) != GL_FLOAT) {
+                        throw std::runtime_error("Animation input was not of component type float");
+                    } else if (static_cast<unsigned int>(outputAccessor["componentType"].toInt()) != GL_FLOAT) {
+                        throw std::runtime_error("Animation output was not of component type float");
+                    } else if (inputAccessor["type"].toString() != "SCALAR") {
+                        throw std::runtime_error("Animation input was not of type SCALAR");
+                    }
+
+                    const std::vector<char>& binaryChunkInput = binaryChunks[inputBufferView["buffer"].toInt()];
+                    const std::vector<char>& binaryChunkOuput = binaryChunks[outputBufferView["buffer"].toInt()];
+                    const float* timestamps =
+                        reinterpret_cast<const float*>(binaryChunkInput.data() + inputBufferView["byteOffset"].toInt());
+
+                    if (channel["target"]["path"].toString() == "translation") {
+                        if (outputAccessor["type"].toString() != "VEC3") {
+                            throw std::runtime_error("Translation animation channel is not of type VEC4");
+                        }
+
+                        std::vector<Keyframe<glm::vec3>> keyframes;
+                        keyframes.reserve(elementCount);
+
+                        const glm::vec3* values = reinterpret_cast<const glm::vec3*>(
+                            binaryChunkOuput.data() + outputBufferView["byteOffset"].toInt()
+                        );
+                        for (int i = 0; i < elementCount; i++) {
+                            keyframes.push_back({timestamps[i], values[i]});
+                        }
+
+                        std::shared_ptr<Timeline<glm::vec3>> timeline =
+                            std::make_shared<Timeline<glm::vec3>>(std::move(keyframes), interpolation);
+                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Translation, timeline});
+                    } else if (channel["target"]["path"].toString() == "rotation") {
+                        if (outputAccessor["type"].toString() != "VEC4") {
+                            throw std::runtime_error("Rotation animation channel is not of type VEC4");
+                        }
+
+                        std::vector<Keyframe<glm::quat>> keyframes;
+                        keyframes.reserve(elementCount);
+
+                        const glm::quat* values = reinterpret_cast<const glm::quat*>(
+                            binaryChunkOuput.data() + outputBufferView["byteOffset"].toInt()
+                        );
+                        for (int i = 0; i < elementCount; i++) {
+                            keyframes.push_back({timestamps[i], values[i]});
+                        }
+
+                        std::shared_ptr<Timeline<glm::quat>> timeline =
+                            std::make_shared<Timeline<glm::quat>>(std::move(keyframes), interpolation);
+                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Rotation, timeline});
+                    } else if (channel["target"]["path"].toString() == "scale") {
+                        if (outputAccessor["type"].toString() != "VEC3") {
+                            throw std::runtime_error("Scale animation channel is not of type VEC3");
+                        }
+
+                        std::vector<Keyframe<float>> keyframes;
+                        keyframes.reserve(elementCount);
+
+                        const glm::vec3* values = reinterpret_cast<const glm::vec3*>(
+                            binaryChunkOuput.data() + outputBufferView["byteOffset"].toInt()
+                        );
+                        for (int i = 0; i < elementCount; i++) {
+                            keyframes.push_back({timestamps[i], values[i].x});  // Forcebly use uniform scale
+                        }
+
+                        std::shared_ptr<Timeline<float>> timeline =
+                            std::make_shared<Timeline<float>>(std::move(keyframes), interpolation);
+                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Scale, timeline});
+                    } else {
+                        throw std::runtime_error("Unknown animation path: " + channel["target"]["path"].toString());
+                    }
+                }
+
+                skData->animations.push_back(std::move(animBlueprint));
+            }
+
+            // Resolve parent idices
+            for (int parent = 0; parent < nodesArray.size(); parent++) {
+                for (int child : nodesArray[parent].childIndices) {
+                    nodesArray[child].parentIndex = parent;
+                }
+            }
+            skData->nodeArray = std::move(nodesArray);
+        } catch (const std::exception& e) {
+            throw std::runtime_error("Could not process glb json chunk: " + std::string(e.what()));
+        }
+    }
+
+    return std::make_shared<SkeletalMeshBlueprint>(std::move(skData));
 }

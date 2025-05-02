@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "engine/blueprints/Blueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/persistence/ChunkStorage.h"
 #include "engine/rendering/BlockToTextureMapping.h"
@@ -20,7 +21,7 @@ private:
     struct WorkerResult {
         glm::ivec3 chunkPos;
         std::shared_ptr<Block[]> blockData;  // nullptr if just rebuild
-        std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData;
+        std::shared_ptr<IBlueprint> meshBlueprint;
     };
 
     uint32_t m_seed;

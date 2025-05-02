@@ -110,19 +110,23 @@ void World::processDataFromWorkers() {
             auto it = m_loadedChunks.find(data.chunkPos);
             if (it != m_loadedChunks.end()) {
                 Chunk& chunk = it->second;
+
+                data.meshBlueprint->bake();  // Upload meshdata to gpu
                 if (!chunk.isLoaded()) {
                     // 1. Case: Chunk has been initially loaded (blocks + mesh must be set)
                     chunk.m_blocks = data.blockData;
-                    chunk.m_mesh =
-                        std::make_shared<StaticMesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh = std::make_shared<StaticMesh>(
+                        std::static_pointer_cast<StaticMesh::Internal>(data.meshBlueprint->createInstance()), material
+                    );
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 } else if (chunk.isBeingRebuild()) {
                     // 2. Case: Chunk has been rebuilded (Reset flag and replace mesh)
                     chunk.m_isBeingRebuild = false;
 
                     // *No need to set blocks*
-                    chunk.m_mesh =
-                        std::make_shared<StaticMesh>(packToRenderData(*data.meshData), data.meshData->bounds, material);
+                    chunk.m_mesh = std::make_shared<StaticMesh>(
+                        std::static_pointer_cast<StaticMesh::Internal>(data.meshBlueprint->createInstance()), material
+                    );
                     chunk.m_mesh->getLocalTransform().setPosition(data.chunkPos);
                 }
             }
@@ -207,12 +211,11 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                     generateChunkBlocks(blocks.get(), chunkPos, m_seed);
                 }
 
-                std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData =
-                    generateMeshForChunkGreedy(blocks.get(), texMap);
+                std::shared_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocks.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_workerResultQueue.push({chunkPos, blocks, meshData});
+                    m_workerResultQueue.push({chunkPos, blocks, meshBp});
                 }
             });
         } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
@@ -228,12 +231,11 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             it->second.m_isBeingRebuild = true;
             it->second.m_changed = false;
             tPool->pushJob(this, [this, chunkPos, blocksCopy] {
-                std::shared_ptr<CPURenderData<CompactChunkVertex>> meshData =
-                    generateMeshForChunkGreedy(blocksCopy.get(), texMap);
+                std::shared_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
 
                 {
                     std::lock_guard<std::mutex> lock(m_chunkGenQueueMtx);
-                    m_workerResultQueue.push({chunkPos, nullptr, meshData});
+                    m_workerResultQueue.push({chunkPos, nullptr, meshBp});
                 }
             });
         }

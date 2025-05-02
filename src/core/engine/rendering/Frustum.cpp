@@ -78,7 +78,7 @@ void cullObjectsOutOfView(
     outputBuffer.clear();
     for (Renderable* mesh : meshes) {
         const BoundingBox bounds = mesh->getBoundingBox();
-        if (!bounds.isInvalid()) {
+        if (!bounds.isInvalid() || bounds.isNotCullable()) {
             glm::vec3 pos = mesh->getGlobalTransform().getPosition();
             if (frustum.isBoxInside(bounds.min + pos, bounds.max + pos)) {
                 outputBuffer.push_back(mesh);

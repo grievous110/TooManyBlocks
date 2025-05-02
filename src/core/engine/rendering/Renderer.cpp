@@ -14,6 +14,7 @@
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Frustum.h"
 #include "engine/rendering/GLUtils.h"
+#include "engine/rendering/SkeletalMesh.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 
@@ -164,7 +165,7 @@ void Renderer::render(const ApplicationContext& context) {
             batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::ShadowPass, m_currentRenderContext);
                 obj->draw();
             }
@@ -186,7 +187,7 @@ void Renderer::render(const ApplicationContext& context) {
             batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::AmbientOcclusion, m_currentRenderContext);
                 obj->draw();
             }
@@ -213,7 +214,11 @@ void Renderer::render(const ApplicationContext& context) {
         batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
 
         for (const Renderable* obj : batch.second) {
-            m_currentRenderContext.meshTransform = obj->getGlobalTransform();
+            if (const SkeletalMesh* sMesh = dynamic_cast<const SkeletalMesh*>(obj)) {
+                // TODO: Remove this quick test
+                m_currentRenderContext.jointMatrices = sMesh->getJointMatrices();
+            }
+            m_currentRenderContext.meshTransform = obj->getRenderableTransform();
             batch.first->bindForObjectDraw(PassType::MainPass, m_currentRenderContext);
             obj->draw();
         }

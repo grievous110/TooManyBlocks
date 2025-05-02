@@ -4,9 +4,8 @@
 #include <memory>
 
 #include "engine/comp/SceneComponent.h"
+#include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/mat/Material.h"
-
-struct BoundingBox;
 
 class Renderable : public SceneComponent {
     friend class Renderer;
@@ -14,12 +13,20 @@ class Renderable : public SceneComponent {
 private:
     virtual void draw() const = 0;
 
+protected:
+    std::shared_ptr<Material> m_material;
+
 public:
+    Renderable(std::shared_ptr<Material> material = nullptr) : m_material(material) {}
     virtual ~Renderable() = default;
 
-    virtual std::shared_ptr<Material> getMaterial() const = 0;
+    virtual void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
 
-    virtual BoundingBox getBoundingBox() const = 0;
+    virtual std::shared_ptr<Material> getMaterial() const { return m_material; };
+
+    virtual BoundingBox getBoundingBox() const { return BoundingBox::invalid(); };
+
+    virtual Transform getRenderableTransform() const { return getGlobalTransform(); }
 };
 
 #endif
