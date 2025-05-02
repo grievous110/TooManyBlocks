@@ -19,14 +19,14 @@ class Provider {
 private:
     struct WorkerResult {
         std::string meshPath;
-        std::shared_ptr<IBlueprint> bp;
+        std::unique_ptr<IBlueprint> bp;
     };
 
     std::unordered_map<std::string, std::weak_ptr<Material>> m_materialCache;
     std::unordered_map<std::string, std::weak_ptr<Shader>> m_shaderCache;
     std::unordered_map<std::string, std::weak_ptr<Texture>> m_textureCache;
-    std::unordered_map<std::string, std::shared_ptr<IBlueprint>> m_staticMeshBpCache;
-    std::unordered_map<std::string, std::shared_ptr<IBlueprint>> m_skeletalMeshBpCache;
+    std::unordered_map<std::string, std::unique_ptr<IBlueprint>> m_staticMeshBpCache;
+    std::unordered_map<std::string, std::unique_ptr<IBlueprint>> m_skeletalMeshBpCache;
     std::unordered_map<std::string, std::vector<std::weak_ptr<AssetHandle<StaticMesh::Internal>>>>
         m_waitingStaticMeshHandles;
     std::unordered_map<std::string, std::vector<std::weak_ptr<AssetHandle<SkeletalMesh::Internal>>>>

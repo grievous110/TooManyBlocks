@@ -163,7 +163,7 @@ static CompactChunkFace generateCompactChunkFace(
     return face;
 }
 
-std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
+std::unique_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap) {
     std::vector<CompactChunkVertex> vertexBuffer;
     std::vector<unsigned int> indexBuffer;
 
@@ -202,10 +202,10 @@ std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const Bloc
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
+    return std::make_unique<StaticChunkMeshBlueprint>(std::move(data));
 }
 
-std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
+std::unique_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap) {
     // Hold for each blocktype cullplanes for all 3 axes
     std::unordered_map<uint16_t, BinaryPlaneArray[3]> blockTypeCullPlanes;
 
@@ -366,7 +366,7 @@ std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, cons
     data->vertices = std::move(vertexBuffer);
     data->indices = std::move(indexBuffer);
     data->bounds = calculateChunkMeshBounds(data->vertices);
-    return std::make_shared<StaticChunkMeshBlueprint>(std::move(data));
+    return std::make_unique<StaticChunkMeshBlueprint>(std::move(data));
 }
 
 namespace std {
@@ -383,7 +383,7 @@ namespace std {
     };
 }  // namespace std
 
-std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
+std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding) {
     std::vector<CPURenderData<Vertex>> meshes;
     {
         std::vector<glm::vec3> positions;
@@ -499,14 +499,14 @@ std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
     meshData->vertices = std::move(obj.vertices);
     meshData->indices = std::move(obj.indices);
     meshData->bounds = calculateMeshBounds(meshData->vertices);
-    return std::make_shared<StaticMeshBlueprint>(std::move(meshData));
+    return std::make_unique<StaticMeshBlueprint>(std::move(meshData));
 }
 
 #define JSON_CHUNK       0x4E4F534A
 #define BIN_CHUNK        0x004E4942
 #define GLB_MAGIC_NUMBER 0x46546C67
 
-std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding) {
+std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding) {
     std::vector<Json::JsonValue> jsonChunks;
     std::vector<std::vector<char>> binaryChunks;
 
@@ -1011,5 +1011,5 @@ std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
         }
     }
 
-    return std::make_shared<SkeletalMeshBlueprint>(std::move(skData));
+    return std::make_unique<SkeletalMeshBlueprint>(std::move(skData));
 }

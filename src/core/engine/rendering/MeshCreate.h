@@ -134,12 +134,12 @@ struct SkeletalVertex {
     glm::vec4 weights;
 };
 
-std::shared_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
+std::unique_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
+std::unique_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
 
-std::shared_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
+std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
 
-std::shared_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding = false);
+std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding = false);
 
 #endif
