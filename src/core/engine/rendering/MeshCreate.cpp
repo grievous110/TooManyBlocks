@@ -28,6 +28,10 @@
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include "util/BitOperations.h"
 
+#define GLB_JSON_CHUNK   0x4E4F534A
+#define GLB_BIN_CHUNK    0x004E4942
+#define GLB_MAGIC_NUMBER 0x46546C67
+
 typedef unsigned int** BinaryPlaneArray;
 typedef unsigned int* BinaryPlane;
 
@@ -94,10 +98,10 @@ static CompactChunkFace generateCompactChunkFace(
     const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1
 ) {
     // Vertices for a specific face
-    glm::ivec3 v0 = glm::ivec3(0);
-    glm::ivec3 v1 = glm::ivec3(0);
-    glm::ivec3 v2 = glm::ivec3(0);
-    glm::ivec3 v3 = glm::ivec3(0);
+    glm::ivec3 v0;
+    glm::ivec3 v1;
+    glm::ivec3 v2;
+    glm::ivec3 v3;
 
     // Generate the appropriate face based on FaceDirection
     switch (faceDirection) {
@@ -391,7 +395,7 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
         std::vector<glm::vec3> normals;
 
         CPURenderData<Vertex> currentMesh;
-        currentMesh.name = "default";  // Default name in case none is provided
+        currentMesh.name = "Mesh";  // Default name in case none is provided
 
         std::unordered_map<Vertex, unsigned int> vertexMap;  // Map to indices to reuse vertices
 
@@ -422,21 +426,24 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
                 std::vector<unsigned int> faceIndices;
                 std::string vertexInfo;
 
-                // Parse each vertex
+                // Parse each vertex (istringstream parses till whitespace character)
                 while (ss >> vertexInfo) {
                     std::istringstream vs(vertexInfo);
                     std::string indexStr;
                     unsigned int vIdx = 0, vtIdx = 0, vnIdx = 0;
 
                     // Parse indices v/vt/vn (Vertex / UV /Normal)
+                    // 1 is substracted cause indices in .obj start at 1
                     std::getline(vs, indexStr, '/');
                     vIdx = std::stoi(indexStr) - 1;
+                    // UV is optional
                     std::getline(vs, indexStr, '/');
                     vtIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
-                    std::getline(vs, indexStr, '/');
+                    // Normal is also optional
+                    std::getline(vs, indexStr);  // Parse rest
                     vnIdx = !indexStr.empty() ? std::stoi(indexStr) - 1 : 0;
 
-                    // Create vertex and push it to the vertex array
+                    // Create vertex (if uv or normal are missing defaulting to 0)
                     Vertex vertex = {
                         positions[vIdx], uvs.size() > vtIdx ? uvs[vtIdx] : glm::vec2(0.0f),
                         normals.size() > vnIdx ? normals[vnIdx] : glm::vec3(0.0f)
@@ -444,6 +451,7 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
 
                     // Check if vertex already exists in the map
                     if (vertexMap.find(vertex) == vertexMap.end()) {
+                        // If not, insert new index and push new vertex
                         vertexMap[vertex] = static_cast<unsigned int>(currentMesh.vertices.size());
                         currentMesh.vertices.push_back(vertex);
                     }
@@ -455,7 +463,7 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
                 // Triangulate the face (convert to triangles)
                 if (faceIndices.size() >= 3) {
                     for (size_t i = 1; i < faceIndices.size() - 1; i++) {
-                        currentMesh.indices.push_back(faceIndices[0]);  // Base vertex
+                        currentMesh.indices.push_back(faceIndices[0]);  // Base vertex for triangulation
                         if (flipWinding) {
                             currentMesh.indices.push_back(faceIndices[i + 1]);
                             currentMesh.indices.push_back(faceIndices[i]);
@@ -482,8 +490,6 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
         if (!currentMesh.vertices.empty()) {
             meshes.push_back(std::move(currentMesh));
         }
-
-        file.close();
     }
 
     if (meshes.empty()) {
@@ -502,16 +508,16 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
     return std::make_unique<StaticMeshBlueprint>(std::move(meshData));
 }
 
-#define JSON_CHUNK       0x4E4F534A
-#define BIN_CHUNK        0x004E4942
-#define GLB_MAGIC_NUMBER 0x46546C67
-
 std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding) {
     std::vector<Json::JsonValue> jsonChunks;
     std::vector<std::vector<char>> binaryChunks;
 
-    std::ifstream file(filePath, std::ios::binary);
-    if (file.is_open()) {
+    {
+        std::ifstream file(filePath, std::ios::binary);
+        if (!file.is_open()) {
+            throw std::runtime_error("Could not open file: " + filePath);
+        }
+
         uint32_t magicNumber = 0;
         file.read(reinterpret_cast<char*>(&magicNumber), sizeof(magicNumber));
         if (file.gcount() != sizeof(magicNumber) || magicNumber != GLB_MAGIC_NUMBER) {
@@ -531,6 +537,7 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
         }
 
         uint32_t bytesRead = 12;  // already read magic, version, length
+        // Read all chunk data in glb file. There are json and binary chunk type
         while (bytesRead < length) {
             uint32_t chunkLength, chunkType;
             file.read(reinterpret_cast<char*>(&chunkLength), sizeof(uint32_t));
@@ -541,17 +548,16 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
             file.read(chunkData.data(), chunkLength);
             bytesRead += chunkLength;
 
-            if (chunkType == JSON_CHUNK) {
+            if (chunkType == GLB_JSON_CHUNK) {
+                // Convert to string and parse it to json structure
                 std::string json(chunkData.data(), chunkLength);
                 jsonChunks.push_back(std::move(Json::parseJson(json)));
-            } else if (chunkType == BIN_CHUNK) {
+            } else if (chunkType == GLB_BIN_CHUNK) {
                 binaryChunks.push_back(std::move(chunkData));
             } else {
                 throw std::runtime_error("Encountered unknown glb chunk identifier");
             }
         }
-    } else {
-        throw std::runtime_error("Could not open file: " + filePath);
     }
 
     // Parse data in application blueprints
@@ -562,18 +568,18 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
         try {
             const Json::JsonValue& activeScene = jsonChunkObj["scenes"][jsonChunkObj["scene"].toInt()];
             std::vector<SkeletalMeshBlueprint::Node> nodesArray;
-            int index = 0;
-            for (const Json::JsonValue& nodeVal : jsonChunkObj["nodes"].toArray()) {
-                const Json::JsonObject& nodeObj = nodeVal.toObject();
+            const Json::JsonArray& nodeArray = jsonChunkObj["nodes"].toArray();
+            for (int nodeIndex = 0; nodeIndex < nodeArray.size(); nodeIndex++) {
+                const Json::JsonObject& nodeObj = nodeArray[nodeIndex].toObject();
                 SkeletalMeshBlueprint::Node node;
 
                 // Get name
                 auto it = nodeObj.find("name");
                 if (it != nodeObj.end()) {
                     node.name = it->second.toString();
-                } else {
-                    node.name = "";
                 }
+
+                // Default to "no parent"
                 node.parentIndex = -1;
 
                 // Get optional translation
@@ -622,7 +628,7 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                     node.localTransform.setScale(factor);
                 }
 
-                // Parse child indices
+                // Parse child indices (each node can reference child nodes, parent indices are resolved later)
                 it = nodeObj.find("children");
                 if (it != nodeObj.end()) {
                     const Json::JsonArray& children = it->second.toArray();
@@ -632,6 +638,7 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                     }
                 }
 
+                // Test if its the mesh node that is animated
                 it = nodeObj.find("mesh");
                 if (it != nodeObj.end()) {
                     int meshIndex = it->second.toInt();
@@ -644,10 +651,10 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                             );
                         }
                         int skinIndex = it->second.toInt();
-                        skData->animatedMeshNodeIndex = index;
+                        skData->animatedMeshNodeIndex = nodeIndex;
 
                         // ########################### Parsing mesh stuff ################################
-                        const Json::JsonValue& mesh = jsonChunkObj["meshes"][meshIndex];
+                        const Json::JsonValue& mesh = jsonChunkObj["meshes"][meshIndex];  // Index into meshes array
                         if (mesh["primitives"].toArray().size() > 1) {
                             lgr::lout.warn("Multiple values in primitive array for mesh, defaulting to first entry...");
                         }
@@ -728,7 +735,8 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                             }
                         }
 
-                        // Parse joint indices attrib
+                        // Parse joint indices attrib (Indices my be stored as types GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT
+                        // or GL_UNSIGNED_INT)
                         const Json::JsonValue& jointIdxAccessor =
                             jsonChunkObj["accessors"][attributes.at("JOINTS_0").toInt()];
                         compType = static_cast<unsigned int>(jointIdxAccessor["componentType"].toInt());
@@ -893,7 +901,6 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                 }
 
                 nodesArray.push_back(std::move(node));
-                index++;
             }
 
             if (skData->animatedMeshNodeIndex == -1) {
@@ -902,14 +909,14 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
 
             // Parse animations
             skData->animations.reserve(jsonChunkObj["animations"].toArray().size());
-            for (const Json::JsonValue& animation : jsonChunkObj["animations"].toArray()) {
-                SkeletalMeshBlueprint::AnimationdDeclare animBlueprint;
-                animBlueprint.name = animation.at("name").toString();
-                animBlueprint.channels.reserve(animation["channels"].toArray().size());
+            for (const Json::JsonValue& animationJson : jsonChunkObj["animations"].toArray()) {
+                SkeletalMeshBlueprint::AnimationdDeclare animDeclaration;
+                animDeclaration.name = animationJson.at("name").toString();
+                animDeclaration.channels.reserve(animationJson["channels"].toArray().size());
 
-                for (const Json::JsonValue& channel : animation["channels"].toArray()) {
+                for (const Json::JsonValue& channel : animationJson["channels"].toArray()) {
                     int targetNode = channel["target"]["node"].toInt();
-                    const Json::JsonValue& sampler = animation["samplers"][channel["sampler"].toInt()];
+                    const Json::JsonValue& sampler = animationJson["samplers"][channel["sampler"].toInt()];
 
                     // Note: Only supports LINEAR and STEP currently
                     const std::string& interpolatioString = sampler["interpolation"].toString();
@@ -945,7 +952,8 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
                     const float* timestamps =
                         reinterpret_cast<const float*>(binaryChunkInput.data() + inputBufferView["byteOffset"].toInt());
 
-                    if (channel["target"]["path"].toString() == "translation") {
+                    const std::string& channelString = channel["target"]["path"].toString();
+                    if (channelString == "translation") {
                         if (outputAccessor["type"].toString() != "VEC3") {
                             throw std::runtime_error("Translation animation channel is not of type VEC4");
                         }
@@ -962,8 +970,8 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
 
                         std::shared_ptr<Timeline<glm::vec3>> timeline =
                             std::make_shared<Timeline<glm::vec3>>(std::move(keyframes), interpolation);
-                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Translation, timeline});
-                    } else if (channel["target"]["path"].toString() == "rotation") {
+                        animDeclaration.channels.push_back({targetNode, AnimationProperty::Translation, timeline});
+                    } else if (channelString == "rotation") {
                         if (outputAccessor["type"].toString() != "VEC4") {
                             throw std::runtime_error("Rotation animation channel is not of type VEC4");
                         }
@@ -980,8 +988,8 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
 
                         std::shared_ptr<Timeline<glm::quat>> timeline =
                             std::make_shared<Timeline<glm::quat>>(std::move(keyframes), interpolation);
-                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Rotation, timeline});
-                    } else if (channel["target"]["path"].toString() == "scale") {
+                        animDeclaration.channels.push_back({targetNode, AnimationProperty::Rotation, timeline});
+                    } else if (channelString == "scale") {
                         if (outputAccessor["type"].toString() != "VEC3") {
                             throw std::runtime_error("Scale animation channel is not of type VEC3");
                         }
@@ -998,13 +1006,13 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
 
                         std::shared_ptr<Timeline<float>> timeline =
                             std::make_shared<Timeline<float>>(std::move(keyframes), interpolation);
-                        animBlueprint.channels.push_back({targetNode, AnimationProperty::Scale, timeline});
+                        animDeclaration.channels.push_back({targetNode, AnimationProperty::Scale, timeline});
                     } else {
                         throw std::runtime_error("Unknown animation path: " + channel["target"]["path"].toString());
                     }
                 }
 
-                skData->animations.push_back(std::move(animBlueprint));
+                skData->animations.push_back(std::move(animDeclaration));
             }
 
             // Resolve parent idices
