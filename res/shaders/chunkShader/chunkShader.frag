@@ -56,8 +56,11 @@ vec4 sampleFromTexAtlas(vec2 uv_coord) {
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
     
-    // Flip Y-axis (Image is loaded starting from top left / opengl reads uvs starting from bottom left tho)
-    vec2 index = vec2(mod(float(texIndex), texturesPerRow), texturesPerRow - 1.0 - floor(float(texIndex) / texturesPerRow));
+    vec2 index = vec2(
+        mod(float(texIndex), texturesPerRow),
+        floor(float(texIndex) / texturesPerRow)
+    );
+
     vec2 atlasUV = (index + uv_coord) * textureScale;
     return texture(u_textureAtlas, atlasUV);
 }
@@ -159,7 +162,6 @@ vec3 calcLightContribution(int lightIndex) {
 
 void main() {
     vec2 uv_frag = fract(uv); // Effectively modulo for repeating texture on faces larger 1
-    uv_frag.y = 1.0 - uv_frag.y; // Flip vertically    
 
     // Sample the texture atlas
     vec3 color = vec3(sampleFromTexAtlas(uv_frag));
