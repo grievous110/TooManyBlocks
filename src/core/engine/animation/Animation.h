@@ -49,12 +49,14 @@ public:
     }
 
     inline const std::string& getName() const { return m_name; }
-    
+
     inline const std::vector<AnimationChannel>& getChannels() const { return m_channels; }
-    
+
     inline void setLooping(bool loop) { m_looping = loop; }
 
     inline bool isLooping() const { return m_looping; }
+
+    inline void setTime(float time) { m_time = time; }
 
     inline float getTime() const { return m_time; }
 

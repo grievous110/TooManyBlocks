@@ -6,10 +6,11 @@ void Animation::update(float deltaTime) {
         if (m_looping) {
             m_time = std::fmod(m_time, m_duration);
         } else {
-            return;
+            m_time = m_duration;
         }
     }
 
+    // Apply transformations to target nodes
     for (const AnimationChannel& channel : m_channels) {
         switch (channel.property) {
             case AnimationProperty::Translation: {

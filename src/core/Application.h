@@ -2,7 +2,6 @@
 #define TOOMANYBLOCKS_APPLICATION_H
 
 #include "datatypes/KeyMouseIO.h"
-#include "engine/ui/Ui.h"
 
 struct GLFWwindow;
 class Provider;
@@ -12,6 +11,9 @@ class GameInstance;
 class FontPool;
 class AppIO;
 class ThreadPool;
+namespace UI {
+    class Window;
+};
 
 struct ApplicationContext {
     unsigned int screenWidth;

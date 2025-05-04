@@ -33,7 +33,9 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
             data.keycode = key;
             data.mods = mods;
 
-            context->io->keyAdapter().notifyObservers(action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp, data);
+            context->io->keyAdapter().notifyObservers(
+                action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp, data
+            );
         }
     }
 }
@@ -42,7 +44,9 @@ static void mouseKeyCallback(GLFWwindow* window, int button, int action, int mod
     if (ApplicationContext* context = Application::getContext()) {
         MouseEventData data;
         data.key.code = button;
-        context->io->mouseAdapter().notifyObservers(action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp, data);
+        context->io->mouseAdapter().notifyObservers(
+            action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp, data
+        );
     }
 }
 
@@ -117,7 +121,8 @@ void Application::deleteCurrentContext() {
 
         // Keep as last deletion!!!
         if (context->window) {
-            glfwDestroyWindow(context->window);  // This implicitly destroys open gl context -> gl calls afterwards will cause error
+            glfwDestroyWindow(context->window
+            );  // This implicitly destroys open gl context -> gl calls afterwards will cause error
         }
         delete context;
     }
@@ -173,14 +178,14 @@ void Application::run() {
 
         // Graphic api details
         std::ostringstream detailsBuf;
-        detailsBuf << "Open GL Version: " << glGetString(GL_VERSION) << std::endl;
-        detailsBuf << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-        detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << std::endl;
+        detailsBuf << "Open GL Version: " << glGetString(GL_VERSION) << "\n";
+        detailsBuf << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
+        detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << "\n";
 
         // Check Antialisasing
         int samples;
         GLCALL(glGetIntegerv(GL_SAMPLES, &samples));
-        detailsBuf << "Antialiasing: MSAA " << samples << std::endl;
+        detailsBuf << "Antialiasing: MSAA " << samples << "\n";
         lgr::lout.info(detailsBuf.str());
 
         // ImGui setup
@@ -215,7 +220,7 @@ void Application::run() {
                 if (context->instance->isWorldInitialized()) {
                     if (!context->instance->gameState.gamePaused) {
                         context->instance->update(deltaTime);
-                        context->provider->processWorkerResults(); // Does this need to be paused?
+                        context->provider->processWorkerResults();  // Does this need to be paused?
                     }
                     context->instance->pushWorldRenderData();
                     context->renderer->render(*context);
