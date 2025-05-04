@@ -59,7 +59,7 @@ FrameBuffer::~FrameBuffer() {
             }
             GLCALL(glDeleteFramebuffers(1, &m_rendererId));
         } catch (const std::exception&) {
-            lgr::lout.error("Error during Shader cleanup");
+            lgr::lout.error("Error during FrameBuffer cleanup");
         }
     }
 }
@@ -117,7 +117,7 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
                 }
                 GLCALL(glDeleteFramebuffers(1, &m_rendererId));
             } catch (const std::exception&) {
-                lgr::lout.error("Error during Shader cleanup");
+                lgr::lout.error("Error during Framebuffer cleanup");
             }
         }
         RenderApiObject::operator=(std::move(other));
