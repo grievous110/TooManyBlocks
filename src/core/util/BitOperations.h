@@ -2,7 +2,6 @@
 #define TOOMANYBLOCKS_BITOPERTAIONS_H
 
 #include <climits>
-#include <iostream>
 #include <sstream>
 
 #if defined(_MSC_VER)  // MSVC
@@ -14,15 +13,15 @@ static_assert(sizeof(unsigned int) * CHAR_BIT == 32, "This bit manipulation head
 template <typename T>
 std::string bitString(const T& value) {
     const char* p = reinterpret_cast<const char*>(&value);
-    std::stringstream stream;
+    std::ostringstream ostream;
 
     for (int i = sizeof(T) - 1; i >= 0; i--) {
         for (int j = CHAR_BIT - 1; j >= 0; j--) {
-            stream << ((p[i] >> j) & 1);
+            ostream << ((p[i] >> j) & 1);
         }
-        stream << ' ';
+        ostream << ' ';
     }
-    return stream.str();
+    return ostream.str();
 }
 
 constexpr unsigned int createMask(unsigned int numBits) {
