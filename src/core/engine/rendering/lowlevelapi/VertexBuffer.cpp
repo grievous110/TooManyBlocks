@@ -32,7 +32,7 @@ VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept
     : RenderApiObject(std::move(other)), m_layout(std::move(other.m_layout)), m_size(other.m_size) {}
 
 VertexBuffer::~VertexBuffer() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
             if (VertexBuffer::currentlyBoundVBO == m_rendererId) {
                 GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
@@ -46,14 +46,15 @@ VertexBuffer::~VertexBuffer() {
 }
 
 void VertexBuffer::updateData(const void* data, size_t size, size_t offset) const {
+    bind();
+    
     if (offset + size > m_size) throw std::runtime_error("VBO update exceeds buffer size");
 
-    bind();
     GLCALL(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
 }
 
 void VertexBuffer::bind() const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of VertexBuffer with id 0");
+    if (!isValid()) throw std::runtime_error("Invalid state of VertexBuffer with id 0");
 
     if (VertexBuffer::currentlyBoundVBO != m_rendererId) {
         GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
@@ -63,7 +64,7 @@ void VertexBuffer::bind() const {
 
 VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
     if (this != &other) {
-        if (m_rendererId != 0) {
+        if (isValid()) {
             try {
                 if (VertexBuffer::currentlyBoundVBO == m_rendererId) {
                     GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));

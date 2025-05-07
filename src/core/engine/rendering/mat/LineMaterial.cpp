@@ -7,7 +7,7 @@ bool LineMaterial::supportsPass(PassType passType) const { return passType == Pa
 
 void LineMaterial::bindForPass(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
-        m_mainShader->bind();
+        m_mainShader->use();
         m_mainShader->setUniform("u_color", m_color);
     } else {
         lgr::lout.error("Material bound for unsupported pass");
@@ -16,7 +16,7 @@ void LineMaterial::bindForPass(PassType passType, const RenderContext& context) 
 
 void LineMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
-        m_mainShader->bind();
+        m_mainShader->use();
         m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
     } else {
         lgr::lout.error("Material bound for unsupported pass");

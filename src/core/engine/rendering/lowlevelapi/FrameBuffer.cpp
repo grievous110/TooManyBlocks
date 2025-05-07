@@ -53,7 +53,7 @@ FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
       m_attachedDepthTexture(std::move(other.m_attachedDepthTexture)) {}
 
 FrameBuffer::~FrameBuffer() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
             if (FrameBuffer::currentlyBoundFBO == m_rendererId) {
                 GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -67,7 +67,7 @@ FrameBuffer::~FrameBuffer() {
 }
 
 void FrameBuffer::bind() const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of FrameBuffer with id 0");
+    if (!isValid()) throw std::runtime_error("Invalid state of FrameBuffer with id 0");
 
     if (FrameBuffer::currentlyBoundFBO != m_rendererId) {
         GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, m_rendererId));
@@ -76,8 +76,9 @@ void FrameBuffer::bind() const {
 }
 
 void FrameBuffer::clearAttachedTextures() {
+    bind();
+
     if (!m_attachedTextures.empty() || m_attachedDepthTexture) {
-        bind();
         for (unsigned int i = 0; i < m_attachedTextures.size(); i++) {
             GLCALL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, 0, 0));
         }
@@ -111,7 +112,7 @@ void FrameBuffer::attachTexture(std::shared_ptr<Texture> texture) {
 
 FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
     if (this != &other) {
-        if (m_rendererId != 0) {
+        if (isValid()) {
             try {
                 if (FrameBuffer::currentlyBoundFBO == m_rendererId) {
                     GLCALL(glBindFramebuffer(GL_FRAMEBUFFER, 0));

@@ -16,7 +16,7 @@ struct ShaderSource {
     std::string fragmentSource;
 };
 
-thread_local unsigned int Shader::currentlyBoundShader = 0;
+thread_local unsigned int Shader::currentlyUsedShader = 0;
 
 static std::string readFile(const std::string& filepath) {
     std::ifstream file(filepath, std::ios::in);
@@ -164,17 +164,17 @@ Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) 
     m_rendererId = createShader(source, definitions);
 }
 
-void Shader::bindDefault() {
-    if (Shader::currentlyBoundShader != 0) {
+void Shader::useDefault() {
+    if (Shader::currentlyUsedShader != 0) {
         GLCALL(glUseProgram(0));
-        Shader::currentlyBoundShader = 0;
+        Shader::currentlyUsedShader = 0;
     }
 }
 
-void Shader::syncBinding() {
+void Shader::syncUsage() {
     int binding;
     GLCALL(glGetIntegerv(GL_CURRENT_PROGRAM, &binding));
-    Shader::currentlyBoundShader = static_cast<unsigned int>(binding);
+    Shader::currentlyUsedShader = static_cast<unsigned int>(binding);
 }
 
 Shader Shader::create(const std::string& shaderPath, const ShaderDefines& defines) {
@@ -188,11 +188,11 @@ Shader::Shader(Shader&& other) noexcept
       m_uniformBlockIndexCache(std::move(other.m_uniformBlockIndexCache)) {}
 
 Shader::~Shader() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
-            if (Shader::currentlyBoundShader == m_rendererId) {
+            if (Shader::currentlyUsedShader == m_rendererId) {
                 GLCALL(glUseProgram(0));
-                Shader::currentlyBoundShader = 0;
+                Shader::currentlyUsedShader = 0;
             }
             GLCALL(glDeleteProgram(m_rendererId));
         } catch (const std::exception&) {
@@ -201,188 +201,188 @@ Shader::~Shader() {
     }
 }
 
-void Shader::bind() const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Shader with id 0");
+void Shader::use() const {
+    if (!isValid()) throw std::runtime_error("Invalid state of Shader with id 0");
 
-    if (Shader::currentlyBoundShader != m_rendererId) {
+    if (Shader::currentlyUsedShader != m_rendererId) {
         GLCALL(glUseProgram(m_rendererId));
-        Shader::currentlyBoundShader = m_rendererId;
+        Shader::currentlyUsedShader = m_rendererId;
     }
 }
 
 void Shader::setAndBindUBO(const std::string& name, const UniformBuffer& ubo, unsigned int bindingPoint) {
-    bind();
-    ubo.bind(bindingPoint);
+    use();
+    ubo.assignTo(bindingPoint);
     GLCALL(glUniformBlockBinding(m_rendererId, getUniformBlockIndex(name), bindingPoint));
 }
 
 void Shader::setUniform(const std::string& name, bool value) {
-    bind();
+    use();
     GLCALL(glUniform1i(getUniformLocation(name), value));
 }
 
 void Shader::setUniform(const std::string& name, int value) {
-    bind();
+    use();
     GLCALL(glUniform1i(getUniformLocation(name), value));
 }
 
 void Shader::setUniform(const std::string& name, unsigned int value) {
-    bind();
+    use();
     GLCALL(glUniform1ui(getUniformLocation(name), value));
 }
 
 void Shader::setUniform(const std::string& name, float value) {
-    bind();
+    use();
     GLCALL(glUniform1f(getUniformLocation(name), value));
 }
 
 void Shader::setUniform(const std::string& name, const glm::bvec2& vector) {
-    bind();
+    use();
     GLCALL(glUniform2i(getUniformLocation(name), vector.x, vector.y));
 }
 
 void Shader::setUniform(const std::string& name, const glm::bvec3& vector) {
-    bind();
+    use();
     GLCALL(glUniform3i(getUniformLocation(name), vector.x, vector.y, vector.z));
 }
 
 void Shader::setUniform(const std::string& name, const glm::bvec4& vector) {
-    bind();
+    use();
     GLCALL(glUniform4i(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec2& vector) {
-    bind();
+    use();
     GLCALL(glUniform2f(getUniformLocation(name), vector.x, vector.y));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec3& vector) {
-    bind();
+    use();
     GLCALL(glUniform3f(getUniformLocation(name), vector.x, vector.y, vector.z));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec4& vector) {
-    bind();
+    use();
     GLCALL(glUniform4f(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec2& vector) {
-    bind();
+    use();
     GLCALL(glUniform2i(getUniformLocation(name), vector.x, vector.y));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec3& vector) {
-    bind();
+    use();
     GLCALL(glUniform3i(getUniformLocation(name), vector.x, vector.y, vector.z));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec4& vector) {
-    bind();
+    use();
     GLCALL(glUniform4i(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec2& vector) {
-    bind();
+    use();
     GLCALL(glUniform2ui(getUniformLocation(name), vector.x, vector.y));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec3& vector) {
-    bind();
+    use();
     GLCALL(glUniform3ui(getUniformLocation(name), vector.x, vector.y, vector.z));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec4& vector) {
-    bind();
+    use();
     GLCALL(glUniform4ui(getUniformLocation(name), vector.x, vector.y, vector.z, vector.w));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat2& matrix) {
-    bind();
+    use();
     GLCALL(glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat3& matrix) {
-    bind();
+    use();
     GLCALL(glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat4& matrix) {
-    bind();
+    use();
     GLCALL(glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(matrix)));
 }
 
 void Shader::setUniform(const std::string& name, const int* values, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform1iv(getUniformLocation(name), count, values));
 }
 
 void Shader::setUniform(const std::string& name, const unsigned int* values, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform1uiv(getUniformLocation(name), count, values));
 }
 
 void Shader::setUniform(const std::string& name, const float* values, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform1fv(getUniformLocation(name), count, values));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec2* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform2fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec3* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform3fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::vec4* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform4fv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec2* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform2iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec3* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform3iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::ivec4* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform4iv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec2* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform2uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec3* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform3uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::uvec4* vectors, size_t count) {
-    bind();
+    use();
     GLCALL(glUniform4uiv(getUniformLocation(name), count, glm::value_ptr(vectors[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat2* matrices, size_t count) {
-    bind();
+    use();
     GLCALL(glUniformMatrix2fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat3* matrices, size_t count) {
-    bind();
+    use();
     GLCALL(glUniformMatrix3fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
 }
 
 void Shader::setUniform(const std::string& name, const glm::mat4* matrices, size_t count) {
-    bind();
+    use();
     GLCALL(glUniformMatrix4fv(getUniformLocation(name), count, GL_FALSE, glm::value_ptr(matrices[0])));
 }
 
@@ -390,9 +390,9 @@ Shader& Shader::operator=(Shader&& other) noexcept {
     if (this != &other) {
         if (m_rendererId != 0) {
             try {
-                if (Shader::currentlyBoundShader == m_rendererId) {
+                if (Shader::currentlyUsedShader == m_rendererId) {
                     GLCALL(glUseProgram(0));
-                    Shader::currentlyBoundShader = 0;
+                    Shader::currentlyUsedShader = 0;
                 }
                 GLCALL(glDeleteProgram(m_rendererId));
             } catch (const std::exception&) {

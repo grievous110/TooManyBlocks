@@ -1,7 +1,10 @@
 #ifndef TOOMANYBLOCKS_TEXTURE_H
 #define TOOMANYBLOCKS_TEXTURE_H
 
+#include <stddef.h>  // For size_t
+
 #include <string>
+#include <vector>
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
 
@@ -32,6 +35,8 @@ enum class TextureWrap {
 
 class Texture : public RenderApiObject {
 private:
+    static thread_local unsigned int currentUnit;
+    static thread_local std::vector<unsigned int> currentlyBoundTextures;  // Per unit
     TextureType m_type;
     unsigned int m_width;
     unsigned int m_height;
@@ -52,8 +57,33 @@ private:
         TextureWrap wrapMode
     );
 
+    /**
+     * @brief Initialies the cache by reading the maximum texture units given the hardware.
+     */
+    static void initCache();
+
 public:
+    /**
+     * @brief Unbinds any currently bound texture from the current active unit.
+     */
     static void bindDefault();
+    /**
+     * @brief Synchronizes the wrapper's internal binding state with OpenGL.
+     *
+     * Should be used if the Texture binding is changed manually.
+     */
+    static void syncBinding();
+    /**
+     * @brief Sets the active unit if it is not already the active one.
+     *
+     * @param unit The new active texture unit.
+     */
+    static void setActiveUnit(unsigned int unit);
+
+    /**
+     * @return The maximum number of texture units available.
+     */
+    static size_t getMaxTextureUnits();
 
     /**
      * Creates a 2D texture with the given specifications.
@@ -118,13 +148,20 @@ public:
     void updateData(int xOffset, int yOffset, unsigned int width, unsigned int height, const void* data) const;
 
     /**
-     * Binds the texture to the specified texture unit.
-     *
-     * @param slot  Texture unit slot (e.g., 0 for GL_TEXTURE0).
+     * Binds the texture to the currently active texture unit if not already bound.
      *
      * @throws std::runtime_error if texture is not valid.
      */
-    void bind(unsigned int slot = 0) const;
+    void bind() const;
+
+    /**
+     * Binds the texture to the specified texture unit.
+     *
+     * @param unit  Texture unit (e.g., 0 for GL_TEXTURE0).
+     *
+     * @throws std::runtime_error if texture is not valid.
+     */
+    void bindToUnit(unsigned int unit = 0) const;
 
     /**
      * Sets the base texture filtering mode (min/mag).

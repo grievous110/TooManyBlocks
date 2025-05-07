@@ -7,9 +7,9 @@ bool SkeletalMaterial::supportsPass(PassType passType) const { return passType =
 
 void SkeletalMaterial::bindForPass(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
-        m_mainShader->bind();
+        m_mainShader->use();
         if (m_texture) {
-            m_texture->bind(0);
+            m_texture->bindToUnit(0);
             m_mainShader->setUniform("u_texture", 0);
         } else {
             lgr::lout.error("SkeletalMaterial has no texture");
@@ -21,7 +21,7 @@ void SkeletalMaterial::bindForPass(PassType passType, const RenderContext& conte
 
 void SkeletalMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
-        m_mainShader->bind();
+        m_mainShader->use();
         m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
         if (context.skInfo.jointMatrices){
             m_mainShader->setAndBindUBO("JointMatrices", *context.skInfo.jointMatrices, 0);

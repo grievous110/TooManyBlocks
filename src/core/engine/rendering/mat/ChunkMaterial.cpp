@@ -16,13 +16,13 @@ bool ChunkMaterial::supportsPass(PassType passType) const {
 void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
         if (m_mainShader) {
-            m_mainShader->bind();
+            m_mainShader->use();
             m_mainShader->setUniform("u_viewProjection", context.tInfo.viewProjection);
             m_mainShader->setUniform("u_cameraPosition", context.tInfo.viewportTransform.getPosition());
 
             // Pass texture data
             if (m_textureAtlas) {
-                m_textureAtlas->bind(0);
+                m_textureAtlas->bindToUnit(0);
                 m_mainShader->setUniform("u_textureAtlas", 0);
                 m_mainShader->setUniform("u_textureAtlasSize", m_textureAtlas->width());
                 m_mainShader->setUniform("u_textureSize", 16u);
@@ -36,7 +36,7 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
             m_mainShader->setAndBindUBO("LightViewProjBlock", *context.lInfo.lightViewProjectionBuff, 1);
 
             if (context.ssaoInfo.output) {
-                context.ssaoInfo.output->bind(1);
+                context.ssaoInfo.output->bindToUnit(1);
                 m_mainShader->setUniform("u_ssaoTexture", 1);
             }
             m_mainShader->setUniform("u_screenResolution", context.currScreenRes);
@@ -45,7 +45,7 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
             for (int prio = 0; prio < LightPriority::Count; prio++) {
                 if (Texture* shadowAtlas = context.lInfo.shadowMapAtlases[prio]) {
                     const std::string strPrio = std::to_string(prio);
-                    shadowAtlas->bind(prio + 2);
+                    shadowAtlas->bindToUnit(prio + 2);
                     m_mainShader->setUniform("u_shadowMapAtlas[" + strPrio + "]", prio + 2);
                     m_mainShader->setUniform("u_shadowMapAtlasSizes[" + strPrio + "]", shadowAtlas->width());
                     m_mainShader->setUniform("u_shadowMapSizes[" + strPrio + "]", context.lInfo.shadowMapSizes[prio]);
@@ -56,14 +56,14 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
         }
     } else if (passType == PassType::ShadowPass) {
         if (m_depthShader) {
-            m_depthShader->bind();
+            m_depthShader->use();
             m_depthShader->setUniform("u_viewProjection", context.tInfo.viewProjection);
         } else {
             lgr::lout.error("Depth shader not loaded for ChunkMaterial");
         }
     } else if (passType == PassType::AmbientOcclusion) {
         if (m_ssaoGBuffShader) {
-            m_ssaoGBuffShader->bind();
+            m_ssaoGBuffShader->use();
             m_ssaoGBuffShader->setUniform("u_view", context.tInfo.view);
             m_ssaoGBuffShader->setUniform("u_projection", context.tInfo.projection);
         } else {
@@ -75,21 +75,21 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 void ChunkMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) const {
     if (passType == PassType::MainPass) {
         if (m_mainShader) {
-            m_mainShader->bind();
+            m_mainShader->use();
             m_mainShader->setUniform("u_chunkPosition", context.tInfo.meshTransform.getPosition());
         } else {
             lgr::lout.error("Main shader not loaded for ChunkMaterial");
         }
     } else if (passType == PassType::ShadowPass) {
         if (m_depthShader) {
-            m_depthShader->bind();
+            m_depthShader->use();
             m_depthShader->setUniform("u_chunkPosition", context.tInfo.meshTransform.getPosition());
         } else {
             lgr::lout.error("Depth shader not loaded for ChunkMaterial");
         }
     } else if (passType == PassType::AmbientOcclusion) {
         if (m_ssaoGBuffShader) {
-            m_ssaoGBuffShader->bind();
+            m_ssaoGBuffShader->use();
             m_ssaoGBuffShader->setUniform("u_chunkPosition", context.tInfo.meshTransform.getPosition());
         } else {
             lgr::lout.error("SSAO shader not loaded for ChunkMaterial");
