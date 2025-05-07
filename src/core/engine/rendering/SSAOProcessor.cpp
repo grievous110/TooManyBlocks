@@ -28,34 +28,34 @@ void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
 }
 
 void SSAOProcessor::createBuffers() {
-    m_ssaoGBuffer->clearAttachedTextures();
-    m_ssaoGBuffer->attachTexture(
-        std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3)
+    m_ssaoGBuffer.clearAttachedTextures();
+    m_ssaoGBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3))
     );
-    m_ssaoGBuffer->attachTexture(
-        std::make_shared<Texture>(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3)
+    m_ssaoGBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3))
     );
-    m_ssaoGBuffer->attachTexture(
-        std::make_shared<Texture>(
+    m_ssaoGBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(
             TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
             TextureWrap::ClampToEdge
-        )
+        ))
     );
 
-    m_ssaoPassBuffer->clearAttachedTextures();
-    m_ssaoPassBuffer->attachTexture(
-        std::make_shared<Texture>(
+    m_ssaoPassBuffer.clearAttachedTextures();
+    m_ssaoPassBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(
             TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
             TextureWrap::ClampToEdge
-        )
+        ))
     );
 
-    m_ssaoBlurBuffer->clearAttachedTextures();
-    m_ssaoBlurBuffer->attachTexture(
-        std::make_shared<Texture>(
+    m_ssaoBlurBuffer.clearAttachedTextures();
+    m_ssaoBlurBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(
             TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
             TextureWrap::ClampToEdge
-        )
+        ))
     );
 }
 
@@ -68,9 +68,9 @@ SSAOProcessor::~SSAOProcessor() {
 void SSAOProcessor::initialize() {
     if (!isInitialized) {
         srand(time(NULL));
-        m_ssaoGBuffer = std::make_unique<FrameBuffer>();
-        m_ssaoPassBuffer = std::make_unique<FrameBuffer>();
-        m_ssaoBlurBuffer = std::make_unique<FrameBuffer>();
+        m_ssaoGBuffer = FrameBuffer::create();
+        m_ssaoPassBuffer = FrameBuffer::create();
+        m_ssaoBlurBuffer = FrameBuffer::create();
         validateBuffers(*Application::getContext());
 
         // Random samples kernel in tagent space
@@ -98,14 +98,14 @@ void SSAOProcessor::initialize() {
             noiseData[i * 2 + 0] = cos(angle);
             noiseData[i * 2 + 1] = sin(angle);
         }
-        m_ssaoNoiseTexture = std::make_unique<Texture>(
+        m_ssaoNoiseTexture = Texture::create(
             TextureType::Float16, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest,
             TextureWrap::Repeat
         );
         delete[] noiseData;
 
-        m_ssaoPassShader = std::make_unique<Shader>(Res::Shader::SSAO_PASS);
-        m_ssaoBlurShader = std::make_unique<Shader>(Res::Shader::SSAO_BLUR);
+        m_ssaoPassShader = Shader::create(Res::Shader::SSAO_PASS);
+        m_ssaoBlurShader = Shader::create(Res::Shader::SSAO_BLUR);
 
         isInitialized = true;
     }
@@ -113,44 +113,42 @@ void SSAOProcessor::initialize() {
 
 void SSAOProcessor::prepareSSAOGBufferPass(const ApplicationContext& context) {
     validateBuffers(context);
-    m_ssaoGBuffer->bind();
+    m_ssaoGBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
 }
 
 void SSAOProcessor::prepareSSAOPass(const ApplicationContext& context) {
     validateBuffers(context);
-    m_ssaoPassBuffer->bind();
+    m_ssaoPassBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
 
-    m_ssaoPassShader->bind();
-    m_ssaoGBuffer->getAttachedTextures().at(0)->bind(0);
-    m_ssaoPassShader->setUniform("u_positionTexture", 0);
-    m_ssaoGBuffer->getAttachedTextures().at(1)->bind(1);
-    m_ssaoPassShader->setUniform("u_normalTexture", 1);
-    m_ssaoNoiseTexture->bind(2);
-    m_ssaoPassShader->setUniform("u_noiseTexture", 2);
+    m_ssaoPassShader.bind();
+    m_ssaoGBuffer.getAttachedTextures().at(0)->bind(0);
+    m_ssaoPassShader.setUniform("u_positionTexture", 0);
+    m_ssaoGBuffer.getAttachedTextures().at(1)->bind(1);
+    m_ssaoPassShader.setUniform("u_normalTexture", 1);
+    m_ssaoNoiseTexture.bind(2);
+    m_ssaoPassShader.setUniform("u_noiseTexture", 2);
 
-    m_ssaoPassShader->setUniform("u_noiseTextureScale", static_cast<float>(m_ssaoNoiseTexture->width()));
-    m_ssaoPassShader->setUniform("u_ssaoPassResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
-    m_ssaoPassShader->setUniform("u_kernelSamples", m_ssaoSamples, SSAO_SAMPLE_COUNT);
-    m_ssaoPassShader->setUniform("u_projection", context.instance->m_player->getCamera()->getProjectionMatrix());
+    m_ssaoPassShader.setUniform("u_noiseTextureScale", static_cast<float>(m_ssaoNoiseTexture.width()));
+    m_ssaoPassShader.setUniform("u_ssaoPassResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
+    m_ssaoPassShader.setUniform("u_kernelSamples", m_ssaoSamples, SSAO_SAMPLE_COUNT);
+    m_ssaoPassShader.setUniform("u_projection", context.instance->m_player->getCamera()->getProjectionMatrix());
 }
 
 void SSAOProcessor::prepareSSAOBlurPass(const ApplicationContext& context) {
     validateBuffers(context);
-    m_ssaoBlurBuffer->bind();
+    m_ssaoBlurBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
 
-    m_ssaoBlurShader->bind();
-    m_ssaoPassBuffer->getAttachedTextures().at(0)->bind(0);
-    m_ssaoBlurShader->setUniform("u_ssaoTexture", 0);
+    m_ssaoBlurShader.bind();
+    m_ssaoPassBuffer.getAttachedTextures().at(0)->bind(0);
+    m_ssaoBlurShader.setUniform("u_ssaoTexture", 0);
 
-    m_ssaoBlurShader->setUniform("u_ssaoPassResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
+    m_ssaoBlurShader.setUniform("u_ssaoPassResolution", glm::uvec2(m_ssaoBufferWidth, m_ssaoBufferHeight));
 }
 
-std::weak_ptr<Texture> SSAOProcessor::getOcclusionOutput() const {
-    return std::weak_ptr<Texture>(m_ssaoBlurBuffer->getAttachedTextures().at(0));
-}
+const Texture* SSAOProcessor::getOcclusionOutput() const { return m_ssaoBlurBuffer.getAttachedTextures().at(0).get(); }

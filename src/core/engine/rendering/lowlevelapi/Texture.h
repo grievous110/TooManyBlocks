@@ -42,10 +42,34 @@ private:
     TextureWrap m_wrapMode;
     bool m_hasMipmaps;
 
+    Texture(
+        TextureType type,
+        unsigned int width,
+        unsigned int height,
+        int channels,
+        const void* data,
+        TextureFilter filterMode,
+        TextureWrap wrapMode
+    );
+
 public:
     static void bindDefault();
 
-    Texture(
+    /**
+     * Creates a 2D texture with the given specifications.
+     *
+     * @param type        The type of the texture (Color, Depth, Float16, etc.).
+     * @param width       Width of the texture in pixels.
+     * @param height      Height of the texture in pixels.
+     * @param channels    Number of color channels (e.g., 1 for R, 3 for RGB, 4 for RGBA). Default is 4.
+     * @param data        Pointer to the raw pixel data. If nullptr, the texture will allocated but remains
+     * uninitialized.
+     * @param filterMode  Filter mode for both minification and magnification. Default is Nearest.
+     * @param wrapMode    Wrap mode for both U and V directions. Default is Repeat.
+     *
+     * @throws std::runtime_error if the texture format is unsupported or OpenGL call fails.
+     */
+    static Texture create(
         TextureType type,
         unsigned int width,
         unsigned int height,
@@ -55,25 +79,100 @@ public:
         TextureWrap wrapMode = TextureWrap::Repeat
     );
 
+    /**
+     * @brief Constructs an uninitialized texture with id 0.
+     */
+    Texture() noexcept
+        : m_type(TextureType::Color),
+          m_width(0),
+          m_height(0),
+          m_channels(0),
+          m_baseFilter(TextureFilter::Nearest),
+          m_mipmapFilter(TextureFilter::Nearest),
+          m_wrapMode(TextureWrap::Repeat),
+          m_hasMipmaps(false) {}
     Texture(Texture&& other) noexcept;
     virtual ~Texture();
 
+    /**
+     * Generates mipmaps for the texture.
+     *
+     * Updates the minification filter to use mipmaps (based on base and mipmap filters).
+     * Has no effect if mipmaps already exist.
+     *
+     * @throws std::runtime_error if the texture is invalid or of type Depth.
+     */
     void createMipmaps();
+
+    /**
+     * Updates a subregion of the texture's pixel data.
+     *
+     * @param xOffset   X offset in the texture to start writing to.
+     * @param yOffset   Y offset in the texture to start writing to.
+     * @param width     Width of the region to update.
+     * @param height    Height of the region to update.
+     * @param data      Pointer to the new pixel data.
+     *
+     * @throws std::runtime_error if texture is invalid, out of bounds, or of unsupported type for the update.
+     */
     void updateData(int xOffset, int yOffset, unsigned int width, unsigned int height, const void* data) const;
 
+    /**
+     * Binds the texture to the specified texture unit.
+     *
+     * @param slot  Texture unit slot (e.g., 0 for GL_TEXTURE0).
+     *
+     * @throws std::runtime_error if texture is not valid.
+     */
     void bind(unsigned int slot = 0) const;
 
+    /**
+     * Sets the base texture filtering mode (min/mag).
+     *
+     * If mipmaps are enabled, only the magnification filter is updated here.
+     *
+     * @param filterMode  Either Linear or Nearest.
+     */
     void setTextureFilterMode(TextureFilter filterMode);
+    /**
+     * Sets the minification filter mode used when mipmaps are enabled.
+     *
+     * This only affects the minification filter (`GL_TEXTURE_MIN_FILTER`). If mipmaps have not
+     * been generated yet, the setting will have no effect until `createMipmaps()` is called.
+     *
+     * @param filterMode  The mipmap filter mode to use (e.g., Nearest or Linear).
+     */
     void setMipmapFilterMode(TextureFilter filterMode);
+    /**
+     * Sets the texture wrapping mode for both the S and T axes.
+     *
+     * Controls how texture coordinates outside the [0, 1] range are handled. Common modes are
+     * `Repeat`, `ClampToEdge`, and `MirroredRepeat`.
+     *
+     * @param wrapMode  The wrapping mode to apply to both U and V directions.
+     */
     void setTextureWrapMode(TextureWrap wrapMode);
 
     inline TextureType type() const { return m_type; }
+    /** @return Texture width in pixels. */
     inline unsigned int width() const { return m_width; }
+    /** @return Texture height in pixels. */
     inline unsigned int height() const { return m_height; }
+    /** @return Number of color channels. */
     inline int channels() const { return m_channels; }
+    /** @return The base texture filter mode (e.g., Nearest or Linear). */
     inline TextureFilter getTextureFilterMode() const { return m_baseFilter; }
+    /**
+     * Returns the mipmap-specific filter mode used for minification.
+     *
+     * This is only relevant when mipmaps are generated and enabled.
+     *
+     * @return The mipmap filter mode.
+     */
     inline TextureFilter getMipmapFilterMode() const { return m_mipmapFilter; }
+    /** @return The the current texture wrapping mode (e.g., Repeat, ClampToEdge, ...). */
     inline TextureWrap getWrapMode() const { return m_wrapMode; }
+    /** @return Whether mipmaps have been generated for this texture. */
     inline bool hasMipmaps() const { return m_hasMipmaps; }
 
     Texture& operator=(Texture&& other) noexcept;

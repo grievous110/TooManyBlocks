@@ -1,23 +1,27 @@
 #ifndef TOOMANYBLOCKS_CHUNKMATERIAL_H
 #define TOOMANYBLOCKS_CHUNKMATERIAL_H
 
+#include <memory>
+
+#include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
 
 class ChunkMaterial : public Material {
 private:
-    std::shared_ptr<Texture> m_textureAtlas;
+    std::shared_ptr<Shader> m_mainShader;
     std::shared_ptr<Shader> m_depthShader;
     std::shared_ptr<Shader> m_ssaoGBuffShader;
+    std::shared_ptr<Texture> m_textureAtlas;
 
 public:
     ChunkMaterial(
-        std::shared_ptr<Shader> shader,
+        std::shared_ptr<Shader> mainShader,
         std::shared_ptr<Shader> depthShader,
         std::shared_ptr<Shader> ssaoGBuffShader,
         std::shared_ptr<Texture> textureAtlas
     )
-        : Material(shader),
+        : m_mainShader(mainShader),
           m_textureAtlas(textureAtlas),
           m_ssaoGBuffShader(ssaoGBuffShader),
           m_depthShader(depthShader) {}

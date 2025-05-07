@@ -7,16 +7,15 @@
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
 
-void UniformBuffer::bindDefault() { GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, 0)); }
-
 UniformBuffer::UniformBuffer(const void* data, size_t size) : m_size(size) {
-    // Uniform Buffer Object (UBO)
     GLCALL(glGenBuffers(1, &m_rendererId));
     GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, m_rendererId));
     GLCALL(glBufferData(GL_UNIFORM_BUFFER, size, data, GL_DYNAMIC_DRAW));
-
-    GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, 0));
 }
+
+void UniformBuffer::bindDefault() { GLCALL(glBindBuffer(GL_UNIFORM_BUFFER, 0)); }
+
+UniformBuffer UniformBuffer::create(const void* data, size_t size) { return UniformBuffer(data, size); }
 
 UniformBuffer::UniformBuffer(UniformBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_size(other.m_size) {
     other.m_size = 0;

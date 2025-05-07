@@ -86,7 +86,7 @@ std::shared_ptr<Shader> Provider::getShaderFromFile(const std::string& shaderPat
     }
 
     // Create the new object and cache it
-    std::shared_ptr<Shader> newShader = std::make_shared<Shader>(shaderPath);
+    std::shared_ptr<Shader> newShader = std::make_shared<Shader>(Shader::create(shaderPath));
     m_shaderCache[shaderPath] = newShader;
     return newShader;
 }
@@ -106,10 +106,10 @@ std::shared_ptr<Texture> Provider::getTextureFromFile(const std::string& texture
 
     if (buffer) {
         // Create the new object and cache it
-        std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(
+        std::shared_ptr<Texture> newTexture = std::make_shared<Texture>(Texture::create(
             TextureType::Color, static_cast<unsigned int>(width), static_cast<unsigned int>(height), channelsInFile,
             buffer
-        );
+        ));
         stbi_image_free(buffer);
         m_textureCache[texturePath] = newTexture;
         return newTexture;

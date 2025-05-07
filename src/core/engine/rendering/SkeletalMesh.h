@@ -8,6 +8,7 @@
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
+#include "engine/rendering/lowlevelapi/UniformBuffer.h"
 
 class SkeletalMesh : public Renderable, public Updatable {
 public:
@@ -15,7 +16,7 @@ public:
         std::shared_ptr<RenderData> meshData;
         std::vector<SceneComponent> nodeArray;
         int animatedMeshNodeIndex;
-        std::shared_ptr<UniformBuffer> jointMatricesUBO;  // For calculating the joint matrices for each joint
+        UniformBuffer jointMatricesUBO;  // Instance specific for calculating the joint matrices for each joint
         std::shared_ptr<UniformBuffer> inverseBindMatricesUBO;
         std::shared_ptr<std::vector<glm::mat4>> inverseBindMatrices;
         std::shared_ptr<std::vector<int>> jointNodeIndices;  // indexed by joint index (Needed to build joint matrices)
@@ -48,7 +49,7 @@ public:
 
     inline std::weak_ptr<AssetHandle<Internal>> getAssetHandle() const { return m_assetHandle; }
 
-    std::weak_ptr<UniformBuffer> getJointMatrices() const;
+    const UniformBuffer* getJointMatrices() const;
 
     Transform getRenderableTransform() const override;
 

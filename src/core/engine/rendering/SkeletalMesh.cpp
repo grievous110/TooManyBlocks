@@ -26,7 +26,7 @@ bool SkeletalMesh::playAnimation(const std::string& animName, bool loop, bool re
 
 void SkeletalMesh::stopAnimation() { m_activeAnim = nullptr; }
 
-std::weak_ptr<UniformBuffer> SkeletalMesh::getJointMatrices() const {
+const UniformBuffer* SkeletalMesh::getJointMatrices() const {
     if (m_assetHandle->ready.load()) {
         std::vector<glm::mat4> jointMatrices;
         for (int i = 0; i < m_assetHandle->asset->jointNodeIndices->size(); i++) {
@@ -37,12 +37,12 @@ std::weak_ptr<UniformBuffer> SkeletalMesh::getJointMatrices() const {
                 (*m_assetHandle->asset->inverseBindMatrices)[i]
             );
         }
-        m_assetHandle->asset->jointMatricesUBO->updateData(
+        m_assetHandle->asset->jointMatricesUBO.updateData(
             jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4)
         );
-        return m_assetHandle->asset->jointMatricesUBO;
+        return &m_assetHandle->asset->jointMatricesUBO;
     }
-    return std::weak_ptr<UniformBuffer>();
+    return nullptr;
 }
 
 Transform SkeletalMesh::getRenderableTransform() const {

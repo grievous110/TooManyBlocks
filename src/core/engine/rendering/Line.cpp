@@ -16,7 +16,7 @@ Line::Line(const glm::vec3& start, const glm::vec3& end, float lineWidth, std::s
     : Renderable(material), m_bounds({glm::min(start, end), glm::max(start, end)}), m_lineWidth(lineWidth) {
     float lineVertices[] = {start.x, start.y, start.z, end.x, end.y, end.z};
 
-    VertexBuffer vbo(lineVertices, sizeof(lineVertices));
+    VertexBuffer vbo = VertexBuffer::create(lineVertices, sizeof(lineVertices));
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);
     vbo.setLayout(layout);

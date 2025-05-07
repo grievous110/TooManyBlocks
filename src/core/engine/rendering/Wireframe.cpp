@@ -30,16 +30,16 @@ Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
     };
 
     // VBO
-    VertexBuffer vbo(&corners[0], 8 * sizeof(glm::vec3));
+    VertexBuffer vbo = VertexBuffer::create(&corners[0], 8 * sizeof(glm::vec3));
     // Layout
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);
     vbo.setLayout(layout);
     // VAO
-    VertexArray vao;
+    VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
     // IBO
-    IndexBuffer ibo(indices, 24);
+    IndexBuffer ibo = IndexBuffer::create(indices, 24);
 
     std::shared_ptr<IndexedRenderData> renderData =
         std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
