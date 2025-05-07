@@ -17,16 +17,6 @@
 static constexpr float PI = 3.14159265f;
 static constexpr size_t NOISE_TEXTURE_SIZE = 4U;
 
-void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
-    unsigned int halfWidth = std::max<unsigned int>(context.screenWidth / 2, 2);
-    unsigned int halfHeight = std::max<unsigned int>(context.screenHeight / 2, 2);
-    if (m_ssaoBufferWidth != halfWidth || m_ssaoBufferHeight != halfHeight) {
-        m_ssaoBufferWidth = halfWidth;
-        m_ssaoBufferHeight = halfHeight;
-        createBuffers();
-    }
-}
-
 void SSAOProcessor::createBuffers() {
     m_ssaoGBuffer.clearAttachedTextures();
     m_ssaoGBuffer.attachTexture(
@@ -111,15 +101,23 @@ void SSAOProcessor::initialize() {
     }
 }
 
+void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
+    unsigned int halfWidth = std::max<unsigned int>(context.screenWidth / 2, 2);
+    unsigned int halfHeight = std::max<unsigned int>(context.screenHeight / 2, 2);
+    if (m_ssaoBufferWidth != halfWidth || m_ssaoBufferHeight != halfHeight) {
+        m_ssaoBufferWidth = halfWidth;
+        m_ssaoBufferHeight = halfHeight;
+        createBuffers();
+    }
+}
+
 void SSAOProcessor::prepareSSAOGBufferPass(const ApplicationContext& context) {
-    validateBuffers(context);
     m_ssaoGBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
 }
 
 void SSAOProcessor::prepareSSAOPass(const ApplicationContext& context) {
-    validateBuffers(context);
     m_ssaoPassBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
@@ -139,7 +137,6 @@ void SSAOProcessor::prepareSSAOPass(const ApplicationContext& context) {
 }
 
 void SSAOProcessor::prepareSSAOBlurPass(const ApplicationContext& context) {
-    validateBuffers(context);
     m_ssaoBlurBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     GLCALL(glViewport(0, 0, m_ssaoBufferWidth, m_ssaoBufferHeight));
