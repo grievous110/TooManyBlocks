@@ -25,7 +25,7 @@ public:
  */
 class Shader : public RenderApiObject {
 private:
-    static thread_local unsigned int currentlyBoundShader;
+    static thread_local unsigned int currentlyUsedShader;
     std::string m_shaderPath;
     std::unordered_map<std::string, int> m_uniformLocationCache;
     std::unordered_map<std::string, unsigned int> m_uniformBlockIndexCache;
@@ -50,15 +50,15 @@ private:
 
 public:
     /**
-     * @brief Unbinds the currently used shader on the current thread.
+     * @brief Sets the currently used shader on the current thread to 0.
      */
-    static void bindDefault();
+    static void useDefault();
     /**
-     * @brief Synchronizes the wrapper's internal binding state with OpenGL.
+     * @brief Synchronizes the wrapper's internal usage state with OpenGL.
      *
-     * Should be used if the Shader binding is changed manually.
+     * Should be used if the Shader usage is changed manually.
      */
-    static void syncBinding();
+    static void syncUsage();
 
     /**
      * @brief Constructs a new Shader from a file path and optional preprocessor definitions.
@@ -77,7 +77,7 @@ public:
      *
      * @throws std::runtime_error If the buffer ID is 0 (uninitialized or moved-from).
      */
-    void bind() const;
+    void use() const;
 
     /**
      * @brief Associates and binds a Uniform Buffer Object (UBO) to a named uniform block in the shader.

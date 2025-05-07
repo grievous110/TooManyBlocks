@@ -35,7 +35,7 @@ VertexArray::VertexArray(VertexArray&& other) noexcept
     : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {}
 
 VertexArray::~VertexArray() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
             if (VertexArray::currentlyBoundVAO == m_rendererId) {
                 GLCALL(glBindVertexArray(0));
@@ -70,7 +70,7 @@ void VertexArray::addBuffer(const VertexBuffer& vb) {
 }
 
 void VertexArray::bind() const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of VertexArray with id 0");
+    if (!isValid()) throw std::runtime_error("Invalid state of VertexArray with id 0");
 
     if (VertexArray::currentlyBoundVAO != m_rendererId) {
         GLCALL(glBindVertexArray(m_rendererId));
@@ -82,7 +82,7 @@ void VertexArray::resetAttribIndex() { m_currAttribIndex = 0; }
 
 VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
     if (this != &other) {
-        if (m_rendererId != 0) {
+        if (isValid()) {
             try {
                 if (VertexArray::currentlyBoundVAO == m_rendererId) {
                     GLCALL(glBindVertexArray(0));

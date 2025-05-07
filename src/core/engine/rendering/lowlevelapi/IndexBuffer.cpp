@@ -31,7 +31,7 @@ IndexBuffer IndexBuffer::create(const unsigned int* data, size_t count) { return
 IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_count(other.m_count) {}
 
 IndexBuffer::~IndexBuffer() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
             if (IndexBuffer::currentlyBoundIBO == m_rendererId) {
                 GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
@@ -45,14 +45,15 @@ IndexBuffer::~IndexBuffer() {
 }
 
 void IndexBuffer::updateData(const unsigned int* data, size_t count, size_t offset) const {
+    bind();
+    
     if (offset + count > m_count) throw std::runtime_error("VBO update exceeds buffer size");
 
-    bind();
     GLCALL(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, count * sizeof(unsigned int), data));
 }
 
 void IndexBuffer::bind() const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of IndexBuffer with id 0");
+    if (!isValid()) throw std::runtime_error("Invalid state of IndexBuffer with id 0");
 
     if (IndexBuffer::currentlyBoundIBO != m_rendererId) {
         GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_rendererId));
@@ -62,7 +63,7 @@ void IndexBuffer::bind() const {
 
 IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
     if (this != &other) {
-        if (m_rendererId != 0) {
+        if (isValid()) {
             try {
                 if (IndexBuffer::currentlyBoundIBO == m_rendererId) {
                     GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));

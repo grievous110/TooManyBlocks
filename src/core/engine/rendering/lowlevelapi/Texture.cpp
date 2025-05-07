@@ -11,6 +11,10 @@ struct TextureFormat {
     GLenum type;
 };
 
+thread_local unsigned int Texture::currentUnit = 0;
+
+thread_local std::vector<unsigned int> Texture::currentlyBoundTextures;
+
 static constexpr TextureFormat toOpenGLTexFormat(TextureType type, int channels) {
     switch (type) {
         case TextureType::Color:  // Normalized
@@ -136,7 +140,7 @@ Texture::Texture(
       m_wrapMode(wrapMode),
       m_hasMipmaps(false) {
     GLCALL(glGenTextures(1, &m_rendererId));
-    GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
+    bind();
 
     // Configure texture
     TextureFormat format = toOpenGLTexFormat(type, channels);
@@ -154,7 +158,64 @@ Texture::Texture(
     GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam));
 }
 
-void Texture::bindDefault() { GLCALL(glBindTexture(GL_TEXTURE_2D, 0)); }
+void Texture::initCache() {
+    // Init cache if empty
+    int maxUnits = 0;
+    GLCALL(glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &maxUnits));
+    currentlyBoundTextures.resize(maxUnits);
+
+    if (maxUnits <= 0) {
+        lgr::lout.warn("No active texture unit can be set");
+    }
+}
+
+void Texture::bindDefault() {
+    if (currentlyBoundTextures.empty()) {
+        Texture::initCache();
+    }
+    if (Texture::currentlyBoundTextures[Texture::currentUnit] != 0) {
+        GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+        Texture::currentlyBoundTextures[Texture::currentUnit] = 0;
+    }
+}
+
+void Texture::syncBinding() {
+    int activeUnit;
+    GLCALL(glGetIntegerv(GL_ACTIVE_TEXTURE, &activeUnit));
+    Texture::currentUnit = static_cast<unsigned int>(activeUnit - GL_TEXTURE0);
+
+    // For all units check bound textures
+    for (unsigned unit = 0; unit < Texture::getMaxTextureUnits(); unit++) {
+        GLCALL(glActiveTexture(GL_TEXTURE0 + unit));
+
+        int binding;
+        GLCALL(glGetIntegerv(GL_TEXTURE_BINDING_2D, &binding));
+        Texture::currentlyBoundTextures[unit] = static_cast<unsigned int>(binding);
+    }
+    GLCALL(glActiveTexture(GL_TEXTURE0 + Texture::currentUnit));  // Restore active unit
+}
+
+void Texture::setActiveUnit(unsigned int unit) {
+    if (currentlyBoundTextures.empty()) {
+        Texture::initCache();
+    }
+    if (unit >= Texture::currentlyBoundTextures.size()) {
+        throw std::runtime_error(
+            "Texture unit " + std::to_string(unit) + " is out of range of maximum total texture units"
+        );
+    }
+    if (currentUnit != unit) {
+        GLCALL(glActiveTexture(GL_TEXTURE0 + unit));
+        currentUnit = unit;
+    }
+}
+
+size_t Texture::getMaxTextureUnits() {
+    if (currentlyBoundTextures.empty()) {
+        Texture::initCache();
+    }
+    return Texture::currentlyBoundTextures.size();
+}
 
 Texture Texture::create(
     TextureType type,
@@ -180,8 +241,16 @@ Texture::Texture(Texture&& other) noexcept
       m_hasMipmaps(other.m_hasMipmaps) {}
 
 Texture::~Texture() {
-    if (m_rendererId != 0) {
+    if (isValid()) {
         try {
+            // Unbind from all units
+            for (int unit = 0; unit < Texture::currentlyBoundTextures.size(); unit++) {
+                if (Texture::currentlyBoundTextures[unit] == m_rendererId) {
+                    Texture::setActiveUnit(unit);
+                    GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+                    Texture::currentlyBoundTextures[unit] = 0;
+                }
+            }
             GLCALL(glDeleteTextures(1, &m_rendererId));
         } catch (const std::exception&) {
             lgr::lout.error("Error during Texture cleanup");
@@ -190,11 +259,11 @@ Texture::~Texture() {
 }
 
 void Texture::createMipmaps() {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+    bind();
+
     if (m_type == TextureType::Depth) throw std::runtime_error("Mipmaps are not supported for depth textures");
 
     if (!m_hasMipmaps) {
-        GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
         GLCALL(glGenerateMipmap(GL_TEXTURE_2D));
 
         // Update minification filter so that mipmaps take effect
@@ -206,7 +275,8 @@ void Texture::createMipmaps() {
 }
 
 void Texture::updateData(int xOffset, int yOffset, unsigned int width, unsigned int height, const void* data) const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+    bind();
+
     if (m_type == TextureType::Depth)
         throw std::runtime_error(
             "Depth textures should ideally not be updated, if still needed then do so manually and unbind it from "
@@ -219,24 +289,33 @@ void Texture::updateData(int xOffset, int yOffset, unsigned int width, unsigned 
             ") exceeds texture dimensions (" + std::to_string(m_width) + "x" + std::to_string(m_height) + ")."
         );
 
-    GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
     TextureFormat format = toOpenGLTexFormat(m_type, m_channels);
     GLCALL(glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, yOffset, width, height, format.inputFormat, format.type, data));
 }
 
-void Texture::bind(unsigned int slot) const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+void Texture::bind() const {
+    if (!isValid()) throw std::runtime_error("Invalid state of Texture with id 0");
+    if (Texture::currentlyBoundTextures.empty()) {
+        Texture::initCache();
+    }
 
-    GLCALL(glActiveTexture(GL_TEXTURE0 + slot));
-    GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
+    if (Texture::currentlyBoundTextures[Texture::currentUnit] != m_rendererId) {
+        GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
+        Texture::currentlyBoundTextures[Texture::currentUnit] = m_rendererId;
+    }
+}
+
+void Texture::bindToUnit(unsigned int unit) const {
+    if (!isValid()) throw std::runtime_error("Invalid state of Texture with id 0");
+    Texture::setActiveUnit(unit);
+    bind();
 }
 
 void Texture::setTextureFilterMode(TextureFilter filterMode) {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+    bind();
 
     if (m_baseFilter != filterMode) {
         m_baseFilter = filterMode;
-        GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
         // Update min filter taking mipmaps into account if they are generated
         GLCALL(glTexParameteri(
             GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -249,13 +328,12 @@ void Texture::setTextureFilterMode(TextureFilter filterMode) {
 }
 
 void Texture::setMipmapFilterMode(TextureFilter filterMode) {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+    bind();
 
     bool changed = m_mipmapFilter != filterMode;
     m_mipmapFilter = filterMode;  // Still store change in the case of createMipmaps() beeing called after this setter
                                   // instead of before
     if (m_hasMipmaps && changed) {
-        GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
         GLCALL(glTexParameteri(
             GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, toOpenGLMinFilterModeWithMipmap(m_baseFilter, m_mipmapFilter)
         ));  // Mip mapping
@@ -263,12 +341,11 @@ void Texture::setMipmapFilterMode(TextureFilter filterMode) {
 }
 
 void Texture::setTextureWrapMode(TextureWrap wrapMode) {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of Texture with id 0");
+    bind();
 
     if (m_wrapMode != wrapMode) {
         m_wrapMode = wrapMode;
         GLenum wrapParam = toOpenGLWrapMode(m_wrapMode);
-        GLCALL(glBindTexture(GL_TEXTURE_2D, m_rendererId));
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapParam));
         GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam));
     }
@@ -276,8 +353,16 @@ void Texture::setTextureWrapMode(TextureWrap wrapMode) {
 
 Texture& Texture::operator=(Texture&& other) noexcept {
     if (this != &other) {
-        if (m_rendererId != 0) {
+        if (isValid()) {
             try {
+                // Unbind from all units
+                for (int unit = 0; unit < Texture::currentlyBoundTextures.size(); unit++) {
+                    if (Texture::currentlyBoundTextures[unit] == m_rendererId) {
+                        Texture::setActiveUnit(unit);
+                        GLCALL(glBindTexture(GL_TEXTURE_2D, 0));
+                        Texture::currentlyBoundTextures[unit] = 0;
+                    }
+                }
                 GLCALL(glDeleteTextures(1, &m_rendererId));
             } catch (const std::exception&) {
                 lgr::lout.error("Error during Texture cleanup");

@@ -19,7 +19,7 @@ private:
 
 public:
     /**
-     * @brief Unbinds any currently bound index buffer on the current thread.
+     * @brief Unbinds any currently bound vertex array.
      */
     static void bindDefault();
     /**

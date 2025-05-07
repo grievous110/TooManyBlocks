@@ -21,13 +21,13 @@ private:
 
 public:
     /**
-     * @brief Unbinds any currently bound vertex buffer on the current thread.
+     * @brief Unbinds any currently bound vertex buffer.
      */
     static void bindDefault();
     /**
      * @brief Syncs the internal binding state with the current OpenGL binding.
      *
-     * Should be used if binding is changed manually.
+     * Should be used if VBO binding is changed manually.
      */
     static void syncBinding();
 
