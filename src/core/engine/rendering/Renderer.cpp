@@ -56,40 +56,41 @@ static inline void batchByMaterialForPass(
 void Renderer::beginShadowpass(const ApplicationContext& context) {
     m_lightProcessor.clearShadowMaps();
 
-    m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
-    m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+    m_currentRenderContext.tInfo.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+    m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
     LightProcessor::prioritizeLights(
-        m_lightsToRender, m_currentRenderContext.lights, m_lightProcessor.getShadowMapCounts(), m_currentRenderContext
+        m_lightsToRender, m_priodLigthsBuffer, m_lightProcessor.getShadowMapCounts(), m_currentRenderContext
     );
-    m_lightProcessor.updateBuffers(m_currentRenderContext.lights);
+    m_currentRenderContext.lInfo.activeLightsCount = m_priodLigthsBuffer.size();
+    m_lightProcessor.updateBuffers(m_priodLigthsBuffer);
 }
 
 void Renderer::endShadowpass(const ApplicationContext& context) {}
 
 void Renderer::beginAmbientOcclusionPass(const ApplicationContext& context) {
-    m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
-    m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
-    m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
-    m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+    m_currentRenderContext.tInfo.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+    m_currentRenderContext.tInfo.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+    m_currentRenderContext.tInfo.view = context.instance->m_player->getCamera()->getViewMatrix();
+    m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
     // Disable blending cause rendering to textures that do not have 4 channels
     // (alpha) will will be discarded. Blending expects a valid alpha component
     GLCALL(glDisable(GL_BLEND));
 }
 
 void Renderer::endAmbientOcclusionPass(const ApplicationContext& context) {
-    m_currentRenderContext.ssaoOutput = m_ssaoProcessor.getOcclusionOutput();
+    m_currentRenderContext.ssaoInfo.output = m_ssaoProcessor.getOcclusionOutput();
     GLCALL(glEnable(GL_BLEND));
 }
 
 void Renderer::beginMainpass(const ApplicationContext& context) {
     FrameBuffer::bindDefault();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
-    glm::uvec2 screenRes = m_currentRenderContext.currentScreenResolution;
+    glm::uvec2 screenRes = m_currentRenderContext.currScreenRes;
     GLCALL(glViewport(0, 0, screenRes.x, screenRes.y));
-    m_currentRenderContext.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
-    m_currentRenderContext.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
-    m_currentRenderContext.view = context.instance->m_player->getCamera()->getViewMatrix();
-    m_currentRenderContext.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+    m_currentRenderContext.tInfo.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+    m_currentRenderContext.tInfo.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
+    m_currentRenderContext.tInfo.view = context.instance->m_player->getCamera()->getViewMatrix();
+    m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
 void Renderer::endMainpass(const ApplicationContext& context) {
@@ -109,23 +110,23 @@ void Renderer::initialize() {
     GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
     m_lightProcessor.initialize();
-    m_currentRenderContext.lights = RawBuffer<Light*>(m_lightProcessor.totalSupportedLights());
-    m_currentRenderContext.shadowMapAtlases = m_lightProcessor.getShadowMapAtlases();
-    m_currentRenderContext.shadowMapSizes = m_lightProcessor.getShadowMapSizes();
-    m_currentRenderContext.lightBuff = m_lightProcessor.getShaderLightUniformBuffer();
-    m_currentRenderContext.lightViewProjectionBuff = m_lightProcessor.getLightViewProjectionUniformBuffer();
+    m_priodLigthsBuffer = RawBuffer<Light*>(m_lightProcessor.totalSupportedLights());
+    m_currentRenderContext.lInfo.shadowMapAtlases = m_lightProcessor.getShadowMapAtlases();
+    m_currentRenderContext.lInfo.shadowMapSizes = m_lightProcessor.getShadowMapSizes();
+    m_currentRenderContext.lInfo.lightBuff = m_lightProcessor.getShaderLightUniformBuffer();
+    m_currentRenderContext.lInfo.lightViewProjectionBuff = m_lightProcessor.getLightViewProjectionUniformBuffer();
 
     // Initialize SSAO renderer
     m_ssaoProcessor.initialize();
 
     // Create vertex array / buffer for fullscreen quad
-    m_fullScreenQuad_vbo = std::make_unique<VertexBuffer>(fullScreenQuadCW, sizeof(fullScreenQuadCW));
+    m_fullScreenQuad_vbo = VertexBuffer::create(fullScreenQuadCW, sizeof(fullScreenQuadCW));
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 2);  // Position
     layout.push(GL_FLOAT, 2);  // Screen UV
-    m_fullScreenQuad_vbo->setLayout(layout);
-    m_fullScreenQuad_vao = std::make_unique<VertexArray>();
-    m_fullScreenQuad_vao->addBuffer(*m_fullScreenQuad_vbo);
+    m_fullScreenQuad_vbo.setLayout(layout);
+    m_fullScreenQuad_vao = VertexArray::create();
+    m_fullScreenQuad_vao.addBuffer(m_fullScreenQuad_vbo);
 
     FrameBuffer::bindDefault();
 }
@@ -143,29 +144,29 @@ void Renderer::render(const ApplicationContext& context) {
     auto totalTimerStart = std::chrono::high_resolution_clock::now();
 
     // Update screen resolution
-    m_currentRenderContext.currentScreenResolution = glm::uvec2(context.screenWidth, context.screenHeight);
+    m_currentRenderContext.currScreenRes = glm::uvec2(context.screenWidth, context.screenHeight);
 
     beginShadowpass(context);
 
     RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
     std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;
-    for (int i = 0; i < m_currentRenderContext.lights.size(); i++) {
-        const Light* light = m_currentRenderContext.lights[i];
-        m_currentRenderContext.currentLightPrio = light->getPriotity();
-        m_currentRenderContext.lightShadowAtlasIndex = light->getShadowAtlasIndex();
-        m_currentRenderContext.viewProjection = light->getViewProjMatrix();
-        m_currentRenderContext.viewportTransform = light->getGlobalTransform();
+    for (int i = 0; i < m_priodLigthsBuffer.size(); i++) {
+        const Light* light = m_priodLigthsBuffer[i];
+        m_currentRenderContext.lInfo.currentLightPrio = light->getPriotity();
+        m_currentRenderContext.lInfo.lightShadowAtlasIndex = light->getShadowAtlasIndex();
+        m_currentRenderContext.tInfo.viewProjection = light->getViewProjMatrix();
+        m_currentRenderContext.tInfo.viewportTransform = light->getGlobalTransform();
 
         m_lightProcessor.prepareShadowPass(light);
 
-        cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.viewProjection);
+        cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.tInfo.viewProjection);
         batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::ShadowPass);
 
         for (const auto& batch : materialBatches) {
             batch.first->bindForPass(PassType::ShadowPass, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
+                m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::ShadowPass, m_currentRenderContext);
                 obj->draw();
             }
@@ -177,7 +178,7 @@ void Renderer::render(const ApplicationContext& context) {
     auto testTimerStart = std::chrono::high_resolution_clock::now();
     beginAmbientOcclusionPass(context);
 
-    cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.viewProjection);
+    cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.tInfo.viewProjection);
     batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::AmbientOcclusion);
 
     if (!materialBatches.empty()) {
@@ -187,7 +188,7 @@ void Renderer::render(const ApplicationContext& context) {
             batch.first->bindForPass(PassType::AmbientOcclusion, m_currentRenderContext);
 
             for (const Renderable* obj : batch.second) {
-                m_currentRenderContext.meshTransform = obj->getRenderableTransform();
+                m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
                 batch.first->bindForObjectDraw(PassType::AmbientOcclusion, m_currentRenderContext);
                 obj->draw();
             }
@@ -216,9 +217,9 @@ void Renderer::render(const ApplicationContext& context) {
         for (const Renderable* obj : batch.second) {
             if (const SkeletalMesh* sMesh = dynamic_cast<const SkeletalMesh*>(obj)) {
                 // TODO: Remove this quick test
-                m_currentRenderContext.jointMatrices = sMesh->getJointMatrices();
+                m_currentRenderContext.skInfo.jointMatrices = sMesh->getJointMatrices();
             }
-            m_currentRenderContext.meshTransform = obj->getRenderableTransform();
+            m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
             batch.first->bindForObjectDraw(PassType::MainPass, m_currentRenderContext);
             obj->draw();
         }
@@ -236,7 +237,7 @@ void Renderer::render(const ApplicationContext& context) {
         msg << "Tested time: " << testTime.count() * 1000.0 / frameCount << "ms (average per frame)" << std::endl;
         msg << "Tested part took " << testTime.count() / totalTime.count() * 100.0 << "% of "
             << totalTime.count() * 1000.0 / frameCount << "ms excution time" << std::endl;
-        msg << "Lights processed: " << m_currentRenderContext.lights.size() << std::endl;
+        msg << "Lights processed: " << m_priodLigthsBuffer.size() << std::endl;
         msg << "Objects drawn: " << culledObjectBuffer.size() << std::endl;
         msg << "Batches: " << materialBatches.size();
         lgr::lout.debug(msg.str());
@@ -250,6 +251,6 @@ void Renderer::render(const ApplicationContext& context) {
 }
 
 void Renderer::drawFullscreenQuad() {
-    m_fullScreenQuad_vao->bind();
+    m_fullScreenQuad_vao.bind();
     GLCALL(glDrawArrays(GL_TRIANGLES, 0, 6));
 }

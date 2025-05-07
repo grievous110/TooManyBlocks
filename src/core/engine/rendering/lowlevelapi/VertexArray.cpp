@@ -25,12 +25,14 @@ void VertexArray::syncBinding() {
     VertexArray::currentlyBoundVAO = static_cast<unsigned int>(binding);
 }
 
-VertexArray::VertexArray() : m_currAttribIndex(0) { GLCALL(glGenVertexArrays(1, &m_rendererId)); }
+VertexArray VertexArray::create() {
+    VertexArray array;
+    GLCALL(glGenVertexArrays(1, &array.m_rendererId));
+    return array;
+}
 
 VertexArray::VertexArray(VertexArray&& other) noexcept
-    : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {
-    other.m_currAttribIndex = 0;
-}
+    : RenderApiObject(std::move(other)), m_currAttribIndex(other.m_currAttribIndex) {}
 
 VertexArray::~VertexArray() {
     if (m_rendererId != 0) {
@@ -94,8 +96,6 @@ VertexArray& VertexArray::operator=(VertexArray&& other) noexcept {
         RenderApiObject::operator=(std::move(other));
 
         m_currAttribIndex = other.m_currAttribIndex;
-
-        other.m_currAttribIndex = 0;
     }
     return *this;
 }

@@ -1,8 +1,6 @@
 #ifndef TOOMANYBLOCKS_RENDERER_H
 #define TOOMANYBLOCKS_RENDERER_H
 
-#include <memory>
-
 #include "compatability/Compatability.h"
 #include "engine/env/lights/Light.h"
 #include "engine/rendering/LightProcessor.h"
@@ -11,13 +9,50 @@
 
 struct ApplicationContext;
 
+struct LightingInfo {
+    unsigned int activeLightsCount;
+    const UniformBuffer* lightBuff;
+    const UniformBuffer* lightViewProjectionBuff;
+    LightPriority currentLightPrio;
+    unsigned int lightShadowAtlasIndex;
+    std::array<unsigned int, LightPriority::Count> shadowMapSizes;
+    std::array<Texture*, LightPriority::Count> shadowMapAtlases;
+};
+
+struct TransformInfo {
+    glm::mat4 viewProjection;
+    glm::mat4 projection;
+    glm::mat4 view;
+    Transform viewportTransform;
+    Transform meshTransform;
+};
+
+struct SSAOInfo {
+    const Texture* output;
+};
+
+struct SkeletalMeshInfo {
+    const UniformBuffer* jointMatrices;
+};
+
+struct RenderContext {
+    glm::uvec2 currScreenRes;
+    
+    TransformInfo tInfo;
+    SkeletalMeshInfo skInfo;
+    LightingInfo lInfo;
+    SSAOInfo ssaoInfo;
+};
+
 class Renderer {
 private:
     std::vector<Light*> m_lightsToRender;
     std::vector<Renderable*> m_objectsToRender;
 
-    std::unique_ptr<VertexArray> m_fullScreenQuad_vao;
-    std::unique_ptr<VertexBuffer> m_fullScreenQuad_vbo;
+    RawBuffer<Light*> m_priodLigthsBuffer;
+
+    VertexArray m_fullScreenQuad_vao;
+    VertexBuffer m_fullScreenQuad_vbo;
 
     RenderContext m_currentRenderContext;
     LightProcessor m_lightProcessor;

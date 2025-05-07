@@ -3,7 +3,6 @@
 
 #include <array>
 #include <glm/glm.hpp>
-#include <memory>
 
 #include "datatypes/RawBuffer.h"
 #include "engine/env/lights/Light.h"
@@ -16,15 +15,15 @@ struct RenderContext;
 class LightProcessor {
 private:
     size_t m_totalSupportedLights;
-    std::array<std::unique_ptr<FrameBuffer>, LightPriority::Count> m_shadowMapAtlases;
+    std::array<FrameBuffer, LightPriority::Count> m_shadowMapAtlases;
     std::array<unsigned int, LightPriority::Count> m_shadowMapSizes;
     std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
 
     RawBuffer<ShaderLightStruct> m_lightBuffer;
-    std::shared_ptr<UniformBuffer> m_lightUniformBuffer;
+    UniformBuffer m_lightUniformBuffer;
 
     RawBuffer<glm::mat4> m_lightViewProjectionBuffer;
-    std::shared_ptr<UniformBuffer> m_lightViewProjectionUniformBuffer;
+    UniformBuffer m_lightViewProjectionUniformBuffer;
 
     bool isInitialized;
 
@@ -46,7 +45,7 @@ public:
 
     void updateBuffers(const RawBuffer<Light*>& activeLights);
 
-    std::array<std::weak_ptr<Texture>, LightPriority::Count> getShadowMapAtlases() const;
+    std::array<Texture*, LightPriority::Count> getShadowMapAtlases() const;
 
     inline size_t totalSupportedLights() const { return m_totalSupportedLights; }
 
@@ -56,12 +55,10 @@ public:
         return m_maxShadowMapsPerPriority;
     }
 
-    inline std::weak_ptr<UniformBuffer> getShaderLightUniformBuffer() const {
-        return std::weak_ptr<UniformBuffer>(m_lightUniformBuffer);
-    }
+    inline const UniformBuffer* getShaderLightUniformBuffer() const { return &m_lightUniformBuffer; }
 
-    inline std::weak_ptr<UniformBuffer> getLightViewProjectionUniformBuffer() const {
-        return std::weak_ptr<UniformBuffer>(m_lightViewProjectionUniformBuffer);
+    inline const UniformBuffer* getLightViewProjectionUniformBuffer() const {
+        return &m_lightViewProjectionUniformBuffer;
     }
 };
 

@@ -118,8 +118,6 @@ static constexpr GLenum toOpenGLWrapMode(TextureWrap wrapMode) {
     }
 }
 
-void Texture::bindDefault() { GLCALL(glBindTexture(GL_TEXTURE_2D, 0)); }
-
 Texture::Texture(
     TextureType type,
     unsigned int width,
@@ -156,6 +154,20 @@ Texture::Texture(
     GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam));
 }
 
+void Texture::bindDefault() { GLCALL(glBindTexture(GL_TEXTURE_2D, 0)); }
+
+Texture Texture::create(
+    TextureType type,
+    unsigned int width,
+    unsigned int height,
+    int channels,
+    const void* data,
+    TextureFilter filterMode,
+    TextureWrap wrapMode
+) {
+    return Texture(type, width, height, channels, data, filterMode, wrapMode);
+}
+
 Texture::Texture(Texture&& other) noexcept
     : RenderApiObject(std::move(other)),
       m_type(other.m_type),
@@ -165,12 +177,7 @@ Texture::Texture(Texture&& other) noexcept
       m_baseFilter(other.m_baseFilter),
       m_mipmapFilter(other.m_mipmapFilter),
       m_wrapMode(other.m_wrapMode),
-      m_hasMipmaps(other.m_hasMipmaps) {
-    other.m_width = 0;
-    other.m_height = 0;
-    other.m_channels = 0;
-    other.m_hasMipmaps = false;
-}
+      m_hasMipmaps(other.m_hasMipmaps) {}
 
 Texture::~Texture() {
     if (m_rendererId != 0) {
@@ -286,11 +293,6 @@ Texture& Texture::operator=(Texture&& other) noexcept {
         m_mipmapFilter = other.m_mipmapFilter;
         m_wrapMode = other.m_wrapMode;
         m_hasMipmaps = other.m_hasMipmaps;
-
-        other.m_width = 0;
-        other.m_height = 0;
-        other.m_channels = 0;
-        other.m_hasMipmaps = false;
     }
     return *this;
 }

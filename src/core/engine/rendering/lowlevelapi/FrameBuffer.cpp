@@ -41,14 +41,16 @@ void FrameBuffer::syncBinding() {
     FrameBuffer::currentlyBoundFBO = static_cast<unsigned int>(binding);
 }
 
-FrameBuffer::FrameBuffer() { GLCALL(glGenFramebuffers(1, &m_rendererId)); }
+FrameBuffer FrameBuffer::create() {
+    FrameBuffer fb;
+    GLCALL(glGenFramebuffers(1, &fb.m_rendererId));
+    return fb;
+}
 
 FrameBuffer::FrameBuffer(FrameBuffer&& other) noexcept
     : RenderApiObject(std::move(other)),
       m_attachedTextures(std::move(other.m_attachedTextures)),
-      m_attachedDepthTexture(other.m_attachedDepthTexture) {
-    other.m_attachedDepthTexture = nullptr;
-}
+      m_attachedDepthTexture(std::move(other.m_attachedDepthTexture)) {}
 
 FrameBuffer::~FrameBuffer() {
     if (m_rendererId != 0) {
@@ -123,9 +125,7 @@ FrameBuffer& FrameBuffer::operator=(FrameBuffer&& other) noexcept {
         RenderApiObject::operator=(std::move(other));
 
         m_attachedTextures = std::move(other.m_attachedTextures);
-        m_attachedDepthTexture = other.m_attachedDepthTexture;
-
-        other.m_attachedDepthTexture = nullptr;
+        m_attachedDepthTexture = std::move(other.m_attachedDepthTexture);
     }
     return *this;
 }

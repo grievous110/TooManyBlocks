@@ -18,12 +18,12 @@ class SSAOProcessor {
 private:
     unsigned int m_ssaoBufferWidth;
     unsigned int m_ssaoBufferHeight;
-    std::unique_ptr<Shader> m_ssaoPassShader;
-    std::unique_ptr<Shader> m_ssaoBlurShader;
-    std::unique_ptr<FrameBuffer> m_ssaoGBuffer;
-    std::unique_ptr<FrameBuffer> m_ssaoPassBuffer;
-    std::unique_ptr<FrameBuffer> m_ssaoBlurBuffer;
-    std::unique_ptr<Texture> m_ssaoNoiseTexture;
+    Shader m_ssaoPassShader;
+    Shader m_ssaoBlurShader;
+    FrameBuffer m_ssaoGBuffer;
+    FrameBuffer m_ssaoPassBuffer;
+    FrameBuffer m_ssaoBlurBuffer;
+    Texture m_ssaoNoiseTexture;
     glm::vec3* m_ssaoSamples;
 
     bool isInitialized;
@@ -41,7 +41,7 @@ public:
     void prepareSSAOPass(const ApplicationContext& context);
     void prepareSSAOBlurPass(const ApplicationContext& context);
 
-    std::weak_ptr<Texture> getOcclusionOutput() const;
+    const Texture* getOcclusionOutput() const;
 };
 
 #endif

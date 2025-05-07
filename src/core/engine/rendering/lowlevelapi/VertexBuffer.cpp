@@ -2,12 +2,16 @@
 
 #include <GL/glew.h>
 
-#include <sstream>
-
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
 
 thread_local unsigned int VertexBuffer::currentlyBoundVBO = 0;
+
+VertexBuffer::VertexBuffer(const void* data, size_t size) : m_size(size) {
+    GLCALL(glGenBuffers(1, &m_rendererId));
+    bind();
+    GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
+}
 
 void VertexBuffer::bindDefault() {
     if (VertexBuffer::currentlyBoundVBO != 0) {
@@ -22,18 +26,10 @@ void VertexBuffer::syncBinding() {
     VertexBuffer::currentlyBoundVBO = static_cast<unsigned int>(binding);
 }
 
-VertexBuffer::VertexBuffer(const void* data, size_t size) : m_size(size) {
-    // Vertex Buffer Object (VBO)
-    GLCALL(glGenBuffers(1, &m_rendererId));
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
-    GLCALL(glBufferData(GL_ARRAY_BUFFER, size, data, GL_STATIC_DRAW));
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, VertexBuffer::currentlyBoundVBO));
-}
+VertexBuffer VertexBuffer::create(const void* data, size_t size) { return VertexBuffer(data, size); }
 
 VertexBuffer::VertexBuffer(VertexBuffer&& other) noexcept
-    : RenderApiObject(std::move(other)), m_layout(std::move(other.m_layout)), m_size(other.m_size) {
-    other.m_size = 0;
-}
+    : RenderApiObject(std::move(other)), m_layout(std::move(other.m_layout)), m_size(other.m_size) {}
 
 VertexBuffer::~VertexBuffer() {
     if (m_rendererId != 0) {
@@ -50,13 +46,10 @@ VertexBuffer::~VertexBuffer() {
 }
 
 void VertexBuffer::updateData(const void* data, size_t size, size_t offset) const {
-    if (m_rendererId == 0) throw std::runtime_error("Invalid state of VertexBuffer with id 0");
-
     if (offset + size > m_size) throw std::runtime_error("VBO update exceeds buffer size");
 
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, m_rendererId));
+    bind();
     GLCALL(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
-    GLCALL(glBindBuffer(GL_ARRAY_BUFFER, 0));
 }
 
 void VertexBuffer::bind() const {
@@ -84,8 +77,6 @@ VertexBuffer& VertexBuffer::operator=(VertexBuffer&& other) noexcept {
         RenderApiObject::operator=(std::move(other));
         m_layout = std::move(other.m_layout);
         m_size = other.m_size;
-
-        other.m_size = 0;
     }
     return *this;
 }

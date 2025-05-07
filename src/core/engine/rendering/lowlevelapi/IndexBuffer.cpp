@@ -7,6 +7,12 @@
 
 thread_local unsigned int IndexBuffer::currentlyBoundIBO = 0;
 
+IndexBuffer::IndexBuffer(const unsigned int* data, size_t count) : m_count(count) {
+    GLCALL(glGenBuffers(1, &m_rendererId));
+    bind();
+    GLCALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_count * sizeof(unsigned int), data, GL_STATIC_DRAW));
+}
+
 void IndexBuffer::bindDefault() {
     if (IndexBuffer::currentlyBoundIBO != 0) {
         GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
@@ -20,17 +26,9 @@ void IndexBuffer::syncBinding() {
     IndexBuffer::currentlyBoundIBO = static_cast<unsigned int>(binding);
 }
 
-IndexBuffer::IndexBuffer(const unsigned int* data, size_t count) : m_count(count) {
-    // Index Buffer Object (IBO)
-    GLCALL(glGenBuffers(1, &m_rendererId));
-    GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_rendererId));
-    GLCALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_count * sizeof(unsigned int), data, GL_STATIC_DRAW));
-    GLCALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IndexBuffer::currentlyBoundIBO));
-}
+IndexBuffer IndexBuffer::create(const unsigned int* data, size_t count) { return IndexBuffer(data, count); }
 
-IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_count(other.m_count) {
-    other.m_count = 0;
-}
+IndexBuffer::IndexBuffer(IndexBuffer&& other) noexcept : RenderApiObject(std::move(other)), m_count(other.m_count) {}
 
 IndexBuffer::~IndexBuffer() {
     if (m_rendererId != 0) {
@@ -44,6 +42,13 @@ IndexBuffer::~IndexBuffer() {
             lgr::lout.error("Error during IndexBuffer cleanup");
         }
     }
+}
+
+void IndexBuffer::updateData(const unsigned int* data, size_t count, size_t offset) const {
+    if (offset + count > m_count) throw std::runtime_error("VBO update exceeds buffer size");
+
+    bind();
+    GLCALL(glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, offset, count * sizeof(unsigned int), data));
 }
 
 void IndexBuffer::bind() const {
@@ -70,8 +75,6 @@ IndexBuffer& IndexBuffer::operator=(IndexBuffer&& other) noexcept {
         }
         RenderApiObject::operator=(std::move(other));
         m_count = other.m_count;
-
-        other.m_count = 0;
     }
     return *this;
 }

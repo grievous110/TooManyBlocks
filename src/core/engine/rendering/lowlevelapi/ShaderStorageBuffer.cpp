@@ -11,7 +11,17 @@ ShaderStorageBuffer::ShaderStorageBuffer(const void* data, size_t size) : m_size
     GLCALL(glGenBuffers(1, &m_rendererId));
     GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_rendererId));
     GLCALL(glBufferData(GL_SHADER_STORAGE_BUFFER, size, data, GL_DYNAMIC_DRAW));
-    GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0));
+}
+
+void ShaderStorageBuffer::bindDefault() { GLCALL(glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0)); }
+
+ShaderStorageBuffer ShaderStorageBuffer::create(const void* data, size_t size) {
+    return ShaderStorageBuffer(data, size);
+}
+
+ShaderStorageBuffer::ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept
+    : RenderApiObject(std::move(other)), m_size(other.m_size) {
+    other.m_size = 0;
 }
 
 ShaderStorageBuffer::~ShaderStorageBuffer() {
@@ -23,11 +33,6 @@ ShaderStorageBuffer::~ShaderStorageBuffer() {
             lgr::lout.error("Error during ShaderStorageBuffer cleanup");
         }
     }
-}
-
-ShaderStorageBuffer::ShaderStorageBuffer(ShaderStorageBuffer&& other) noexcept
-    : RenderApiObject(std::move(other)), m_size(other.m_size) {
-    other.m_size = 0;
 }
 
 void ShaderStorageBuffer::updateData(const void* data, size_t size, size_t offset) const {

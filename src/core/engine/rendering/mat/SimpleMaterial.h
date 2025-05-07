@@ -10,12 +10,15 @@
 
 class SimpleMaterial : public Material {
 private:
+    std::shared_ptr<Shader> m_mainShader;
     glm::vec3 m_color;
     std::shared_ptr<Texture> m_texture;
 
 public:
-    SimpleMaterial(std::shared_ptr<Shader> shader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr)
-        : Material(shader), m_color(color), m_texture(texture) {}
+    SimpleMaterial(
+        std::shared_ptr<Shader> mainShader, const glm::vec3 color, std::shared_ptr<Texture> texture = nullptr
+    )
+        : m_mainShader(mainShader), m_color(color), m_texture(texture) {}
 
     virtual ~SimpleMaterial() = default;
 

@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 
 static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<SkeletalVertex>& data) {
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(SkeletalVertex));
+    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(SkeletalVertex));
     // Vertex Attribute Pointer
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);         // Position
@@ -14,12 +14,12 @@ static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Skeletal
     vbo.setLayout(layout);
 
     // Vertex Array Object (VAO)
-    VertexArray vao;
+    VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
 
     if (data.isIndexed()) {
         // Index Buffer Object (IBO)
-        IndexBuffer ibo(data.indices.data(), data.indices.size());
+        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
         return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
     } else {
         return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));
@@ -32,9 +32,9 @@ void SkeletalMeshBlueprint::bake() {
         m_baked->meshData = packToRenderData(m_raw->meshData);
         m_baked->nodeArray = std::move(m_raw->nodeArray);
         m_baked->animatedMeshNodeIndex = m_raw->animatedMeshNodeIndex;
-        m_baked->inverseBindMatricesUBO = std::make_shared<UniformBuffer>(
+        m_baked->inverseBindMatricesUBO = std::make_shared<UniformBuffer>(UniformBuffer::create(
             m_raw->inverseBindMatrices.data(), m_raw->inverseBindMatrices.size() * sizeof(glm::mat4)
-        );
+        ));
         m_baked->inverseBindMatrices = std::make_shared<std::vector<glm::mat4>>(std::move(m_raw->inverseBindMatrices));
         m_baked->jointNodeIndices = std::make_shared<std::vector<int>>(std::move(m_raw->jointNodeIndices));
         m_baked->animations = std::move(m_raw->animations);
@@ -85,7 +85,7 @@ std::shared_ptr<void> SkeletalMeshBlueprint::createInstance() const {
 
         return std::make_shared<SkeletalMesh::Internal>(SkeletalMesh::Internal{
             m_baked->meshData, std::move(sceneCompArray), m_baked->animatedMeshNodeIndex,
-            std::make_shared<UniformBuffer>(initalMatrices.data(), initalMatrices.size() * sizeof(glm::mat4)),
+            UniformBuffer::create(initalMatrices.data(), initalMatrices.size() * sizeof(glm::mat4)),
             m_baked->inverseBindMatricesUBO, m_baked->inverseBindMatrices, m_baked->jointNodeIndices,
             std::move(animInstances), m_baked->bounds
         });

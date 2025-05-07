@@ -3,23 +3,19 @@
 #include <GL/glew.h>
 
 static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
+    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
 
-    // Vertex Attribute Pointer
     VertexBufferLayout layout;
     // Compressed data
     layout.push(GL_UNSIGNED_INT, 1);
     layout.push(GL_UNSIGNED_INT, 1);
     vbo.setLayout(layout);
 
-    // Vertex Array Object (VAO)
-    VertexArray vao;
+    VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
 
     if (data.isIndexed()) {
-        // Index Buffer Object (IBO)
-        IndexBuffer ibo(data.indices.data(), data.indices.size());
+        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
         return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
     } else {
         return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));
@@ -27,23 +23,19 @@ static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactC
 }
 
 static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) {
-    // Vertex Buffer Object (VBO)
-    VertexBuffer vbo(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
+    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
 
-    // Vertex Attribute Pointer
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);  // Position
     layout.push(GL_FLOAT, 2);  // UV
     layout.push(GL_FLOAT, 3);  // Normal
     vbo.setLayout(layout);
 
-    // Vertex Array Object (VAO)
-    VertexArray vao;
+    VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
 
     if (data.isIndexed()) {
-        // Index Buffer Object (IBO)
-        IndexBuffer ibo(data.indices.data(), data.indices.size());
+        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
         return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
     } else {
         return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));

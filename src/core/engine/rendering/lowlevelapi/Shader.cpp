@@ -1,6 +1,6 @@
 #include "Shader.h"
 
-#include  <GL/glew.h>
+#include <GL/glew.h>
 #include <stddef.h>
 
 #include <fstream>
@@ -23,7 +23,7 @@ static std::string readFile(const std::string& filepath) {
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
-    return std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 }
 
 static ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
@@ -159,6 +159,11 @@ unsigned int Shader::getUniformBlockIndex(const std::string& name) {
     return blockIndex;
 }
 
+Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) : m_shaderPath(shaderPath) {
+    ShaderSource source = shaderSourceFromFile(shaderPath);
+    m_rendererId = createShader(source, definitions);
+}
+
 void Shader::bindDefault() {
     if (Shader::currentlyBoundShader != 0) {
         GLCALL(glUseProgram(0));
@@ -172,15 +177,15 @@ void Shader::syncBinding() {
     Shader::currentlyBoundShader = static_cast<unsigned int>(binding);
 }
 
-Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) : m_shaderPath(shaderPath) {
-    ShaderSource source = shaderSourceFromFile(shaderPath);
-    m_rendererId = createShader(source, definitions);
+Shader Shader::create(const std::string& shaderPath, const ShaderDefines& defines) {
+    return Shader(shaderPath, defines);
 }
 
 Shader::Shader(Shader&& other) noexcept
-    : RenderApiObject(std::move(other)), m_shaderPath(std::move(other.m_shaderPath)) {
-    other.m_uniformLocationCache.clear();
-}
+    : RenderApiObject(std::move(other)),
+      m_shaderPath(std::move(other.m_shaderPath)),
+      m_uniformLocationCache(std::move(other.m_uniformLocationCache)),
+      m_uniformBlockIndexCache(std::move(other.m_uniformBlockIndexCache)) {}
 
 Shader::~Shader() {
     if (m_rendererId != 0) {
@@ -397,9 +402,8 @@ Shader& Shader::operator=(Shader&& other) noexcept {
         RenderApiObject::operator=(std::move(other));
 
         m_shaderPath = std::move(other.m_shaderPath);
-        m_uniformLocationCache.clear();
-
-        other.m_uniformLocationCache.clear();
+        m_uniformLocationCache = std::move(other.m_uniformLocationCache);
+        m_uniformBlockIndexCache = std::move(other.m_uniformBlockIndexCache);
     }
     return *this;
 }
