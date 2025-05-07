@@ -28,7 +28,6 @@ private:
 
     bool isInitialized;
 
-    void validateBuffers(const ApplicationContext& context);
     void createBuffers();
 
 public:
@@ -37,6 +36,7 @@ public:
 
     void initialize();
 
+    void validateBuffers(const ApplicationContext& context);
     void prepareSSAOGBufferPass(const ApplicationContext& context);
     void prepareSSAOPass(const ApplicationContext& context);
     void prepareSSAOBlurPass(const ApplicationContext& context);

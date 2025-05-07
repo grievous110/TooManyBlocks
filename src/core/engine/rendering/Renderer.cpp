@@ -72,6 +72,7 @@ void Renderer::beginAmbientOcclusionPass(const ApplicationContext& context) {
     m_currentRenderContext.tInfo.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
     m_currentRenderContext.tInfo.view = context.instance->m_player->getCamera()->getViewMatrix();
     m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
+    m_ssaoProcessor.validateBuffers(context); // Possible resize sssao textures if resize happened
     // Disable blending cause rendering to textures that do not have 4 channels
     // (alpha) will will be discarded. Blending expects a valid alpha component
     GLCALL(glDisable(GL_BLEND));
