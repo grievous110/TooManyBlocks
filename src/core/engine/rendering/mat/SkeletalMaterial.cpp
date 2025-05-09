@@ -24,7 +24,7 @@ void SkeletalMaterial::bindForObjectDraw(PassType passType, const RenderContext&
         m_mainShader->use();
         m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
         if (context.skInfo.jointMatrices){
-            m_mainShader->setAndBindUBO("JointMatrices", *context.skInfo.jointMatrices, 0);
+            m_mainShader->bindUniformBuffer("JointMatrices", *context.skInfo.jointMatrices);
         } else {
             lgr::lout.error("UBO for joint matrices was not set");
         }

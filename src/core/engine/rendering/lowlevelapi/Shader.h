@@ -6,6 +6,7 @@
 #include <unordered_map>
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
+#include "engine/rendering/lowlevelapi/ShaderStorageBuffer.h"
 #include "engine/rendering/lowlevelapi/UniformBuffer.h"
 
 class ShaderDefines {
@@ -21,30 +22,43 @@ public:
 /**
  * @brief Wrapper for OpenGL Shader programs.
  *
- * Exposes setters for uniform variables.
+ * Exposes setters for uniform variables and UBOs and SSBOs.
  */
 class Shader : public RenderApiObject {
 private:
+    struct BlockBindInfo {
+        unsigned int blockIndex;
+        unsigned int bindingPoint;
+    };
+
     static thread_local unsigned int currentlyUsedShader;
-    std::string m_shaderPath;
+    unsigned int m_nextUBOBindingPoint;
+    unsigned int m_nextSSBOBindingPoint;
     std::unordered_map<std::string, int> m_uniformLocationCache;
-    std::unordered_map<std::string, unsigned int> m_uniformBlockIndexCache;
+    std::unordered_map<std::string, BlockBindInfo> m_uboBindingCache;
+    std::unordered_map<std::string, BlockBindInfo> m_ssboBindingCache;
 
     /**
      * @brief Retrieves the location of a uniform variable by name.
      *
      * @param name The name of the uniform variable.
-     * @return The location of the uniform, or -1 if not found.
+     * @return The location of the uniform, or -1 if not found (Is cached).
      */
     int getUniformLocation(const std::string& name);
-
     /**
-     * @brief Retrieves the index of a uniform block (UBO) by name.
+     * @brief Retrieves index and binding point of a uniform block (UBO) by name.
      *
-     * @param name The name of the uniform block.
-     * @return The OpenGL index of the uniform block, or GL_INVALID_INDEX if not found.
+     * @param name The name of the uniform block in the shader.
+     * @return Struct containing the block index and assigned binding point (Is cached).
      */
-    unsigned int getUniformBlockIndex(const std::string& name);
+    BlockBindInfo getUBOBindInfo(const std::string& name);
+    /**
+     * @brief Retrieves ndex and binding point of a shader storage block (SSBO) by name.
+     *
+     * @param name The name of the shader storage block in the shader.
+     * @return Struct containing the block index and assigned binding point (Is cached).
+     */
+    BlockBindInfo getSSBOBindInfo(const std::string& name);
 
     Shader(const std::string& shaderPath, const ShaderDefines& defines);
 
@@ -68,7 +82,7 @@ public:
      */
     static Shader create(const std::string& shaderPath, const ShaderDefines& defines = ShaderDefines());
 
-    Shader() noexcept = default;
+    Shader() noexcept : m_nextUBOBindingPoint(0), m_nextSSBOBindingPoint(0) {}
     Shader(Shader&& other) noexcept;
     virtual ~Shader();
 
@@ -79,14 +93,9 @@ public:
      */
     void use() const;
 
-    /**
-     * @brief Associates and binds a Uniform Buffer Object (UBO) to a named uniform block in the shader.
-     *
-     * @param name The name of the uniform block in the shader.
-     * @param ubo The UniformBuffer instance to bind.
-     * @param bindingPoint The binding point to associate with the UBO.
-     */
-    void setAndBindUBO(const std::string& name, const UniformBuffer& ubo, unsigned int bindingPoint);
+    void bindUniformBuffer(const std::string& name, const UniformBuffer& ubo);
+
+    void bindShaderStorageBuffer(const std::string& name, const ShaderStorageBuffer& ssbo);
 
     void setUniform(const std::string& name, bool value);
     void setUniform(const std::string& name, int value);

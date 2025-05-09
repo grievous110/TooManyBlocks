@@ -32,8 +32,8 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 
             // Pass light info
             m_mainShader->setUniform("u_lightCount", static_cast<int>(context.lInfo.activeLightsCount));
-            m_mainShader->setAndBindUBO("LightViewProjBlock", *context.lInfo.lightBuff, 0);
-            m_mainShader->setAndBindUBO("LightViewProjBlock", *context.lInfo.lightViewProjectionBuff, 1);
+            m_mainShader->bindUniformBuffer("LightsBlock", *context.lInfo.lightBuff);
+            m_mainShader->bindUniformBuffer("LightViewProjBlock", *context.lInfo.lightViewProjectionBuff);
 
             if (context.ssaoInfo.output) {
                 context.ssaoInfo.output->bindToUnit(1);

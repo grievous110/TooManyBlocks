@@ -144,9 +144,9 @@ int Shader::getUniformLocation(const std::string& name) {
     return location;
 }
 
-unsigned int Shader::getUniformBlockIndex(const std::string& name) {
-    auto it = m_uniformBlockIndexCache.find(name);
-    if (it != m_uniformBlockIndexCache.end()) {
+Shader::BlockBindInfo Shader::getUBOBindInfo(const std::string& name) {
+    auto it = m_uboBindingCache.find(name);
+    if (it != m_uboBindingCache.end()) {
         return it->second;
     }
 
@@ -155,11 +155,31 @@ unsigned int Shader::getUniformBlockIndex(const std::string& name) {
         lgr::lout.warn("Warning: Index of '" + std::string(name) + "' uniform buffer was invalid!");
     }
 
-    m_uniformBlockIndexCache[name] = blockIndex;
-    return blockIndex;
+    // Dymanically assign next available binding point, caller does not need to manage this.
+    BlockBindInfo info = {blockIndex, m_nextUBOBindingPoint++}; // Binding point space of ubos differs from ssbos
+    m_uboBindingCache[name] = info;
+    return info;
 }
 
-Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions) : m_shaderPath(shaderPath) {
+Shader::BlockBindInfo Shader::getSSBOBindInfo(const std::string& name) {
+    auto it = m_ssboBindingCache.find(name);
+    if (it != m_ssboBindingCache.end()) {
+        return it->second;
+    }
+
+    GLCALL(unsigned int blockIndex = glGetProgramResourceIndex(m_rendererId, GL_SHADER_STORAGE_BLOCK, name.c_str()));
+    if (blockIndex == GL_INVALID_INDEX) {
+        lgr::lout.warn("Warning: Index of '" + std::string(name) + "' uniform buffer was invalid!");
+    }
+
+    // Dymanically assign next available binding point, caller does not need to manage this.
+    BlockBindInfo info = {blockIndex, m_nextSSBOBindingPoint++};  // Binding point space of ubos differs from ssbos
+    m_ssboBindingCache[name] = info;
+    return info;
+}
+
+Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions)
+    : m_nextUBOBindingPoint(0), m_nextSSBOBindingPoint(0) {
     ShaderSource source = shaderSourceFromFile(shaderPath);
     m_rendererId = createShader(source, definitions);
 }
@@ -183,9 +203,11 @@ Shader Shader::create(const std::string& shaderPath, const ShaderDefines& define
 
 Shader::Shader(Shader&& other) noexcept
     : RenderApiObject(std::move(other)),
-      m_shaderPath(std::move(other.m_shaderPath)),
+      m_nextUBOBindingPoint(other.m_nextUBOBindingPoint),
+      m_nextSSBOBindingPoint(other.m_nextSSBOBindingPoint),
       m_uniformLocationCache(std::move(other.m_uniformLocationCache)),
-      m_uniformBlockIndexCache(std::move(other.m_uniformBlockIndexCache)) {}
+      m_uboBindingCache(std::move(other.m_uboBindingCache)),
+      m_ssboBindingCache(std::move(other.m_ssboBindingCache)) {}
 
 Shader::~Shader() {
     if (isValid()) {
@@ -210,10 +232,18 @@ void Shader::use() const {
     }
 }
 
-void Shader::setAndBindUBO(const std::string& name, const UniformBuffer& ubo, unsigned int bindingPoint) {
+void Shader::bindUniformBuffer(const std::string& name, const UniformBuffer& ubo) {
     use();
-    ubo.assignTo(bindingPoint);
-    GLCALL(glUniformBlockBinding(m_rendererId, getUniformBlockIndex(name), bindingPoint));
+    BlockBindInfo bindInfo = getUBOBindInfo(name);
+    ubo.assignTo(bindInfo.bindingPoint);
+    GLCALL(glUniformBlockBinding(m_rendererId, bindInfo.blockIndex, bindInfo.bindingPoint));
+}
+
+void Shader::bindShaderStorageBuffer(const std::string& name, const ShaderStorageBuffer& ssbo) {
+    use();
+    BlockBindInfo bindInfo = getSSBOBindInfo(name);
+    ssbo.assignTo(bindInfo.bindingPoint);
+    GLCALL(glShaderStorageBlockBinding(m_rendererId, bindInfo.blockIndex, bindInfo.bindingPoint));
 }
 
 void Shader::setUniform(const std::string& name, bool value) {
@@ -401,9 +431,11 @@ Shader& Shader::operator=(Shader&& other) noexcept {
         }
         RenderApiObject::operator=(std::move(other));
 
-        m_shaderPath = std::move(other.m_shaderPath);
+        m_nextUBOBindingPoint = other.m_nextUBOBindingPoint;
+        m_nextSSBOBindingPoint = other.m_nextSSBOBindingPoint;
         m_uniformLocationCache = std::move(other.m_uniformLocationCache);
-        m_uniformBlockIndexCache = std::move(other.m_uniformBlockIndexCache);
+        m_uboBindingCache = std::move(other.m_uboBindingCache);
+        m_ssboBindingCache = std::move(other.m_ssboBindingCache);
     }
     return *this;
 }
