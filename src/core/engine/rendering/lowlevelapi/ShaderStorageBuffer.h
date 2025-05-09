@@ -67,7 +67,7 @@ public:
     void bind() const;
 
     /**
-     * @brief Binds the buffer to a specific ssbo binding point.
+     * @brief Binds the buffer to a specific global ssbo binding point.
      *
      * @param bindingPoint Index in the block binding range.
      */
