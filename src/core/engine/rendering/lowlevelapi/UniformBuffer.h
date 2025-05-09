@@ -67,7 +67,7 @@ public:
     void bind() const;
 
     /**
-     * @brief Binds the buffer to a specific uniform buffer binding point for usage in shaders.
+     * @brief Binds the buffer to a specific global uniform buffer binding point for usage in shaders.
      *
      * @param bindingPoint Index in the block binding range.
      */
