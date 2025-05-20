@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "engine/rendering/lowlevelapi/RenderApiObject.h"
 #include "engine/rendering/lowlevelapi/ShaderStorageBuffer.h"
@@ -26,6 +27,9 @@ public:
  */
 class Shader : public RenderApiObject {
 private:
+    std::vector<unsigned int> m_attachedShaders; // Just holds shader references until link() is called
+
+protected:
     struct BlockBindInfo {
         unsigned int blockIndex;
         unsigned int bindingPoint;
@@ -53,14 +57,23 @@ private:
      */
     BlockBindInfo getUBOBindInfo(const std::string& name);
     /**
-     * @brief Retrieves ndex and binding point of a shader storage block (SSBO) by name.
+     * @brief Retrieves index and binding point of a shader storage block (SSBO) by name.
      *
      * @param name The name of the shader storage block in the shader.
      * @return Struct containing the block index and assigned binding point (Is cached).
      */
     BlockBindInfo getSSBOBindInfo(const std::string& name);
 
-    Shader(const std::string& shaderPath, const ShaderDefines& defines);
+    /**
+     * @brief Final initilization step, internally links the program and cleans up shader refrences.
+     */
+    void link();
+
+    Shader(
+        const std::unordered_map<unsigned int, std::string>& shaderTypeAndSource,
+        const ShaderDefines& defines,
+        bool deferLinking = false // Wether to link or not
+    );
 
 public:
     /**

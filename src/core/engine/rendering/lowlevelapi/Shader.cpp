@@ -10,25 +10,9 @@
 
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
-
-struct ShaderSource {
-    std::string vertexSource;
-    std::string fragmentSource;
-};
 #include "util/Utility.h"
 
 thread_local unsigned int Shader::currentlyUsedShader = 0;
-
-static ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
-    std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
-    std::string vertFile = shaderPath + "/" + basename + ".vert";
-    std::string fragFile = shaderPath + "/" + basename + ".frag";
-
-    std::string vertexShaderCode = readFile(vertFile);
-    std::string fragmentShaderCode = readFile(fragFile);
-
-    return {vertexShaderCode, fragmentShaderCode};
-}
 
 static unsigned int compileShader(unsigned int type, const std::string& source, const ShaderDefines& definitions) {
     const char* src = nullptr;
@@ -90,38 +74,6 @@ static unsigned int compileShader(unsigned int type, const std::string& source, 
     return id;
 }
 
-static unsigned int createShader(const ShaderSource& source, const ShaderDefines& definitions) {
-    GLCALL(unsigned int program = glCreateProgram());
-    unsigned int vs = compileShader(GL_VERTEX_SHADER, source.vertexSource, definitions);
-    unsigned int fs = compileShader(GL_FRAGMENT_SHADER, source.fragmentSource, definitions);
-
-    GLCALL(glAttachShader(program, vs));
-    GLCALL(glAttachShader(program, fs));
-    GLCALL(glLinkProgram(program));
-
-    int linkingSuccess;
-    GLCALL(glGetProgramiv(program, GL_LINK_STATUS, &linkingSuccess));
-    if (!linkingSuccess) {
-        int logLength = 0;
-        GLCALL(glGetProgramiv(program, GL_INFO_LOG_LENGTH, &logLength));
-        if (logLength > 0) {
-            std::ostringstream ostream;
-            char* infoLog = new char[logLength];
-            glGetProgramInfoLog(program, logLength, nullptr, infoLog);
-            ostream << "Shader Linking Error:\n" << infoLog << std::endl;
-            lgr::lout.error(ostream.str());
-            delete[] infoLog;
-        }
-    }
-
-    GLCALL(glValidateProgram(program));
-
-    GLCALL(glDeleteShader(vs));
-    GLCALL(glDeleteShader(fs));
-
-    return program;
-}
-
 int Shader::getUniformLocation(const std::string& name) {
     auto it = m_uniformLocationCache.find(name);
     if (it != m_uniformLocationCache.end()) {
@@ -149,7 +101,7 @@ Shader::BlockBindInfo Shader::getUBOBindInfo(const std::string& name) {
     }
 
     // Dymanically assign next available binding point, caller does not need to manage this.
-    BlockBindInfo info = {blockIndex, m_nextUBOBindingPoint++}; // Binding point space of ubos differs from ssbos
+    BlockBindInfo info = {blockIndex, m_nextUBOBindingPoint++};  // Binding point space of ubos differs from ssbos
     m_uboBindingCache[name] = info;
     return info;
 }
@@ -171,10 +123,50 @@ Shader::BlockBindInfo Shader::getSSBOBindInfo(const std::string& name) {
     return info;
 }
 
-Shader::Shader(const std::string& shaderPath, const ShaderDefines& definitions)
+void Shader::link() {
+    GLCALL(glLinkProgram(m_rendererId));
+
+    int linkingSuccess;
+    GLCALL(glGetProgramiv(m_rendererId, GL_LINK_STATUS, &linkingSuccess));
+    if (!linkingSuccess) {
+        int logLength = 0;
+        GLCALL(glGetProgramiv(m_rendererId, GL_INFO_LOG_LENGTH, &logLength));
+        if (logLength > 0) {
+            std::ostringstream ostream;
+            char* infoLog = new char[logLength];
+            glGetProgramInfoLog(m_rendererId, logLength, nullptr, infoLog);
+            ostream << "Shader Linking Error:\n" << infoLog << std::endl;
+            lgr::lout.error(ostream.str());
+            delete[] infoLog;
+        }
+    }
+
+    GLCALL(glValidateProgram(m_rendererId));
+
+    // Cleanup shaders
+    for (unsigned int shader : m_attachedShaders) {
+        GLCALL(glDeleteShader(shader));
+    }
+    m_attachedShaders.clear();
+}
+
+Shader::Shader(
+    const std::unordered_map<unsigned int, std::string>& shaderTypeAndSource,
+    const ShaderDefines& definitions,
+    bool deferLinking
+)
     : m_nextUBOBindingPoint(0), m_nextSSBOBindingPoint(0) {
-    ShaderSource source = shaderSourceFromFile(shaderPath);
-    m_rendererId = createShader(source, definitions);
+    GLCALL(m_rendererId = glCreateProgram());
+
+    for (const auto& entry : shaderTypeAndSource) {
+        unsigned int shader = compileShader(entry.first, entry.second, definitions);
+        m_attachedShaders.push_back(shader);
+        GLCALL(glAttachShader(m_rendererId, shader));
+    }
+
+    if (!deferLinking) {
+        link();
+    }
 }
 
 void Shader::useDefault() {
@@ -191,7 +183,10 @@ void Shader::syncUsage() {
 }
 
 Shader Shader::create(const std::string& shaderPath, const ShaderDefines& defines) {
-    return Shader(shaderPath, defines);
+    std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
+    std::string vertFile = shaderPath + "/" + basename + ".vert";
+    std::string fragFile = shaderPath + "/" + basename + ".frag";
+    return Shader({{GL_VERTEX_SHADER, readFile(vertFile)}, {GL_FRAGMENT_SHADER, readFile(fragFile)}}, defines);
 }
 
 Shader::Shader(Shader&& other) noexcept
