@@ -1,6 +1,7 @@
 #include "Utility.h"
 
 #include <cstdlib>
+#include <fstream>
 
 #ifdef _WIN32
 #include <shlobj.h>
@@ -28,3 +29,11 @@ std::filesystem::path getAppDataPath() {
     return std::filesystem::path();  // Error case
 }
 #endif
+
+std::string readFile(const std::string& filepath) {
+    std::ifstream file(filepath, std::ios::in);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file: " + filepath);
+    }
+    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+}

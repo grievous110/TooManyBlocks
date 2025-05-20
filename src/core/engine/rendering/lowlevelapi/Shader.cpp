@@ -15,16 +15,9 @@ struct ShaderSource {
     std::string vertexSource;
     std::string fragmentSource;
 };
+#include "util/Utility.h"
 
 thread_local unsigned int Shader::currentlyUsedShader = 0;
-
-static std::string readFile(const std::string& filepath) {
-    std::ifstream file(filepath, std::ios::in);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + filepath);
-    }
-    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
-}
 
 static ShaderSource shaderSourceFromFile(const std::string& shaderPath) {
     std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
