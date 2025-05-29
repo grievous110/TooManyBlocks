@@ -15,8 +15,10 @@
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/Renderer.h"
+#include "engine/rendering/lowlevelapi/TransformFeedbackShader.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/rendering/mat/LineMaterial.h"
+#include "engine/rendering/mat/ParticleMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/mat/SkeletalMaterial.h"
 #include "providers/Provider.h"
@@ -85,6 +87,16 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_skeletalMesh->assignMaterial(std::make_shared<SkeletalMaterial>(skeletalShader, skeletalTexture));
         m_skeletalMesh->getLocalTransform().setPosition(glm::vec3(10.0f, 8.0f, 5.0f));
 
+        // Particles
+        m_particles = std::make_shared<ParticleSystem>();
+        std::shared_ptr<Shader> particleTFShader =
+            std::make_shared<TransformFeedbackShader>(TransformFeedbackShader::create(
+                "res/shaders/particleTFShader", {"tf_position", "tf_velocity", "tf_timeToLive", "tf_type"}
+            ));
+        std::shared_ptr<Shader> particleShader = provider->getShaderFromFile("res/shaders/particleShader");
+        m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader));
+        m_particles->getLocalTransform().setPosition(glm::vec3(10.0f, 12.0f, 5.0f));
+
         auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
         lgr::lout.debug("Loaded world in: " + std::to_string(dur.count()) + " ms");
     }
@@ -129,6 +141,7 @@ void GameInstance::pushWorldRenderData() const {
         renderer->submitRenderable(m_mesh1.get());
         renderer->submitRenderable(m_mesh2.get());
         renderer->submitRenderable(m_skeletalMesh.get());
+        renderer->submitRenderable(m_particles.get());
 
         if (m_player->isFocusingBlock()) {
             m_focusedBlockOutline->getLocalTransform().setPosition(m_player->getFocusedBlock());

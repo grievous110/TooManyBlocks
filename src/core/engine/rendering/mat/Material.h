@@ -4,6 +4,7 @@
 struct RenderContext;
 
 enum PassType {
+    TransformFeedback,
     ShadowPass,
     AmbientOcclusion,
     MainPass
