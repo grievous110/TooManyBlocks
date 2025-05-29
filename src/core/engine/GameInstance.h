@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Updatable.h"
+#include "engine/ParticleSystem.h"
 #include "engine/entity/Player.h"
 #include "engine/env/World.h"
 #include "engine/env/lights/Light.h"
@@ -34,6 +35,8 @@ public:
     std::shared_ptr<StaticMesh> m_mesh2;
     std::shared_ptr<Wireframe> m_focusedBlockOutline;
     std::vector<std::shared_ptr<Spotlight>> m_lights;
+
+    std::shared_ptr<ParticleSystem> m_particles;
 
 public:
     GameInstance();

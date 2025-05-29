@@ -10,6 +10,7 @@
 #include "Application.h"
 #include "Logger.h"
 #include "engine/GameInstance.h"
+#include "engine/ParticleSystem.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Frustum.h"
@@ -53,6 +54,13 @@ static inline void batchByMaterialForPass(
     }
 }
 
+void Renderer::beginTransformFeedbackPass(const ApplicationContext& context) {
+    GLCALL(glEnable(GL_RASTERIZER_DISCARD));
+    m_currentRenderContext.tInfo.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+}
+
+void Renderer::endTransformFeedbackPass(const ApplicationContext& context) { GLCALL(glDisable(GL_RASTERIZER_DISCARD)); }
+
 void Renderer::beginShadowpass(const ApplicationContext& context) {
     m_lightProcessor.clearShadowMaps();
 
@@ -72,7 +80,7 @@ void Renderer::beginAmbientOcclusionPass(const ApplicationContext& context) {
     m_currentRenderContext.tInfo.projection = context.instance->m_player->getCamera()->getProjectionMatrix();
     m_currentRenderContext.tInfo.view = context.instance->m_player->getCamera()->getViewMatrix();
     m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
-    m_ssaoProcessor.validateBuffers(context); // Possible resize sssao textures if resize happened
+    m_ssaoProcessor.validateBuffers(context);  // Possible resize sssao textures if resize happened
     // Disable blending cause rendering to textures that do not have 4 channels
     // (alpha) will will be discarded. Blending expects a valid alpha component
     GLCALL(glDisable(GL_BLEND));
@@ -100,6 +108,8 @@ void Renderer::endMainpass(const ApplicationContext& context) {
 }
 
 void Renderer::initialize() {
+    GLEnableDebugging();
+
     // GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
     GLCALL(glEnable(GL_BLEND));
     GLCALL(glEnable(GL_DEPTH_TEST));
@@ -144,13 +154,36 @@ void Renderer::render(const ApplicationContext& context) {
 
     auto totalTimerStart = std::chrono::high_resolution_clock::now();
 
-    // Update screen resolution
+    // Update render context
     m_currentRenderContext.currScreenRes = glm::uvec2(context.screenWidth, context.screenHeight);
-
-    beginShadowpass(context);
+    m_currentRenderContext.deltaTime = context.deltaTime;
+    m_currentRenderContext.elapsedTime = context.elapsedTime;
 
     RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
     std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;
+
+    beginTransformFeedbackPass(context);
+
+    cullObjectsOutOfView(m_objectsToRender, culledObjectBuffer, m_currentRenderContext.tInfo.viewProjection);
+    batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::TransformFeedback);
+
+    for (auto& batch : materialBatches) {
+        batch.first->bindForPass(PassType::TransformFeedback, m_currentRenderContext);
+
+        for (Renderable* obj : batch.second) {
+            if (ParticleSystem* ps = dynamic_cast<ParticleSystem*>(obj)){
+                ps->switchBuffers();
+                m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
+                batch.first->bindForObjectDraw(PassType::TransformFeedback, m_currentRenderContext);
+                ps->compute();
+            }
+        }
+    }
+
+    endTransformFeedbackPass(context);
+
+    beginShadowpass(context);
+
     for (int i = 0; i < m_priodLigthsBuffer.size(); i++) {
         const Light* light = m_priodLigthsBuffer[i];
         m_currentRenderContext.lInfo.currentLightPrio = light->getPriotity();

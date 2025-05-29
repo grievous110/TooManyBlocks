@@ -37,6 +37,8 @@ struct SkeletalMeshInfo {
 
 struct RenderContext {
     glm::uvec2 currScreenRes;
+    float deltaTime;
+    float elapsedTime;
     
     TransformInfo tInfo;
     SkeletalMeshInfo skInfo;
@@ -58,6 +60,8 @@ private:
     LightProcessor m_lightProcessor;
     SSAOProcessor m_ssaoProcessor;
 
+    void beginTransformFeedbackPass(const ApplicationContext& context);
+    void endTransformFeedbackPass(const ApplicationContext& context);
     void beginShadowpass(const ApplicationContext& context);
     void endShadowpass(const ApplicationContext& context);
     void beginAmbientOcclusionPass(const ApplicationContext& context);
