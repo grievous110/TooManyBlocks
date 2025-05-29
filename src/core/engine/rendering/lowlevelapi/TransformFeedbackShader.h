@@ -31,7 +31,7 @@ public:
      * @param varyings List of varying variable names to capture (Order matters).
      * @param defines Optional list of preprocessor macro definitions.
      */
-    TransformFeedbackShader create(
+    static TransformFeedbackShader create(
         const std::string& shaderPath,
         const std::vector<std::string>& varyings,
         const ShaderDefines& defines = ShaderDefines()
