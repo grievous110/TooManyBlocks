@@ -92,6 +92,9 @@ ApplicationContext* Application::createContext() {
     context->lastMousepositionX = 0;
     context->lastMousepositionY = 0;
 
+    context->deltaTime = 0.0f;
+    context->elapsedTime = 0.0f;
+
     context->workerPool = new ThreadPool(WORKER_COUNT);
     context->window = nullptr;
     context->provider = new Provider;
@@ -210,16 +213,16 @@ void Application::run() {
         // Loop until the user closes the window
         try {
             context->renderer->initialize();
-            double previousTime = glfwGetTime();
+            float previousTime = static_cast<float>(glfwGetTime());
 
             while (!glfwWindowShouldClose(context->window) && !context->instance->gameState.quitGame) {
-                double currentTime = glfwGetTime();
-                float deltaTime = static_cast<float>(currentTime - previousTime);
-                previousTime = currentTime;
+                context->elapsedTime = static_cast<float>(glfwGetTime());
+                context->deltaTime = context->elapsedTime - previousTime;
+                previousTime = context->elapsedTime;
 
                 if (context->instance->isWorldInitialized()) {
                     if (!context->instance->gameState.gamePaused) {
-                        context->instance->update(deltaTime);
+                        context->instance->update(context->deltaTime);
                         context->provider->processWorkerResults();  // Does this need to be paused?
                     }
                     context->instance->pushWorldRenderData();
