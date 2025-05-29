@@ -17,6 +17,8 @@ private:
     static thread_local unsigned int currentlyBoundVAO;
     unsigned int m_currAttribIndex;
 
+    void internalAddBuffer(const VertexBuffer& vb, unsigned int divisor);
+
 public:
     /**
      * @brief Unbinds any currently bound vertex array.
@@ -51,6 +53,18 @@ public:
      * @throws std::runtime_error If ID is 0 (uninitialized or moved-from), same for the passed vertex buffer.
      */
     void addBuffer(const VertexBuffer& vb);
+
+    /**
+     * @brief Adds a vertex buffer to the VAO and configures its vertex attributes for instanced rendering.
+     *
+     * The buffer’s layout must be set prior to this call. Each attibutes advances once per instance.
+     * Attributes are assigned sequentially starting at the current index. Use resetAttribIndex() to reuse slots.
+     *
+     * @param vb The VertexBuffer to bind and configure for instancing.
+     *
+     * @throws std::runtime_error If ID is 0 (uninitialized or moved-from), same for the passed vertex buffer.
+     */
+    void addInstanceBuffer(const VertexBuffer& vb);
 
     /**
      * @brief  Binds this VAO if not already bound.

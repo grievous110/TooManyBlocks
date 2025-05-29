@@ -12,6 +12,31 @@ constexpr bool isIntegerBased(unsigned int type) {
            type == GL_BYTE || type == GL_UNSIGNED_BYTE;
 }
 
+void VertexArray::internalAddBuffer(const VertexBuffer& vb, unsigned int divisor) {
+    bind();
+    vb.bind();
+    size_t offset = 0;
+    for (const BufferLayoutElement& element : vb.getLayout().elements()) {
+        GLCALL(glEnableVertexAttribArray(m_currAttribIndex));
+        if (isIntegerBased(element.type)) {
+            GLCALL(glVertexAttribIPointer(
+                m_currAttribIndex, element.count, element.type, vb.getLayout().stride(), (const void*)offset
+            ));
+        } else {
+            GLCALL(glVertexAttribPointer(
+                m_currAttribIndex, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE,
+                vb.getLayout().stride(), (const void*)offset
+            ));
+        }
+        if (divisor != 0) {
+            // Attrib advances every "divisor" instances compared to per vertex default
+            GLCALL(glVertexAttribDivisor(m_currAttribIndex, divisor));
+        }
+        offset += element.count * element.typeSize;
+        m_currAttribIndex++;
+    }
+}
+
 void VertexArray::bindDefault() {
     if (VertexArray::currentlyBoundVAO != 0) {
         GLCALL(glBindVertexArray(0));
@@ -49,24 +74,11 @@ VertexArray::~VertexArray() {
 }
 
 void VertexArray::addBuffer(const VertexBuffer& vb) {
-    bind();
-    vb.bind();
-    size_t offset = 0;
-    for (const BufferLayoutElement& element : vb.getLayout().elements()) {
-        GLCALL(glEnableVertexAttribArray(m_currAttribIndex));
-        if (isIntegerBased(element.type)) {
-            GLCALL(glVertexAttribIPointer(
-                m_currAttribIndex, element.count, element.type, vb.getLayout().stride(), (const void*)offset
-            ));
-        } else {
-            GLCALL(glVertexAttribPointer(
-                m_currAttribIndex, element.count, element.type, element.normalized ? GL_TRUE : GL_FALSE,
-                vb.getLayout().stride(), (const void*)offset
-            ));
-        }
-        offset += element.count * element.typeSize;
-        m_currAttribIndex++;
-    }
+    internalAddBuffer(vb, 0);
+}
+
+void VertexArray::addInstanceBuffer(const VertexBuffer& vb) {
+    internalAddBuffer(vb, 1);
 }
 
 void VertexArray::bind() const {
