@@ -8,6 +8,10 @@
 
 #include "datatypes/BlockTypes.h"
 
+static std::string chunkFileNameFromCoords(const glm::ivec3& chunkPos) {
+   return "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z) + ".chnk";
+}
+
 std::shared_ptr<std::mutex> ChunkStorage::getChunkMutex(const glm::ivec3& pos) {
     std::lock_guard<std::mutex> lock(m_lockMapMutex);
 
@@ -43,8 +47,7 @@ bool ChunkStorage::hasChunk(const glm::ivec3& chunkPos) {
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
-    std::string chunkFileName =
-        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
+    std::string chunkFileName = chunkFileNameFromCoords(chunkPos);
     return std::filesystem::exists(m_chunkStoragePath / chunkFileName);
 }
 
@@ -52,8 +55,7 @@ std::unique_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
-    std::string chunkFileName =
-        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
+    std::string chunkFileName = chunkFileNameFromCoords(chunkPos);
     std::filesystem::path chunkFilePath = m_chunkStoragePath / chunkFileName;
 
     std::ifstream file(chunkFilePath.c_str(), std::ios::binary);
@@ -124,8 +126,7 @@ void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 
-    std::string chunkFileName =
-        "chunk_" + std::to_string(chunkPos.x) + "_" + std::to_string(chunkPos.y) + "_" + std::to_string(chunkPos.z);
+    std::string chunkFileName = chunkFileNameFromCoords(chunkPos);
     std::filesystem::path chunkFilePath = m_chunkStoragePath / chunkFileName;
 
     std::ofstream file(chunkFilePath.c_str(), std::ios::binary);
