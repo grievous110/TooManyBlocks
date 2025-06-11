@@ -19,7 +19,7 @@ private:
     std::array<unsigned int, LightPriority::Count> m_shadowMapSizes;
     std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
 
-    RawBuffer<ShaderLightStruct> m_lightBuffer;
+    RawBuffer<GPULight> m_lightBuffer;
     UniformBuffer m_lightUniformBuffer;
 
     RawBuffer<glm::mat4> m_lightViewProjectionBuffer;

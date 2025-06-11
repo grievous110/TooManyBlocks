@@ -98,9 +98,9 @@ void LightProcessor::initialize() {
         }
 
         m_lightViewProjectionBuffer = RawBuffer<glm::mat4>(m_totalSupportedLights);
-        m_lightUniformBuffer = UniformBuffer::create(nullptr, m_totalSupportedLights * sizeof(ShaderLightStruct));
+        m_lightUniformBuffer = UniformBuffer::create(nullptr, m_totalSupportedLights * sizeof(GPULight));
 
-        m_lightBuffer = RawBuffer<ShaderLightStruct>(m_totalSupportedLights);
+        m_lightBuffer = RawBuffer<GPULight>(m_totalSupportedLights);
         m_lightViewProjectionUniformBuffer = UniformBuffer::create(nullptr, m_totalSupportedLights * sizeof(glm::mat4));
         isInitialized = true;
     }
@@ -137,7 +137,7 @@ void LightProcessor::updateBuffers(const RawBuffer<Light*>& activeLights) {
         for (Light* currLight : activeLights) {
             Transform lTr = currLight->getGlobalTransform();
 
-            ShaderLightStruct lightStruct;
+            GPULight lightStruct;
             lightStruct.lightType = static_cast<unsigned int>(currLight->getType());
             lightStruct.priority = static_cast<unsigned int>(currLight->getPriotity());
             lightStruct.shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
@@ -155,7 +155,7 @@ void LightProcessor::updateBuffers(const RawBuffer<Light*>& activeLights) {
             m_lightViewProjectionBuffer.push_back(currLight->getViewProjMatrix());
         }
 
-        m_lightUniformBuffer.updateData(m_lightBuffer.data(), activeLights.size() * sizeof(ShaderLightStruct));
+        m_lightUniformBuffer.updateData(m_lightBuffer.data(), activeLights.size() * sizeof(GPULight));
         m_lightViewProjectionUniformBuffer.updateData(
             m_lightViewProjectionBuffer.data(), activeLights.size() * sizeof(glm::mat4)
         );
