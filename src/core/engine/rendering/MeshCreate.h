@@ -11,6 +11,7 @@
 #include "engine/rendering/BlockToTextureMapping.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/StaticMesh.h"
+#include "util/BitOperations.h"
 
 #define POSITION_BITMASK  0x3FF
 #define X_POSITION_OFFSET 20
@@ -27,10 +28,6 @@
 
 #define NORMAL_BITMASK    0x07
 #define NORMAL_OFFSET     0
-
-#define SET_BITS(target, value, bitmask, position) \
-    (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
-#define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
 
 struct UVCoord {
     uint8_t x : 6;
