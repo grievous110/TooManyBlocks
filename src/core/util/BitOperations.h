@@ -8,7 +8,13 @@
 #include <intrin.h>
 #endif
 
-static_assert(sizeof(unsigned int) * CHAR_BIT == 32, "This bit manipulation header enforces unsigned int to be 32 bits for safety");
+static_assert(
+    sizeof(unsigned int) * CHAR_BIT == 32, "This bit manipulation header enforces unsigned int to be 32 bits for safety"
+);
+
+#define SET_BITS(target, value, bitmask, position) \
+    (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
+#define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
 
 template <typename T>
 std::string bitString(const T& value) {
