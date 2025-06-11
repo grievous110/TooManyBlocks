@@ -88,10 +88,20 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_skeletalMesh->getLocalTransform().setPosition(glm::vec3(10.0f, 8.0f, 5.0f));
 
         // Particles
-        m_particles = std::make_shared<ParticleSystem>();
+        m_particles = std::make_shared<ParticleSystem>(std::vector<GenericGPUParticleModule>{
+            ParticleModules::SphereSpawn(0.5f),
+            ParticleModules::InitialVelocityInCone(5.0f, 10.0f, glm::vec3(1.0, 5.0, 0.5), 45.0f),
+            ParticleModules::InitialLifetime(0.5f, 2.0f), ParticleModules::Acceleration(glm::vec3(0, -9.81, 0)),
+            ParticleModules::ColorOverLife({
+                {0.0f, glm::vec4(1, 0, 0, 1)},  // red at birth
+                {0.5f, glm::vec4(0, 1, 0, 1)},  // green halfway
+                {1.0f, glm::vec4(0, 0, 1, 0)}   // fade to blue and alpha 0 at death
+            })
+        });
         std::shared_ptr<Shader> particleTFShader =
             std::make_shared<TransformFeedbackShader>(TransformFeedbackShader::create(
-                "res/shaders/particleTFShader", {"tf_position", "tf_velocity", "tf_timeToLive", "tf_type"}
+                "res/shaders/particleTFShader", {"tf_color", "tf_velocity", "tf_position", "tf_timeToLive",
+                                                 "tf_initialTimeToLive", "tf_size", "tf_flags"}
             ));
         std::shared_ptr<Shader> particleShader = provider->getShaderFromFile("res/shaders/particleShader");
         m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader));

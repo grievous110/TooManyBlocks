@@ -1,6 +1,7 @@
 #include "ParticleMaterial.h"
 
 #include "Logger.h"
+#include "engine/ParticleSystem.h"
 #include "engine/rendering/Renderer.h"
 
 bool ParticleMaterial::supportsPass(PassType passType) const {
@@ -23,6 +24,11 @@ void ParticleMaterial::bindForPass(PassType passType, const RenderContext& conte
 void ParticleMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) const {
     if (passType == PassType::TransformFeedback) {
         m_tfShader->use();
+        m_tfShader->bindUniformBuffer("ParticleModulesBlock", *context.pInfo.pModulesBuff);
+        m_tfShader->setUniform(
+            "u_moduleCount",
+            static_cast<unsigned int>(context.pInfo.pModulesBuff->getByteSize() / sizeof(GenericGPUParticleModule))
+        );
     } else if (passType == PassType::MainPass) {
         m_mainShader->use();
         m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());

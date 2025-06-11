@@ -173,7 +173,8 @@ void Renderer::render(const ApplicationContext& context) {
         for (Renderable* obj : batch.second) {
             if (ParticleSystem* ps = dynamic_cast<ParticleSystem*>(obj)){
                 ps->switchBuffers();
-                m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
+                m_currentRenderContext.tInfo.meshTransform = ps->getRenderableTransform();
+                m_currentRenderContext.pInfo.pModulesBuff = ps->getModulesUBO();
                 batch.first->bindForObjectDraw(PassType::TransformFeedback, m_currentRenderContext);
                 ps->compute();
             }
