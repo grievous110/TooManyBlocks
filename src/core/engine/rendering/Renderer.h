@@ -27,6 +27,10 @@ struct TransformInfo {
     Transform meshTransform;
 };
 
+struct ParticleInfo {
+    const UniformBuffer* pModulesBuff;
+};
+
 struct SSAOInfo {
     const Texture* output;
 };
@@ -43,6 +47,7 @@ struct RenderContext {
     TransformInfo tInfo;
     SkeletalMeshInfo skInfo;
     LightingInfo lInfo;
+    ParticleInfo pInfo;
     SSAOInfo ssaoInfo;
 };
 
