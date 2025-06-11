@@ -20,7 +20,7 @@ enum class LightType : uint8_t {
     Point
 };
 
-struct ShaderLightStruct {
+struct GPULight {
     unsigned int lightType;
     unsigned int priority;
     unsigned int shadowMapIndex;
