@@ -81,14 +81,14 @@ void Renderer::beginAmbientOcclusionPass(const ApplicationContext& context) {
     m_currentRenderContext.tInfo.view = context.instance->m_player->getCamera()->getViewMatrix();
     m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
     m_ssaoProcessor.validateBuffers(context);  // Possible resize sssao textures if resize happened
-    // Disable blending cause rendering to textures that do not have 4 channels
+    // Disable blending if enabled here cause rendering to textures that do not have 4 channels
     // (alpha) will will be discarded. Blending expects a valid alpha component
-    GLCALL(glDisable(GL_BLEND));
+    // GLCALL(glDisable(GL_BLEND));
 }
 
 void Renderer::endAmbientOcclusionPass(const ApplicationContext& context) {
+    // GLCALL(glEnable(GL_BLEND));
     m_currentRenderContext.ssaoInfo.output = m_ssaoProcessor.getOcclusionOutput();
-    GLCALL(glEnable(GL_BLEND));
 }
 
 void Renderer::beginMainpass(const ApplicationContext& context) {
@@ -111,7 +111,7 @@ void Renderer::initialize() {
     GLEnableDebugging();
 
     // GLCALL(glPolygonMode(GL_FRONT, GL_LINE)); // Grid View mode
-    GLCALL(glEnable(GL_BLEND));
+    // GLCALL(glEnable(GL_BLEND)); // Leave disabled for now (Blending will receive dedicated system)
     GLCALL(glEnable(GL_DEPTH_TEST));
     GLCALL(glEnable(GL_CULL_FACE));    // Enable face culling
     GLCALL(glCullFace(GL_BACK));       // Specify that back faces should be culled (not rendered)
