@@ -231,6 +231,8 @@ void spawnParticle() {
 }
 
 void updateParticle() {
+    uint seed = floatBitsToUint(u_time) + gl_VertexID;
+
     tf_color = in_color;
     tf_velocity = in_velocity;
     tf_position = in_position + in_velocity * u_deltaTime;
@@ -239,12 +241,15 @@ void updateParticle() {
     tf_size = in_size;
     tf_flags = in_flags;
 
+    float dragCoefficient = 0.0;
+    vec3 jitterVel = vec3(0.0);
+
     for (uint i = 0; i < u_moduleCount; i++) {
         ParticleModule module = u_modules[i];
         if ((module.flags & UPDATEMODULE_FLAG) != 0) {
             switch (module.type) {
             case Drag: {
-                // TODO: Implement
+                dragCoefficient = module.params[0].x;
                 break;
             }
             case Acceleration: {
@@ -252,7 +257,11 @@ void updateParticle() {
                 break;
             }
             case Turbulence: {
-                // TODO: Implement
+                jitterVel = vec3(
+                    rand01(seed) * 2.0 - 1.0,
+                    rand01(seed) * 2.0 - 1.0,
+                    rand01(seed) * 2.0 - 1.0
+                ) * module.params[0].x * u_deltaTime;
                 break;
             }
             case SizeOverLife: {
@@ -312,6 +321,11 @@ void updateParticle() {
             }
         }
     }
+
+    // Apply drag
+    tf_velocity *= max(1.0 - dragCoefficient * u_deltaTime, 0.0);
+    // Apply turbulence
+    tf_velocity += jitterVel;
 }
 
 void main() {

@@ -92,6 +92,7 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::SpawnRate(50.0f),
             ParticleModules::SpawnBurst(3.0f, 200.0f),
             ParticleModules::SphereSpawn(0.5f),
+            ParticleModules::Turbulence(50.0f),
             ParticleModules::InitialVelocityInCone(6.0f, 10.0f, glm::vec3(1.0, 2.0, 0.5), 15.0f),
             ParticleModules::Acceleration(glm::vec3(0, -9.86, 0)),
             ParticleModules::InitialLifetime(1.5f, 3.0f),

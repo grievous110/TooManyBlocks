@@ -35,30 +35,30 @@ namespace ParticleModules {
     GenericGPUParticleModule SpawnBurst(float time, unsigned int count);
 
     GenericGPUParticleModule PointSpawn();
-    GenericGPUParticleModule BoxSpawn(glm::vec3 minCorner, glm::vec3 maxCorner);
+    GenericGPUParticleModule BoxSpawn(const glm::vec3& minCorner, const glm::vec3& maxCorner);
     GenericGPUParticleModule SphereSpawn(float radius, float innerRadius = 0.0f);
     GenericGPUParticleModule ConeSpawn(float height, float baseRadius);
     GenericGPUParticleModule DiskSpawn(float radius, float innerRadius = 0.0f);
-    GenericGPUParticleModule LineSpawn(glm::vec3 start, glm::vec3 end);
+    GenericGPUParticleModule LineSpawn(const glm::vec3& start, const glm::vec3& end);
 
-    GenericGPUParticleModule InitialVelocity(glm::vec3 vel);
-    GenericGPUParticleModule InitialVelocity(glm::vec3 minVel, glm::vec3 maxVel);
+    GenericGPUParticleModule InitialVelocity(const glm::vec3& vel);
+    GenericGPUParticleModule InitialVelocity(const glm::vec3& minVel, const glm::vec3& maxVel);
     GenericGPUParticleModule InitialVelocityInCone(
-        float velocityMag, glm::vec3 axis, float coneAngle, float innerConeAngle = 0.0f
+        float velocityMag, const glm::vec3& axis, float coneAngle, float innerConeAngle = 0.0f
     );
     GenericGPUParticleModule InitialVelocityInCone(
-        float minVelocityMag, float maxVelocityMag, glm::vec3 axis, float coneAngle, float innerConeAngle = 0.0f
+        float minVelocityMag, float maxVelocityMag, const glm::vec3& axis, float coneAngle, float innerConeAngle = 0.0f
     );
     GenericGPUParticleModule InitialLifetime(float time);
     GenericGPUParticleModule InitialLifetime(float minLife, float maxLife);
     GenericGPUParticleModule InitialSize(float size);
     GenericGPUParticleModule InitialSize(float minSize, float maxSize);
-    GenericGPUParticleModule InitialColor(glm::vec4 color);
-    GenericGPUParticleModule InitialColor(glm::vec4 minColor, glm::vec4 maxColor);
+    GenericGPUParticleModule InitialColor(const glm::vec4& color);
+    GenericGPUParticleModule InitialColor(const glm::vec4& minColor, const glm::vec4& maxColor);
 
     GenericGPUParticleModule Drag(float dragCoefficient);
-    GenericGPUParticleModule Acceleration(glm::vec3 acceleration);
-    GenericGPUParticleModule Turbulence(float frequency, float amplitude);  // could sample 3D noise
+    GenericGPUParticleModule Acceleration(const glm::vec3& acceleration);
+    GenericGPUParticleModule Turbulence(float strength);
     GenericGPUParticleModule SizeOverLife(const std::vector<std::pair<float, float>>& keyframes);
     GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec4>>& keyframes);
 };  // namespace ParticleModules
@@ -82,7 +82,7 @@ private:
     float m_spawnAccumulator;
     float m_spawnRate;
     std::vector<std::tuple<float, float, bool>> m_burstSpawns;
-    
+
     unsigned int m_spawnCount;
     unsigned int m_particleSpawnOffset;
     unsigned int m_newParticleSpawnOffset;
