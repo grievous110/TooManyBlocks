@@ -293,7 +293,7 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
     bool lifeTimeDefined = false;
 
     float maxLifetime = 0.0f;
-    float maxBurstCount = 0.0f;
+    float totalBurstParticleCount = 0.0f;
 
     for (const GenericGPUParticleModule& module : modules) {
         if (module.flags & SPAWNMODULE_FLAG) {
@@ -319,7 +319,7 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
                         "Cannot define SpawnBurst when already having SpawnFixedParticleCount module"
                     );
                 m_burstSpawns.push_back({module.params[0].x, module.params[1].x, false});
-                maxBurstCount += module.params[1].x;
+                totalBurstParticleCount += module.params[1].x;
                 m_flags |= DYNAMIC_SPAWNRATE;
                 hasSpawnRateModule = true;
             }
@@ -339,8 +339,8 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
     if (!hasSpawnLocationModule) throw std::runtime_error("Must at least define one spawn location module");
 
     if (m_flags & DYNAMIC_SPAWNRATE) {
-        float estimatedCount = m_spawnRate * maxLifetime + maxBurstCount;
-        m_maxParticleCount = static_cast<size_t>(std::ceil(estimatedCount));
+        float worstCaseActiveParticles = m_spawnRate * maxLifetime + totalBurstParticleCount;
+        m_maxParticleCount = static_cast<size_t>(std::ceil(worstCaseActiveParticles));
     }
 
     m_tfFeedbackVAO1 = VertexArray::create();
