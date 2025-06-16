@@ -91,7 +91,7 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule BoxSpawn(glm::vec3 minCorner, glm::vec3 maxCorner) {
+    GenericGPUParticleModule BoxSpawn(const glm::vec3& minCorner, const glm::vec3& maxCorner) {
         if (minCorner.x > maxCorner.x || minCorner.y > maxCorner.y || minCorner.z > maxCorner.z)
             throw std::invalid_argument("BoxSpawn: minCorner must be less than or equal to maxCorner on all axes.");
 
@@ -143,7 +143,7 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule LineSpawn(glm::vec3 start, glm::vec3 end) {
+    GenericGPUParticleModule LineSpawn(const glm::vec3& start, const glm::vec3& end) {
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::LineSpawn);
         gModule.flags |= SPAWNLOCATIONMODULE_FLAG;
@@ -152,9 +152,9 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule InitialVelocity(glm::vec3 vel) { return InitialVelocity(vel, vel); }
+    GenericGPUParticleModule InitialVelocityconst(const glm::vec3& vel) { return InitialVelocity(vel, vel); }
 
-    GenericGPUParticleModule InitialVelocity(glm::vec3 minVel, glm::vec3 maxVel) {
+    GenericGPUParticleModule InitialVelocity(const glm::vec3& minVel, const glm::vec3& maxVel) {
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::InitialVelocity);
         gModule.flags |= INITMODULE_FLAG;
@@ -164,13 +164,13 @@ namespace ParticleModules {
     }
 
     GenericGPUParticleModule InitialVelocityInCone(
-        float velocityMag, glm::vec3 axis, float coneAngle, float innerConeAngle
+        float velocityMag, const glm::vec3& axis, float coneAngle, float innerConeAngle
     ) {
         return InitialVelocityInCone(velocityMag, velocityMag, axis, coneAngle, innerConeAngle);
     }
 
     GenericGPUParticleModule InitialVelocityInCone(
-        float minVelocityMag, float maxVelocityMag, glm::vec3 axis, float coneAngle, float innerConeAngle
+        float minVelocityMag, float maxVelocityMag, const glm::vec3& axis, float coneAngle, float innerConeAngle
     ) {
         if (glm::length(axis) < 1e-6f)
             throw std::invalid_argument("InitialVelocityInCone: axis vector must be of non-zero length.");
@@ -218,9 +218,9 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule InitialColor(glm::vec4 color) { return InitialColor(color, color); }
+    GenericGPUParticleModule InitialColor(const glm::vec4& color) { return InitialColor(color, color); }
 
-    GenericGPUParticleModule InitialColor(glm::vec4 minColor, glm::vec4 maxColor) {
+    GenericGPUParticleModule InitialColor(const glm::vec4& minColor, const glm::vec4& maxColor) {
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::InitialColor);
         gModule.flags |= INITMODULE_FLAG;
@@ -237,7 +237,7 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule Acceleration(glm::vec3 acceleration) {
+    GenericGPUParticleModule Acceleration(const glm::vec3& acceleration) {
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::Acceleration);
         gModule.flags |= UPDATEMODULE_FLAG;
@@ -245,8 +245,12 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule Turbulence(float frequency, float amplitude) {
-        throw std::runtime_error("Turbulence not implemented yet");
+    GenericGPUParticleModule Turbulence(float strength) {
+        GenericGPUParticleModule gModule = {};
+        gModule.type = static_cast<uint32_t>(ModuleType::Turbulence);
+        gModule.flags |= UPDATEMODULE_FLAG;
+        gModule.params[0].x = strength;
+        return gModule;
     }
 
     GenericGPUParticleModule SizeOverLife(const std::vector<std::pair<float, float>>& keyframes) {
