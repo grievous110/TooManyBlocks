@@ -30,6 +30,10 @@ struct GenericGPUParticleModule {
 };
 
 namespace ParticleModules {
+    GenericGPUParticleModule SpawnFixedParticleCount(unsigned int count);
+    GenericGPUParticleModule SpawnRate(float rate);
+    GenericGPUParticleModule SpawnBurst(float time, unsigned int count);
+
     GenericGPUParticleModule PointSpawn();
     GenericGPUParticleModule BoxSpawn(glm::vec3 minCorner, glm::vec3 maxCorner);
     GenericGPUParticleModule SphereSpawn(float radius, float innerRadius = 0.0f);
@@ -74,6 +78,15 @@ private:
 
     bool m_switched;
 
+    float m_accumulatedTime;
+    float m_spawnAccumulator;
+    float m_spawnRate;
+    std::vector<std::tuple<float, float, bool>> m_burstSpawns;
+    
+    unsigned int m_spawnCount;
+    unsigned int m_particleSpawnOffset;
+    unsigned int m_newParticleSpawnOffset;
+    unsigned int m_maxParticleCount;
     uint32_t m_flags;
 
     virtual void draw() const override;
@@ -86,11 +99,21 @@ public:
 
     void compute();
 
+    void reset();
+
     void update(float deltaTime) override;
 
     const UniformBuffer* getModulesUBO() const { return &m_modulesUBO; }
 
     virtual BoundingBox getBoundingBox() const override { return BoundingBox::notCullable(); };
+
+    unsigned int getSpawnCount() const { return m_spawnCount; }
+
+    unsigned int getParticleSpawnOffset() const { return m_particleSpawnOffset; }
+
+    unsigned int getMaxParticleCount() const { return m_maxParticleCount; }
+
+    uint32_t getFlags() const { return m_flags; }
 };
 
 #endif

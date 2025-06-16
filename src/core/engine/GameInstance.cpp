@@ -89,13 +89,16 @@ void GameInstance::initializeWorld(World* newWorld) {
 
         // Particles
         m_particles = std::make_shared<ParticleSystem>(std::vector<GenericGPUParticleModule>{
+            ParticleModules::SpawnRate(50.0f),
+            ParticleModules::SpawnBurst(3.0f, 200.0f),
             ParticleModules::SphereSpawn(0.5f),
-            ParticleModules::InitialVelocityInCone(0.1f, 2.0f, glm::vec3(1.0, 5.0, 0.5), 45.0f),
-            ParticleModules::Acceleration(glm::vec3(0, -1, 0)),
-            ParticleModules::InitialLifetime(0.5f, 3.0f),
+            ParticleModules::InitialVelocityInCone(6.0f, 10.0f, glm::vec3(1.0, 2.0, 0.5), 15.0f),
+            ParticleModules::Acceleration(glm::vec3(0, -9.86, 0)),
+            ParticleModules::InitialLifetime(1.5f, 3.0f),
+            ParticleModules::InitialSize(0.1f),
             ParticleModules::ColorOverLife({
                 {0.0f, glm::vec4(1, 0, 0, 1)},
-                {0.5f, glm::vec4(0, 1, 0, 0.5)},
+                {0.5f, glm::vec4(0, 1, 0, 0.5f)},
                 {1.0f, glm::vec4(0, 0, 1, 0)}
             })
         });
@@ -166,6 +169,8 @@ void GameInstance::update(float deltaTime) {
     for (const auto& light : m_lights) {
         light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * deltaTime, 0.0f));
     }
+
+    m_particles->update(deltaTime);
 
     Transform& mehs1Tr = m_mesh1->getLocalTransform();
     mehs1Tr.rotate(10.0f * deltaTime, WorldUp);

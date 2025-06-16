@@ -29,6 +29,10 @@ struct TransformInfo {
 
 struct ParticleInfo {
     const UniformBuffer* pModulesBuff;
+    unsigned int spawnCount;
+    unsigned int particleSpawnOffset;
+    unsigned int maxParticleCount;
+    uint32_t flags;
 };
 
 struct SSAOInfo {
