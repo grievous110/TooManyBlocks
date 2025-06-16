@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include <chrono>
 #include <random>
 #include <vector>
 
@@ -80,9 +79,7 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_focusedBlockOutline->setLineWidth(3.5f);
 
         std::shared_ptr<Shader> skeletalShader = provider->getShaderFromFile(Res::Shader::SKELETAL_MESH);
-        auto start = std::chrono::high_resolution_clock::now();
         std::shared_ptr<Texture> skeletalTexture = provider->getTextureFromFile(Res::Texture::TESTFLY_TEXTURE);
-        auto end = std::chrono::high_resolution_clock::now();
         m_skeletalMesh = provider->getSkeletalMeshFromFile(Res::Model::TESTFLY);
         m_skeletalMesh->assignMaterial(std::make_shared<SkeletalMaterial>(skeletalShader, skeletalTexture));
         m_skeletalMesh->getLocalTransform().setPosition(glm::vec3(10.0f, 8.0f, 5.0f));
@@ -111,9 +108,6 @@ void GameInstance::initializeWorld(World* newWorld) {
         std::shared_ptr<Shader> particleShader = provider->getShaderFromFile("res/shaders/particleShader");
         m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader));
         m_particles->getLocalTransform().setPosition(glm::vec3(10.0f, 12.0f, 5.0f));
-
-        auto dur = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-        lgr::lout.debug("Loaded world in: " + std::to_string(dur.count()) + " ms");
     }
 }
 
