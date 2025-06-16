@@ -57,6 +57,7 @@ static inline void batchByMaterialForPass(
 void Renderer::beginTransformFeedbackPass(const ApplicationContext& context) {
     GLCALL(glEnable(GL_RASTERIZER_DISCARD));
     m_currentRenderContext.tInfo.viewProjection = context.instance->m_player->getCamera()->getViewProjMatrix();
+    m_currentRenderContext.tInfo.viewportTransform = context.instance->m_player->getCamera()->getGlobalTransform();
 }
 
 void Renderer::endTransformFeedbackPass(const ApplicationContext& context) { GLCALL(glDisable(GL_RASTERIZER_DISCARD)); }
@@ -171,10 +172,14 @@ void Renderer::render(const ApplicationContext& context) {
         batch.first->bindForPass(PassType::TransformFeedback, m_currentRenderContext);
 
         for (Renderable* obj : batch.second) {
-            if (ParticleSystem* ps = dynamic_cast<ParticleSystem*>(obj)){
+            if (ParticleSystem* ps = dynamic_cast<ParticleSystem*>(obj)) {
                 ps->switchBuffers();
                 m_currentRenderContext.tInfo.meshTransform = ps->getRenderableTransform();
                 m_currentRenderContext.pInfo.pModulesBuff = ps->getModulesUBO();
+                m_currentRenderContext.pInfo.spawnCount = ps->getSpawnCount();
+                m_currentRenderContext.pInfo.particleSpawnOffset = ps->getParticleSpawnOffset();
+                m_currentRenderContext.pInfo.maxParticleCount = ps->getMaxParticleCount();
+                m_currentRenderContext.pInfo.flags = ps->getFlags();
                 batch.first->bindForObjectDraw(PassType::TransformFeedback, m_currentRenderContext);
                 ps->compute();
             }
