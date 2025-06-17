@@ -21,8 +21,8 @@ struct ApplicationContext {
     int lastMousepositionX;
     int lastMousepositionY;
 
-    float deltaTime;
-    float elapsedTime;
+    float deltaAppTime;
+    float elapsedAppTime;
 
     ThreadPool* workerPool;
     GLFWwindow* window;
