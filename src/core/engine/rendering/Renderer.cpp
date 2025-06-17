@@ -10,7 +10,6 @@
 #include "Application.h"
 #include "Logger.h"
 #include "engine/GameInstance.h"
-#include "engine/ParticleSystem.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/Frustum.h"
@@ -18,27 +17,28 @@
 #include "engine/rendering/SkeletalMesh.h"
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
+#include "engine/rendering/particles/ParticleSystem.h"
 
 static constexpr float fullScreenQuadCCW[] = {
-    // Position   // UV-Koordinaten
-    -1.0f, 1.0f,  0.0f, 1.0f,  // Oben-Links
-    -1.0f, -1.0f, 0.0f, 0.0f,  // Unten-Links
-    1.0f,  -1.0f, 1.0f, 0.0f,  // Unten-Rechts
+    // Position   // UV-Coords
+    -1.0f, 1.0f,  0.0f, 1.0f,  // Top-Left
+    -1.0f, -1.0f, 0.0f, 0.0f,  // Bottom-Left
+    1.0f,  -1.0f, 1.0f, 0.0f,  // Bottom-Right
 
-    -1.0f, 1.0f,  0.0f, 1.0f,  // Oben-Links
-    1.0f,  -1.0f, 1.0f, 0.0f,  // Unten-Rechts
-    1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+    -1.0f, 1.0f,  0.0f, 1.0f,  // Top-Left
+    1.0f,  -1.0f, 1.0f, 0.0f,  // Bottom-Right
+    1.0f,  1.0f,  1.0f, 1.0f   // Top-Right
 };
 
 static constexpr float fullScreenQuadCW[] = {
-    // Position   // UV-Koordinaten
-    1.0f,  -1.0f, 1.0f, 0.0f,  // Unten-Rechts
-    -1.0f, -1.0f, 0.0f, 0.0f,  // Unten-Links
-    -1.0f, 1.0f,  0.0f, 1.0f,  // Oben-Links
+    // Position   // UV-Coords
+    1.0f,  -1.0f, 1.0f, 0.0f,  // Bottom-Right
+    -1.0f, -1.0f, 0.0f, 0.0f,  // Bottom-Left
+    -1.0f, 1.0f,  0.0f, 1.0f,  // Top-Links
 
-    1.0f,  -1.0f, 1.0f, 0.0f,  // Unten-Rechts
-    -1.0f, 1.0f,  0.0f, 1.0f,  // Oben-Links
-    1.0f,  1.0f,  1.0f, 1.0f   // Oben-Rechts
+    1.0f,  -1.0f, 1.0f, 0.0f,  // Bottom-Right
+    -1.0f, 1.0f,  0.0f, 1.0f,  // Top-Left
+    1.0f,  1.0f,  1.0f, 1.0f   // Top-Right
 };
 
 static inline void batchByMaterialForPass(
