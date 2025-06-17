@@ -19,6 +19,8 @@
 #include "engine/rendering/lowlevelapi/Texture.h"
 
 struct GameState {
+    float elapsedGameTime = 0.0f;
+    float deltaTime = 0.0f;
     bool gamePaused = false;
     bool quitGame = false;
 };

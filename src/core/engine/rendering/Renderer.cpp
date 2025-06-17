@@ -157,8 +157,8 @@ void Renderer::render(const ApplicationContext& context) {
 
     // Update render context
     m_currentRenderContext.currScreenRes = glm::uvec2(context.screenWidth, context.screenHeight);
-    m_currentRenderContext.deltaTime = context.deltaTime;
-    m_currentRenderContext.elapsedTime = context.elapsedTime;
+    m_currentRenderContext.deltaTime = context.instance->gameState.deltaTime;
+    m_currentRenderContext.elapsedTime = context.instance->gameState.elapsedGameTime;
 
     RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
     std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;

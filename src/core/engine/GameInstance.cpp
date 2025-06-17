@@ -30,6 +30,9 @@ GameInstance::~GameInstance() { deinitWorld(); }
 
 void GameInstance::initializeWorld(World* newWorld) {
     if (m_world == nullptr) {
+        gameState.deltaTime = 0.0f;
+        gameState.elapsedGameTime = 0.0f;
+
         std::random_device rd;
         std::mt19937 generator(rd());
         std::uniform_int_distribution<uint32_t> distribution(0, UINT32_MAX);
@@ -160,6 +163,9 @@ void GameInstance::pushWorldRenderData() const {
 }
 
 void GameInstance::update(float deltaTime) {
+    gameState.deltaTime = deltaTime;
+    gameState.elapsedGameTime += deltaTime;
+
     m_player->update(deltaTime);
     for (const auto& light : m_lights) {
         light->getLocalTransform().rotate(glm::vec3(0.0f, 10.0f * deltaTime, 0.0f));
