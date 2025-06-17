@@ -257,11 +257,11 @@ void updateParticle() {
                 break;
             }
             case Turbulence: {
-                jitterVel = vec3(
+                jitterVel = normalize(vec3(
                     rand01(seed) * 2.0 - 1.0,
                     rand01(seed) * 2.0 - 1.0,
                     rand01(seed) * 2.0 - 1.0
-                ) * module.params[0].x * u_deltaTime;
+                )) * module.params[0].x * u_deltaTime;
                 break;
             }
             case SizeOverLife: {

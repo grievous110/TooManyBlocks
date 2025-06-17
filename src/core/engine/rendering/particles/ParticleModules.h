@@ -1,25 +1,17 @@
-#ifndef TOOMANYBLOCKS_PARTICLESYSTEM_H
-#define TOOMANYBLOCKS_PARTICLESYSTEM_H
+#ifndef TOOMANYBLOCKS_PARTICLEMODULES_H
+#define TOOMANYBLOCKS_PARTICLEMODULES_H
+
+#include <stdint.h>
 
 #include <glm/glm.hpp>
+#include <vector>
 
-#include "engine/Updatable.h"
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/Renderable.h"
-#include "engine/rendering/lowlevelapi/ShaderStorageBuffer.h"
-#include "engine/rendering/lowlevelapi/UniformBuffer.h"
-#include "engine/rendering/lowlevelapi/VertexArray.h"
-#include "engine/rendering/lowlevelapi/VertexBuffer.h"
+constexpr uint32_t SPAWNMODULE_FLAG = (1U << 0);
+constexpr uint32_t SPAWNLOCATIONMODULE_FLAG = (1U << 1);
+constexpr uint32_t INITMODULE_FLAG = (1U << 2);
+constexpr uint32_t UPDATEMODULE_FLAG = (1U << 3);
 
-struct Particle {
-    glm::vec4 color;
-    glm::vec3 position;
-    glm::vec3 velocity;
-    float timeToLive;
-    float initialTimeToLive;
-    float size;
-    uint32_t flags;
-};
+constexpr uint32_t DYNAMIC_SPAWNRATE = (1U << 0);
 
 struct GenericGPUParticleModule {
     uint32_t type;
@@ -27,6 +19,35 @@ struct GenericGPUParticleModule {
     uint32_t metadata1;
     uint32_t metadata2;
     glm::vec4 params[5];
+};
+
+enum ModuleType : uint32_t {
+    // Spawn modules
+    SpawnFixedParticleCount = 0U,
+    SpawnRate,
+    SpawnBurst,
+
+    // Spawn location modules
+    PointSpawn,
+    BoxSpawn,
+    SphereSpawn,
+    ConeSpawn,
+    DiskSpawn,
+    LineSpawn,
+
+    // Initializaion modules
+    InitialVelocity,
+    InitialVelocityInCone,
+    InitialLifetime,
+    InitialSize,
+    InitialColor,
+
+    // Update modules
+    Drag,
+    Acceleration,
+    Turbulence,
+    SizeOverLife,
+    ColorOverLife
 };
 
 namespace ParticleModules {
@@ -62,58 +83,5 @@ namespace ParticleModules {
     GenericGPUParticleModule SizeOverLife(const std::vector<std::pair<float, float>>& keyframes);
     GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec4>>& keyframes);
 };  // namespace ParticleModules
-
-class ParticleSystem : public Renderable, public Updatable {
-private:
-    VertexArray m_tfFeedbackVAO1;
-    VertexArray m_tfFeedbackVAO2;
-    VertexBuffer m_instanceDataVBO1;
-    VertexBuffer m_instanceDataVBO2;
-
-    VertexArray m_renderVAO1;
-    VertexArray m_renderVAO2;
-    VertexBuffer m_verticesVBO;
-
-    UniformBuffer m_modulesUBO;
-
-    bool m_switched;
-
-    float m_accumulatedTime;
-    float m_spawnAccumulator;
-    float m_spawnRate;
-    std::vector<std::tuple<float, float, bool>> m_burstSpawns;
-
-    unsigned int m_spawnCount;
-    unsigned int m_particleSpawnOffset;
-    unsigned int m_newParticleSpawnOffset;
-    unsigned int m_maxParticleCount;
-    uint32_t m_flags;
-
-    virtual void draw() const override;
-
-public:
-    ParticleSystem(const std::vector<GenericGPUParticleModule>& modules);
-    virtual ~ParticleSystem() = default;
-
-    void switchBuffers();
-
-    void compute();
-
-    void reset();
-
-    void update(float deltaTime) override;
-
-    const UniformBuffer* getModulesUBO() const { return &m_modulesUBO; }
-
-    virtual BoundingBox getBoundingBox() const override { return BoundingBox::notCullable(); };
-
-    unsigned int getSpawnCount() const { return m_spawnCount; }
-
-    unsigned int getParticleSpawnOffset() const { return m_particleSpawnOffset; }
-
-    unsigned int getMaxParticleCount() const { return m_maxParticleCount; }
-
-    uint32_t getFlags() const { return m_flags; }
-};
 
 #endif

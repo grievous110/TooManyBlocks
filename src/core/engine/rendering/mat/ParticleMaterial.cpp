@@ -1,8 +1,8 @@
 #include "ParticleMaterial.h"
 
 #include "Logger.h"
-#include "engine/ParticleSystem.h"
 #include "engine/rendering/Renderer.h"
+#include "engine/rendering/particles/ParticleSystem.h"
 
 bool ParticleMaterial::supportsPass(PassType passType) const {
     return passType == PassType::TransformFeedback || passType == PassType::MainPass;

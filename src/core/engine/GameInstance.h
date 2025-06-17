@@ -6,17 +6,16 @@
 #include <vector>
 
 #include "Updatable.h"
-#include "engine/ParticleSystem.h"
 #include "engine/entity/Player.h"
 #include "engine/env/World.h"
 #include "engine/env/lights/Light.h"
 #include "engine/env/lights/Spotlight.h"
-#include "engine/rendering/Camera.h"
 #include "engine/rendering/Line.h"
 #include "engine/rendering/SkeletalMesh.h"
 #include "engine/rendering/Wireframe.h"
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/particles/ParticleSystem.h"
 
 struct GameState {
     float elapsedGameTime = 0.0f;
