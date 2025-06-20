@@ -41,13 +41,17 @@ enum ModuleType : uint32_t {
     InitialLifetime,
     InitialSize,
     InitialColor,
+    InitialAlpha,
+    InitialTexture,
 
     // Update modules
     Drag,
     Acceleration,
     Turbulence,
     SizeOverLife,
-    ColorOverLife
+    ColorOverLife,
+    AlphaOverLife,
+    AnimatedTexture
 };
 
 namespace ParticleModules {
@@ -74,14 +78,18 @@ namespace ParticleModules {
     GenericGPUParticleModule InitialLifetime(float minLife, float maxLife);
     GenericGPUParticleModule InitialSize(float size);
     GenericGPUParticleModule InitialSize(float minSize, float maxSize);
-    GenericGPUParticleModule InitialColor(const glm::vec4& color);
-    GenericGPUParticleModule InitialColor(const glm::vec4& minColor, const glm::vec4& maxColor);
-
+    GenericGPUParticleModule InitialColor(const glm::vec3& color);
+    GenericGPUParticleModule InitialColor(const glm::vec3& minColor, const glm::vec3& maxColor);
+    GenericGPUParticleModule InitialAlpha(float alpha);
+    GenericGPUParticleModule InitialTexture(unsigned int texIndex);
+    
     GenericGPUParticleModule Drag(float dragCoefficient);
     GenericGPUParticleModule Acceleration(const glm::vec3& acceleration);
     GenericGPUParticleModule Turbulence(float strength);
     GenericGPUParticleModule SizeOverLife(const std::vector<std::pair<float, float>>& keyframes);
-    GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec4>>& keyframes);
+    GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec3>>& keyframes);
+    GenericGPUParticleModule AlphaOverLife(const std::vector<std::pair<float, float>>& keyframes);
+    GenericGPUParticleModule AnimatedTexture(unsigned int baseTexIndex, unsigned int numFrames, float fps, float randomStart = 0.0f);
 };  // namespace ParticleModules
 
 #endif

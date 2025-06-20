@@ -19,7 +19,7 @@ struct Particle {
     float timeToLive;
     float initialTimeToLive;
     float size;
-    uint32_t flags;
+    uint32_t metadata;
 };
 
 class ParticleSystem : public Renderable, public Updatable {
