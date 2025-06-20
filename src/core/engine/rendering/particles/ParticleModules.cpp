@@ -3,6 +3,7 @@
 #include <stdexcept>
 
 static constexpr size_t MAX_KEYFRAMES = 4;
+static constexpr size_t MAX_ANIMATEDTEXTURE_FRAMES = 16;
 
 namespace ParticleModules {
     GenericGPUParticleModule SpawnFixedParticleCount(unsigned int count) {
@@ -168,14 +169,31 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule InitialColor(const glm::vec4& color) { return InitialColor(color, color); }
+    GenericGPUParticleModule InitialColor(const glm::vec3& color) { return InitialColor(color, color); }
 
-    GenericGPUParticleModule InitialColor(const glm::vec4& minColor, const glm::vec4& maxColor) {
+    GenericGPUParticleModule InitialColor(const glm::vec3& minColor, const glm::vec3& maxColor) {
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::InitialColor);
         gModule.flags |= INITMODULE_FLAG;
-        gModule.params[0] = minColor;
-        gModule.params[1] = maxColor;
+        gModule.params[0] = glm::vec4(minColor, 0.0f);
+        gModule.params[1] = glm::vec4(maxColor, 0.0f);
+        return gModule;
+    }
+
+    GenericGPUParticleModule InitialAlpha(float alpha) {
+        if (alpha > 1.0f || alpha < 0.0f) throw std::invalid_argument("InitialAlpha: alpha must be in [0, 1]");
+        GenericGPUParticleModule gModule = {};
+        gModule.type = static_cast<uint32_t>(ModuleType::InitialAlpha);
+        gModule.flags |= INITMODULE_FLAG;
+        gModule.params[0].x = alpha;
+        return gModule;
+    }
+
+    GenericGPUParticleModule InitialTexture(unsigned int texIndex) {
+        GenericGPUParticleModule gModule = {};
+        gModule.type = static_cast<uint32_t>(ModuleType::InitialTexture);
+        gModule.flags |= INITMODULE_FLAG;
+        gModule.metadata1 = texIndex;
         return gModule;
     }
 
@@ -222,7 +240,7 @@ namespace ParticleModules {
         return gModule;
     }
 
-    GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec4>>& keyframes) {
+    GenericGPUParticleModule ColorOverLife(const std::vector<std::pair<float, glm::vec3>>& keyframes) {
         if (keyframes.size() > MAX_KEYFRAMES)
             throw std::invalid_argument(
                 "ColorOverLife: Too many keyframes maximum allowed is: " + std::to_string(MAX_KEYFRAMES)
@@ -234,8 +252,41 @@ namespace ParticleModules {
         gModule.metadata1 = static_cast<uint32_t>(keyframes.size());
         for (int i = 0; i < keyframes.size(); i++) {
             gModule.params[0][i] = keyframes[i].first;
-            gModule.params[i + 1] = keyframes[i].second;
+            gModule.params[i + 1] = glm::vec4(keyframes[i].second, 0.0f);
         }
+        return gModule;
+    }
+    GenericGPUParticleModule AlphaOverLife(const std::vector<std::pair<float, float>>& keyframes) {
+        if (keyframes.size() > MAX_KEYFRAMES)
+            throw std::invalid_argument(
+                "AlphaOverLife: Too many keyframes maximum allowed is: " + std::to_string(MAX_KEYFRAMES)
+            );
+
+        GenericGPUParticleModule gModule = {};
+        gModule.type = static_cast<uint32_t>(ModuleType::AlphaOverLife);
+        gModule.flags |= UPDATEMODULE_FLAG;
+        gModule.metadata1 = static_cast<uint32_t>(keyframes.size());
+        for (int i = 0; i < keyframes.size(); i++) {
+            gModule.params[0][i] = keyframes[i].first;
+            gModule.params[i + 1].x = keyframes[i].second;
+        }
+        return gModule;
+    }
+    GenericGPUParticleModule AnimatedTexture(
+        unsigned int baseTexIndex, unsigned int numFrames, float fps, float randomStart
+    ) {
+        if (numFrames > MAX_ANIMATEDTEXTURE_FRAMES)
+            throw std::invalid_argument(
+                "AnimatedTexture: Too many animated frames maximum allowed is: " + std::to_string(MAX_ANIMATEDTEXTURE_FRAMES)
+            );
+
+        GenericGPUParticleModule gModule = {};
+        gModule.type = static_cast<uint32_t>(ModuleType::AlphaOverLife);
+        gModule.flags |= UPDATEMODULE_FLAG;
+        gModule.metadata1 = baseTexIndex;
+        gModule.metadata1 = numFrames;
+        gModule.params[0].x = fps;
+        gModule.params[1].x = randomStart;
         return gModule;
     }
 };  // namespace ParticleModules

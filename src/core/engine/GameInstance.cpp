@@ -98,9 +98,14 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::InitialLifetime(1.5f, 3.0f),
             ParticleModules::InitialSize(0.1f),
             ParticleModules::ColorOverLife({
-                {0.0f, glm::vec4(1, 0, 0, 1)},
-                {0.5f, glm::vec4(0, 1, 0, 0.5f)},
-                {1.0f, glm::vec4(0, 0, 1, 0)}
+                {0.0f, glm::vec3(1, 0, 0)},
+                {0.5f, glm::vec3(0, 1, 0)},
+                {1.0f, glm::vec3(0, 0, 1)}
+            }),
+            ParticleModules::AlphaOverLife({
+                {0.3f, 1.0f},
+                {0.5f, 0.5f},
+                {1.0f, 0.0f}
             })
         });
         std::shared_ptr<Shader> particleTFShader =

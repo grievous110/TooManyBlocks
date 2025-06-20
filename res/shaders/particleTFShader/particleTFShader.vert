@@ -9,6 +9,9 @@
 
 #define DYNAMIC_SPAWNRATE        (1 << 0)
 
+#define SET_BITS(target, value, bitmask, position) (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
+#define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
+
 #define SpawnFixedParticleCount 0U
 #define SpawnRate               1U
 #define SpawnBurst              2U
@@ -27,13 +30,17 @@
 #define InitialLifetime         11U
 #define InitialSize             12U
 #define InitialColor            13U
+#define InitialAlpha            14U
+#define InitialTexture          15U
 
 // Update modules
-#define Drag            14U
-#define Acceleration    15U
-#define Turbulence      16U
-#define SizeOverLife    17U
-#define ColorOverLife   18U
+#define Drag            16U
+#define Acceleration    17U
+#define Turbulence      18U
+#define SizeOverLife    19U
+#define ColorOverLife   20U
+#define AlphaOverLife   21U
+#define AnimatedTexture 22U
 
 layout(location = 0) in vec4 in_color;
 layout(location = 1) in vec3 in_velocity;
@@ -87,7 +94,7 @@ float rand01(inout uint seedState) {
 void spawnParticle() {
     uint seed = floatBitsToUint(u_time) + gl_VertexID;
 
-    tf_color = vec4(0.0);
+    tf_color = vec4(0.0, 0.0, 0.0, 1.0);
     tf_velocity = vec3(0.0);
     tf_position = vec3(0.0);
     tf_timeToLive = 0.0;
@@ -217,12 +224,19 @@ void spawnParticle() {
                 break;
             }
             case InitialColor: {
-                tf_color = vec4(
+                tf_color.rgb = vec3(
                     mix(module.params[0].x, module.params[1].x, rand01(seed)),
                     mix(module.params[0].y, module.params[1].y, rand01(seed)),
-                    mix(module.params[0].z, module.params[1].z, rand01(seed)),
-                    mix(module.params[0].w, module.params[1].w, rand01(seed))
+                    mix(module.params[0].z, module.params[1].z, rand01(seed))
                 );
+                break;
+            }
+            case InitialAlpha: {
+                tf_color.a = module.params[0].x;
+                break;
+            }
+            case InitialTexture: {
+                // TODO: Implement
                 break;
             }
             }
@@ -265,57 +279,101 @@ void updateParticle() {
                 break;
             }
             case SizeOverLife: {
-                float t = clamp(1.0 - in_timeToLive / in_initialTimeToLive, 0.0, 1.0);
+                uint numKeyframes = module.metadata1;
+                if (numKeyframes > 0) {
+                    float t = clamp(1.0 - in_timeToLive / in_initialTimeToLive, 0.0, 1.0);
 
-                // Single keyframe case (fallback)
-                if (module.metadata1 == 1) {
-                    tf_size = module.params[1].x; // Only one color
-                    break;
-                }
+                    // Extract the first and last time values
+                    float t_first = module.params[0][0];
+                    float t_last = module.params[0][numKeyframes - 1];
 
-                // Default to last keyframe if out of bounds
-                tf_size = module.params[module.metadata1].x;
+                    if (t <= t_first) {
+                        tf_size = module.params[1].x; // Snap to first value
+                    } else if (t >= t_last) {
+                        tf_size = module.params[1].x; // Snap to last value
+                    } else {
+                        for (uint i = 0; i < numKeyframes - 1; i++) {
+                            float t0 = module.params[0][i];
+                            float t1 = module.params[0][i + 1];
 
-                for (uint i = 0; i < module.metadata1 - 1; i++) {
-                    float t0 = module.params[0][i];
-                    float t1 = module.params[0][i + 1];
+                            if (t >= t0 && t <= t1) {
+                                float s0 = module.params[i + 1].x;
+                                float s1 = module.params[i + 2].x;
 
-                    if (t >= t0 && t <= t1) {
-                        float s0 = module.params[i + 1].x;
-                        float s1 = module.params[i + 2].x;
-
-                        float localT = (t - t0) / max(t1 - t0, 1e-5);
-                        tf_size = mix(s0, s1, localT);
-                        break;
+                                float localT = (t - t0) / max(t1 - t0, 1e-5);
+                                tf_size = mix(s0, s1, localT);
+                                break;
+                            }
+                        }
                     }
                 }
                 break;
             }
             case ColorOverLife: {
-                float t = clamp(1.0 - in_timeToLive / in_initialTimeToLive, 0.0, 1.0);
+                uint numKeyframes = module.metadata1;
+                if (numKeyframes > 0) {
+                    float t = clamp(1.0 - in_timeToLive / in_initialTimeToLive, 0.0, 1.0);
 
-                // Single keyframe case (fallback)
-                if (module.metadata1 == 1) {
-                    tf_color = module.params[1]; // Only one color
-                    break;
-                }
+                    // Extract the first and last time values
+                    float t_first = module.params[0][0];
+                    float t_last = module.params[0][numKeyframes - 1];
 
-                // Default to last keyframe if out of bounds
-                tf_color = module.params[module.metadata1];
+                    if (t <= t_first) {
+                        tf_color.rgb = module.params[1].rgb; // Snap to first value
+                    } else if (t >= t_last) {
+                        tf_color.rgb = module.params[1].rgb; // Snap to last value
+                    } else {
+                        // Interpolate
+                        for (uint i = 0; i < numKeyframes - 1; i++) {
+                            float t0 = module.params[0][i];
+                            float t1 = module.params[0][i + 1];
 
-                for (uint i = 0; i < module.metadata1 - 1; i++) {
-                    float t0 = module.params[0][i];
-                    float t1 = module.params[0][i + 1];
+                            if (t >= t0 && t <= t1) {
+                                vec3 c0 = module.params[i + 1].rgb;
+                                vec3 c1 = module.params[i + 2].rgb;
 
-                    if (t >= t0 && t <= t1) {
-                        vec4 c0 = module.params[i + 1];
-                        vec4 c1 = module.params[i + 2];
-
-                        float localT = (t - t0) / max(t1 - t0, 1e-5);
-                        tf_color = mix(c0, c1, localT);
-                        break;
+                                float localT = (t - t0) / max(t1 - t0, 1e-5);
+                                tf_color.rgb = mix(c0, c1, localT);
+                                break;
+                            }
+                        }
                     }
                 }
+                break;
+            }
+            case AlphaOverLife: {
+                uint numKeyframes = module.metadata1;
+                if (numKeyframes > 0) {
+                    float t = clamp(1.0 - in_timeToLive / in_initialTimeToLive, 0.0, 1.0);
+
+                    // Extract the first and last time values
+                    float t_first = module.params[0][0];
+                    float t_last = module.params[0][numKeyframes - 1];
+
+                    if (t <= t_first) {
+                        tf_color.a = module.params[1].x; // Snap to first value
+                    } else if (t >= t_last) {
+                        tf_color.a = module.params[1].x; // Snap to last value
+                    } else {
+                        for (uint i = 0; i < numKeyframes - 1; i++) {
+                            float t0 = module.params[0][i];
+                            float t1 = module.params[0][i + 1];
+
+                            if (t >= t0 && t <= t1) {
+                                float a0 = module.params[i + 1].x;
+                                float a1 = module.params[i + 2].x;
+
+                                float localT = (t - t0) / max(t1 - t0, 1e-5);
+                                tf_color.a = mix(a0, a1, localT);
+                                break;
+                            }
+                        }
+                    }
+                }
+                break;
+            }
+            case AnimatedTexture: {
+                // TODO: Implement
                 break;
             }
             }
