@@ -2,7 +2,7 @@
 
 #include <GL/glew.h>
 
-#include <cmath> // For std::ceil / std::floor
+#include <cmath>  // For std::ceil / std::floor
 #include <string>
 
 #include "engine/rendering/GLUtils.h"
@@ -31,12 +31,15 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
       m_maxParticleCount(0U),
       m_flags(0U) {
     if (modules.size() > MAX_PARTICLE_MODULES)
-        throw std::runtime_error("More than" + std::to_string(MAX_PARTICLE_MODULES) + " modules were passed to particle system");
+        throw std::runtime_error(
+            "More than" + std::to_string(MAX_PARTICLE_MODULES) + " modules were passed to particle system"
+        );
 
     bool hasFixedParticleCount = false;
     bool hasSpawnRateModule = false;
     bool hasSpawnLocationModule = false;
     bool lifeTimeDefined = false;
+    bool hasTextureModule = false;
 
     float maxLifetime = 0.0f;
     float totalBurstParticleCount = 0.0f;
@@ -76,6 +79,20 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
             if (module.type == ModuleType::InitialLifetime) {
                 maxLifetime = module.params[1].x;
                 lifeTimeDefined = true;
+            } else if (module.type == ModuleType::InitialTexture) {
+                if (hasTextureModule) {
+                    throw std::runtime_error("Cannot define multiple texture modules");
+                }
+                m_flags |= USES_TEXTURE;
+                hasTextureModule = true;
+            }
+        } else if (module.flags & UPDATEMODULE_FLAG) {
+            if (module.type == ModuleType::AnimatedTexture) {
+                if (hasTextureModule) {
+                    throw std::runtime_error("Cannot define multiple texture modules");
+                }
+                m_flags |= USES_TEXTURE;
+                hasTextureModule = true;
             }
         }
     }

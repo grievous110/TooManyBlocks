@@ -37,6 +37,15 @@ void ParticleMaterial::bindForObjectDraw(PassType passType, const RenderContext&
     } else if (passType == PassType::MainPass) {
         m_mainShader->use();
         m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
+        // Pass texture data
+        bool useTexture = (m_textureAtlas != nullptr) && (context.pInfo.flags & USES_TEXTURE);
+        m_mainShader->setUniform("u_useTexture", useTexture);
+        if (useTexture) {
+            m_textureAtlas->bindToUnit(0);
+            m_mainShader->setUniform("u_textureAtlas", 0);
+            m_mainShader->setUniform("u_textureAtlasSize", m_textureAtlas->width());
+            m_mainShader->setUniform("u_textureSize", 16u);
+        }
     } else {
         lgr::lout.error("Material bound for unsupported pass");
     }

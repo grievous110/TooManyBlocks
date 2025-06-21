@@ -256,8 +256,9 @@ void Renderer::render(const ApplicationContext& context) {
 
         for (const Renderable* obj : batch.second) {
             if (const SkeletalMesh* sMesh = dynamic_cast<const SkeletalMesh*>(obj)) {
-                // TODO: Remove this quick test
                 m_currentRenderContext.skInfo.jointMatrices = sMesh->getJointMatrices();
+            } else if (const ParticleSystem* pSys = dynamic_cast<const ParticleSystem*>(obj)) {
+                m_currentRenderContext.pInfo.flags = pSys->getFlags();
             }
             m_currentRenderContext.tInfo.meshTransform = obj->getRenderableTransform();
             batch.first->bindForObjectDraw(PassType::MainPass, m_currentRenderContext);
