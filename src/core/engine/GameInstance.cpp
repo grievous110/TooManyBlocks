@@ -96,7 +96,8 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::InitialVelocityInCone(6.0f, 10.0f, glm::vec3(1.0, 2.0, 0.5), 15.0f),
             ParticleModules::Acceleration(glm::vec3(0, -9.86, 0)),
             ParticleModules::InitialLifetime(1.5f, 3.0f),
-            ParticleModules::InitialSize(0.1f),
+            ParticleModules::InitialSize(0.5f),
+            ParticleModules::AnimatedTexture(4, 7, 3, 1.0f),
             ParticleModules::ColorOverLife({
                 {0.0f, glm::vec3(1, 0, 0)},
                 {0.5f, glm::vec3(0, 1, 0)},
@@ -108,13 +109,14 @@ void GameInstance::initializeWorld(World* newWorld) {
                 {1.0f, 0.0f}
             })
         });
+        std::shared_ptr<Texture> testBlockTextures = provider->getTextureFromFile(Res::Texture::BLOCK_TEX_ATLAS);
         std::shared_ptr<Shader> particleTFShader =
             std::make_shared<TransformFeedbackShader>(TransformFeedbackShader::create(
                 "res/shaders/particleTFShader", {"tf_color", "tf_velocity", "tf_position", "tf_timeToLive",
-                                                 "tf_initialTimeToLive", "tf_size", "tf_flags"}
+                                                 "tf_initialTimeToLive", "tf_size", "tf_metadata"}
             ));
         std::shared_ptr<Shader> particleShader = provider->getShaderFromFile("res/shaders/particleShader");
-        m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader));
+        m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader, testBlockTextures));
         m_particles->getLocalTransform().setPosition(glm::vec3(10.0f, 12.0f, 5.0f));
     }
 }

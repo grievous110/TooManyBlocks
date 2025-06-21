@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 static constexpr size_t MAX_KEYFRAMES = 4;
-static constexpr size_t MAX_ANIMATEDTEXTURE_FRAMES = 16;
 
 namespace ParticleModules {
     GenericGPUParticleModule SpawnFixedParticleCount(unsigned int count) {
@@ -275,16 +274,11 @@ namespace ParticleModules {
     GenericGPUParticleModule AnimatedTexture(
         unsigned int baseTexIndex, unsigned int numFrames, float fps, float randomStart
     ) {
-        if (numFrames > MAX_ANIMATEDTEXTURE_FRAMES)
-            throw std::invalid_argument(
-                "AnimatedTexture: Too many animated frames maximum allowed is: " + std::to_string(MAX_ANIMATEDTEXTURE_FRAMES)
-            );
-
         GenericGPUParticleModule gModule = {};
-        gModule.type = static_cast<uint32_t>(ModuleType::AlphaOverLife);
+        gModule.type = static_cast<uint32_t>(ModuleType::AnimatedTexture);
         gModule.flags |= UPDATEMODULE_FLAG;
         gModule.metadata1 = baseTexIndex;
-        gModule.metadata1 = numFrames;
+        gModule.metadata2 = numFrames;
         gModule.params[0].x = fps;
         gModule.params[1].x = randomStart;
         return gModule;

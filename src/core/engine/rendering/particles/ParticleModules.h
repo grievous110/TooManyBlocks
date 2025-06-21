@@ -12,6 +12,7 @@ constexpr uint32_t INITMODULE_FLAG = (1U << 2);
 constexpr uint32_t UPDATEMODULE_FLAG = (1U << 3);
 
 constexpr uint32_t DYNAMIC_SPAWNRATE = (1U << 0);
+constexpr uint32_t USES_TEXTURE = (1U << 1);
 
 struct GenericGPUParticleModule {
     uint32_t type;

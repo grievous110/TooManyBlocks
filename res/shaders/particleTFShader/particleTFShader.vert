@@ -9,6 +9,9 @@
 
 #define DYNAMIC_SPAWNRATE        (1 << 0)
 
+#define TEXINDEX_BITMASK  0xFFFF
+#define TEXINDEX_OFFSET   16
+
 #define SET_BITS(target, value, bitmask, position) (target = (target & ~(bitmask << position)) | ((value & bitmask) << position))
 #define GET_BITS(target, bitmask, position) ((target >> position) & bitmask)
 
@@ -48,7 +51,7 @@ layout(location = 2) in vec3 in_position;
 layout(location = 3) in float in_timeToLive;
 layout(location = 4) in float in_initialTimeToLive;
 layout(location = 5) in float in_size;
-layout(location = 6) in uint in_flags;
+layout(location = 6) in uint in_metadata;
 
 layout(location = 0) out vec4 tf_color;
 layout(location = 1) out vec3 tf_velocity;
@@ -56,7 +59,7 @@ layout(location = 2) out vec3 tf_position;
 layout(location = 3) out float tf_timeToLive;
 layout(location = 4) out float tf_initialTimeToLive;
 layout(location = 5) out float tf_size;
-layout(location = 6) out uint tf_flags;
+layout(location = 6) out uint tf_metadata;
 
 struct ParticleModule {
     uint type;
@@ -100,7 +103,7 @@ void spawnParticle() {
     tf_timeToLive = 0.0;
     tf_initialTimeToLive = 0.0f;
     tf_size = 1.0;
-    tf_flags = 0U;
+    tf_metadata = 0U;
 
     for (uint i = 0; i < u_moduleCount; i++) {
         ParticleModule module = u_modules[i];
@@ -236,7 +239,7 @@ void spawnParticle() {
                 break;
             }
             case InitialTexture: {
-                // TODO: Implement
+                SET_BITS(tf_metadata, module.metadata1, TEXINDEX_BITMASK, TEXINDEX_OFFSET);
                 break;
             }
             }
@@ -253,7 +256,7 @@ void updateParticle() {
     tf_timeToLive = in_timeToLive - u_deltaTime;
     tf_initialTimeToLive = in_initialTimeToLive;
     tf_size = in_size;
-    tf_flags = in_flags;
+    tf_metadata = in_metadata;
 
     float dragCoefficient = 0.0;
     vec3 jitterVel = vec3(0.0);
@@ -373,7 +376,17 @@ void updateParticle() {
                 break;
             }
             case AnimatedTexture: {
-                // TODO: Implement
+                float offset = 0.0;
+                uint baseTexIndex = module.metadata1;
+                uint numFrames = module.metadata2;
+                float fps = module.params[0].x;
+                if (module.params[1].x > 0.0) {
+                    uint startSeed = gl_VertexID;
+                    offset = rand01(startSeed) * (float(numFrames) / fps);
+                }
+
+                uint frameIndex = uint(floor((u_time + offset) * fps)) % numFrames;
+                SET_BITS(tf_metadata, baseTexIndex + frameIndex, TEXINDEX_BITMASK, TEXINDEX_OFFSET);
                 break;
             }
             }
