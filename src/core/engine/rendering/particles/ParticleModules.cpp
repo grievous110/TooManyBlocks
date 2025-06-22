@@ -274,6 +274,9 @@ namespace ParticleModules {
     GenericGPUParticleModule AnimatedTexture(
         unsigned int baseTexIndex, unsigned int numFrames, float fps, float randomStart
     ) {
+        if (randomStart > 1.0f || randomStart < 0.0f)
+            throw std::invalid_argument("AnimatedTexture: randomStart must be in [0, 1]");
+
         GenericGPUParticleModule gModule = {};
         gModule.type = static_cast<uint32_t>(ModuleType::AnimatedTexture);
         gModule.flags |= UPDATEMODULE_FLAG;

@@ -380,12 +380,14 @@ void updateParticle() {
                 uint baseTexIndex = module.metadata1;
                 uint numFrames = module.metadata2;
                 float fps = module.params[0].x;
-                if (module.params[1].x > 0.0) {
+                float offsetScale = module.params[1].x;
+                if (offsetScale > 0.0) {
                     uint startSeed = gl_VertexID;
-                    offset = rand01(startSeed) * (float(numFrames) / fps);
+                    offset = rand01(startSeed) * offsetScale * (float(numFrames) / fps);
                 }
-
-                uint frameIndex = uint(floor((u_time + offset) * fps)) % numFrames;
+                float age = 1.0 - (tf_timeToLive / (tf_initialTimeToLive + 0.0001));
+                float elapsedRelativeTime = age * tf_initialTimeToLive;
+                uint frameIndex = uint(floor((elapsedRelativeTime + offset) * fps)) % numFrames;
                 SET_BITS(tf_metadata, baseTexIndex + frameIndex, TEXINDEX_BITMASK, TEXINDEX_OFFSET);
                 break;
             }
