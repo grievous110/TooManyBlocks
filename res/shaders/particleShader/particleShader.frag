@@ -34,7 +34,7 @@ void main() {
 
     if (u_useTexture) {
         fragColor = sampleFromTexAtlas(uv).rgba;
-        fragColor.a *= color.a;
+        fragColor *= color;
     } else {
         fragColor = color;
     }

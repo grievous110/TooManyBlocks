@@ -97,7 +97,7 @@ float rand01(inout uint seedState) {
 void spawnParticle() {
     uint seed = floatBitsToUint(u_time) + gl_VertexID;
 
-    tf_color = vec4(0.0, 0.0, 0.0, 1.0);
+    tf_color = vec4(1.0);
     tf_velocity = vec3(0.0);
     tf_position = vec3(0.0);
     tf_timeToLive = 0.0;

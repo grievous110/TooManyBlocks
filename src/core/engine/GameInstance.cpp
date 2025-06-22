@@ -99,9 +99,9 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::InitialSize(0.5f),
             ParticleModules::AnimatedTexture(4, 7, 3, 1.0f),
             ParticleModules::ColorOverLife({
-                {0.0f, glm::vec3(1, 0, 0)},
-                {0.5f, glm::vec3(0, 1, 0)},
-                {1.0f, glm::vec3(0, 0, 1)}
+                {0.0f, glm::vec3(1, 1, 0.5)},
+                {0.5f, glm::vec3(0.5, 1, 0.5)},
+                {1.0f, glm::vec3(0, 0.5, 1)}
             }),
             ParticleModules::AlphaOverLife({
                 {0.3f, 1.0f},
