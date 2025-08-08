@@ -95,7 +95,7 @@ static BoundingBox calculateMeshBounds(const std::vector<Vertex>& vertexBuffer) 
 }
 
 static CompactChunkFace generateCompactChunkFace(
-    const glm::ivec3& origin, AxisDirection faceDirection, uint16_t texIndex, int width = 1, int height = 1
+    const glm::ivec3& origin, AxisDirection faceDirection, FaceInfo fInfo, int width = 1, int height = 1
 ) {
     // Vertices for a specific face
     glm::ivec3 v0;
@@ -157,8 +157,8 @@ static CompactChunkFace generateCompactChunkFace(
     UVCoord uv11 = {static_cast<uint8_t>(height), static_cast<uint8_t>(width)};
 
     CompactChunkFace face = {
-        {CompactChunkVertex(v0, texIndex, uv00, faceDirection), CompactChunkVertex(v1, texIndex, uv10, faceDirection),
-         CompactChunkVertex(v2, texIndex, uv11, faceDirection), CompactChunkVertex(v3, texIndex, uv01, faceDirection)},
+        {CompactChunkVertex(v0, fInfo.texIndex, uv00, faceDirection), CompactChunkVertex(v1, fInfo.texIndex, uv10, faceDirection),
+         CompactChunkVertex(v2, fInfo.texIndex, uv11, faceDirection), CompactChunkVertex(v3, fInfo.texIndex, uv01, faceDirection)},
         {
             0, 1, 2, 2, 3, 0  // indices
         }
@@ -183,7 +183,7 @@ std::unique_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const Bloc
                     for (AxisDirection dir : allAxisDirections) {
                         if (isBlockFaceVisible(blocks, origin.x, origin.y, origin.z, dir)) {
                             CompactChunkFace face =
-                                generateCompactChunkFace(origin, dir, texMap.getTexIndex(blockRef.type, dir));
+                                generateCompactChunkFace(origin, dir, texMap.getInfo(blockRef.type, dir));
                             // Add face vertices to the global vertex buffer
                             for (int i = 0; i < 4; i++) {
                                 vertexBuffer.push_back(face.vertices[i]);
@@ -337,7 +337,7 @@ std::unique_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, cons
 
                             // ##### Adding face #####
                             CompactChunkFace face = generateCompactChunkFace(
-                                coord, currentDirection, texMap.getTexIndex(element.first, currentDirection), w, h
+                                coord, currentDirection, texMap.getInfo(element.first, currentDirection), w, h
                             );
                             // Add face vertices to the global vertex buffer
                             for (int i = 0; i < 4; i++) {

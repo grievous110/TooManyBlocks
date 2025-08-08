@@ -2,15 +2,15 @@
 
 #include <stdexcept>
 
-#define ADD_MAPPING(blockType, mappingdef) map.emplace(blockType, std::array<uint16_t, 6>{mappingdef})
+#define ADD_MAPPING(blockType, mappingdef) map.emplace(blockType, std::array<FaceInfo, 6>{{mappingdef}})
 
-#define ALL_FACES(val)                     val, val, val, val, val, val
-#define AXIS_BASED(x_axis, y_axis, z_axis) x_axis, x_axis, y_axis, y_axis, z_axis, z_axis
+#define ALL_FACES(val)                     {val, 0}, {val, 0}, {val, 0}, {val, 0}, {val, 0}, {val, 0}
+#define AXIS_BASED(x_axis, y_axis, z_axis) {x_axis, 0}, {x_axis, 0}, {y_axis, 0}, {y_axis, 0}, {z_axis, 0}, {z_axis, 0}
 #define INDIVIDUAL_FACES(xp_face, xn_face, yp_face, yn_face, zp_face, zn_face) \
-    xp_face, xn_face, yp_face, yn_face, zp_face, zn_face
-#define TOP_BOTTOM_SIDES(top, bottom, sides) sides, sides, top, bottom, sides, sides
+    {xp_face, 0}, {xn_face, 0}, {yp_face, 0}, {yn_face, 0}, {zp_face, 0}, {zn_face, 0}
+#define TOP_BOTTOM_SIDES(top, bottom, sides) {sides, 0}, {sides, 0}, {top, 0}, {bottom, 0}, {sides, 0}, {sides, 0}
 #define TOP_BOTTOM_WITH_SIDES(top, bottom, xp_face, xn_face, zp_face, zn_face) \
-    xp_face, xn_face, top, bottom, zp_face, zn_face
+    {xp_face, 0}, {xn_face, 0}, {top, 0}, {bottom, 0}, {zp_face, 0}, {zn_face, 0}
 
 BlockToTextureMap::BlockToTextureMap() {
     ADD_MAPPING(STONE, ALL_FACES(0U));
@@ -48,7 +48,7 @@ BlockToTextureMap::BlockToTextureMap() {
     ADD_MAPPING(GRANITE_BRICK, ALL_FACES(36U));
 }
 
-uint16_t BlockToTextureMap::getTexIndex(uint16_t blockType, AxisDirection dir) const {
+FaceInfo BlockToTextureMap::getInfo(uint16_t blockType, AxisDirection dir) const {
     auto it = map.find(blockType);
     if (it == map.end()) {
         throw std::out_of_range("No texture index mapping for this block type");
