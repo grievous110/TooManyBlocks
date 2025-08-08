@@ -8,14 +8,19 @@
 #include "datatypes/BlockTypes.h"
 #include "datatypes/DatatypeDefs.h"
 
+struct FaceInfo {
+    uint16_t texIndex;
+    uint8_t animFrames;
+};
+
 class BlockToTextureMap {
 private:
-    std::unordered_map<uint16_t, std::array<uint16_t, 6>> map;
+    std::unordered_map<uint16_t, std::array<FaceInfo, 6>> map;
 
 public:
     BlockToTextureMap();
 
-    uint16_t getTexIndex(uint16_t blockType, AxisDirection dir) const;
+    FaceInfo getInfo(uint16_t blockType, AxisDirection dir) const;
 };
 
 #endif
