@@ -24,7 +24,11 @@ namespace lgr {
     std::string Logger::getCurrentTime() const noexcept {
         std::time_t now = std::time(nullptr);
         std::tm localTime{};
-        localtime_s(&localTime, &now);
+        #if defined(_WIN32) || defined(_WIN64)
+            localtime_s(&localTime, &now);
+        #else
+            localtime_r(&now, &localTime);
+        #endif
         std::ostringstream oss;
         oss << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
         return oss.str();
@@ -89,10 +93,10 @@ namespace lgr {
 #else
         // Check if console is available on other platform
         if (isatty(fileno(stdout))) {
-            consoleAvailable = true;
+            m_consoleAvailable = true;
         } else {
-            consoleAvailable = false;
-            logFile.open("log.txt", std::ios::out | std::ios::trunc);
+            m_consoleAvailable = false;
+            m_logFile.open("log.txt", std::ios::out | std::ios::trunc);
         }
 #endif
     }
