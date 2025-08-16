@@ -20,8 +20,8 @@ else()
     # GLEW has a large CMake file
     add_subdirectory(glew/build/cmake)
 
-    # Ensure the correct include directories for GLEW
     target_compile_definitions(glew_s PRIVATE GLEW_STATIC)
+    # Ensure the correct include directories for GLEW
     target_include_directories(glew_s INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/glew/include>)
 endif()
 
