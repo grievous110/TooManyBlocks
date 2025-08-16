@@ -166,7 +166,7 @@ namespace UI {
             if (hasError() && !ImGui::IsPopupOpen((const char*)0, ImGuiPopupFlags_AnyPopup)) {
                 float errorWidth = ImGui::CalcTextSize(getError()).x;
                 ImGui::SetCursorPosX((io.DisplaySize.x - errorWidth) * 0.5f);
-                ImGui::TextColored(ImVec4(1, 0, 0, 1), getError());
+                ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", getError());
             }
 
             ImGui::SetCursorPosX((io.DisplaySize.x - 725.0f) * 0.5f);
@@ -238,7 +238,7 @@ namespace UI {
                     randomSeed();
                 }
                 if (hasError()) {
-                    ImGui::TextColored(ImVec4(1, 0, 0, 1), getError());
+                    ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", getError());
                 }
 
                 ImGui::Separator();
@@ -283,7 +283,7 @@ namespace UI {
                 ImGui::Text("Enter New World Name:");
                 ImGui::InputText("##NameInput", m_newWorldName, sizeof(m_newWorldName));
                 if (hasError()) {
-                    ImGui::TextColored(ImVec4(1, 0, 0, 1), getError());
+                    ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", getError());
                 }
 
                 ImGui::Separator();

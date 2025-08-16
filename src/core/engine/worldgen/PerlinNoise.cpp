@@ -49,11 +49,11 @@ static inline void putRandomGradient(float* gradientDest, const int* sourceCoord
         gradientDest[i] = static_cast<float>(xorshift32(hash)) / UINT32_MAX * 2.0f - 1.0f;
         magnitude += gradientDest[i] * gradientDest[i];
     }
-    magnitude = std::sqrtf(magnitude);
+    magnitude = std::sqrt(magnitude);
 
     if (magnitude == 0.0f) {
         // Handle zero magnitude by generating a default normalized vector
-        float value = 1.0f / std::sqrtf(static_cast<float>(dimension));
+        float value = 1.0f / std::sqrt(static_cast<float>(dimension));
         for (int i = 0; i < dimension; i++) {
             gradientDest[i] = value;
         }
@@ -121,7 +121,7 @@ std::unique_ptr<float[]> PerlinNoise::generatePerlinNoise(
 
         octaveSubsectionSizes[oi] = currentSubsectionSize;
         octaveAmplitudeScales[oi] =
-            amplitude * std::powf(
+            amplitude * std::pow(
                             persistence, static_cast<float>(oi)
                         );  // Exponential dropoff [persistence < 1.0f] or increase [persistence > 1.0f]
 
