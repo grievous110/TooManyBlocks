@@ -17,17 +17,13 @@ struct Light {
     uint lightType;
     uint priority;
     uint shadowMapIndex;
-    float padding1; 
-    vec3 lightPosition;
-    float padding2; 
-    vec3 direction;
-    float padding3; 
-    vec3 color;
     float intensity;
+    vec3 lightPosition;
     float range; // Used by point- / spotlight
+    vec3 direction;
     float fovy; // Used by spotlicht
+    vec3 color;    
     float innerCutoffAngle; // Used by spotlicht
-    float padding4;
 };
 
 layout(std140) uniform LightsBlock {

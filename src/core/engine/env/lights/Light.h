@@ -20,21 +20,17 @@ enum class LightType : uint8_t {
     Point
 };
 
-struct GPULight {
+struct alignas(16) GPULight {
     unsigned int lightType;
     unsigned int priority;
     unsigned int shadowMapIndex;
-    float padding1;
-    glm::vec3 lightPosition;
-    float padding2;
-    glm::vec3 direction;
-    float padding3;
-    glm::vec3 color;
     float intensity;
-    float range;             // Used by point- / spotlight
-    float fovy;              // Used by spotlicht
-    float innerCutoffAngle;  // Used by spotlicht
-    float padding4;
+    glm::vec3 lightPosition;
+    float range;                    // Used by point- / spotlight
+    glm::vec3 direction;
+    float fovy;                     // Used by spotlicht
+    glm::vec3 color;
+    float innerCutoffAngle;         // Used by spotlicht
 };
 
 class Light : public SceneComponent {
