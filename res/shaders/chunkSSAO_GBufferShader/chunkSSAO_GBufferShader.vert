@@ -1,7 +1,7 @@
 #version 430 core
 
-layout(location = 0) in uint compressedPosition;
-layout(location = 1) in uint compressedData;
+layout(location = 0) in uint compressedData1;
+layout(location = 1) in uint compressedData2;
 
 out vec3 position;
 flat out vec3 normal;
@@ -10,10 +10,10 @@ uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform vec3 u_chunkPosition;
 
-#define POSITION_BITMASK 0x3FFu
-#define X_POSITION_OFFSET 20
-#define Y_POSITION_OFFSET 10
-#define Z_POSITION_OFFSET 0
+#define POSITION_BITMASK  0x3Fu
+#define X_POSITION_OFFSET 26
+#define Y_POSITION_OFFSET 20
+#define Z_POSITION_OFFSET 14
 
 #define NORMAL_BITMASK 0x07u
 #define NORMAL_OFFSET 0
@@ -28,11 +28,11 @@ uniform vec3 u_chunkPosition;
 #define PositiveZ 4u
 #define NegativeZ 5u
 
-vec3 decodePosition(uint compressedPosition) {
+vec3 decodePosition(uint compressedData) {
     uvec3 pos;
-    pos.x = GET_BITS(compressedPosition, POSITION_BITMASK, X_POSITION_OFFSET);
-    pos.y = GET_BITS(compressedPosition, POSITION_BITMASK, Y_POSITION_OFFSET);
-    pos.z = GET_BITS(compressedPosition, POSITION_BITMASK, Z_POSITION_OFFSET);
+    pos.x = GET_BITS(compressedData, POSITION_BITMASK, X_POSITION_OFFSET);
+    pos.y = GET_BITS(compressedData, POSITION_BITMASK, Y_POSITION_OFFSET);
+    pos.z = GET_BITS(compressedData, POSITION_BITMASK, Z_POSITION_OFFSET);
     return vec3(pos);
 }
 
@@ -50,8 +50,8 @@ vec3 decodeNormal(uint compressedData) {
 }
 
 void main() {
-    vec3 localPosInChunk = decodePosition(compressedPosition);
-    vec3 decodedNormal = decodeNormal(compressedData);
+    vec3 localPosInChunk = decodePosition(compressedData1);
+    vec3 decodedNormal = decodeNormal(compressedData2);
 
     vec3 worldVertexPos = u_chunkPosition + localPosInChunk;
 

@@ -157,8 +157,11 @@ static CompactChunkFace generateCompactChunkFace(
     UVCoord uv11 = {static_cast<uint8_t>(height), static_cast<uint8_t>(width)};
 
     CompactChunkFace face = {
-        {CompactChunkVertex(v0, fInfo.texIndex, uv00, faceDirection), CompactChunkVertex(v1, fInfo.texIndex, uv10, faceDirection),
-         CompactChunkVertex(v2, fInfo.texIndex, uv11, faceDirection), CompactChunkVertex(v3, fInfo.texIndex, uv01, faceDirection)},
+        {
+            CompactChunkVertex(v0, 0, 0, fInfo.texIndex, uv00, faceDirection),
+            CompactChunkVertex(v1, 0, 0, fInfo.texIndex, uv10, faceDirection),
+            CompactChunkVertex(v2, 0, 0, fInfo.texIndex, uv11, faceDirection),
+            CompactChunkVertex(v3, 0, 0, fInfo.texIndex, uv01, faceDirection)},
         {
             0, 1, 2, 2, 3, 0  // indices
         }
