@@ -11,10 +11,15 @@ flat out vec3 normal;
 uniform mat4 u_viewProjection;
 uniform vec3 u_chunkPosition;
 
-#define POSITION_BITMASK 0x3FFu
-#define X_POSITION_OFFSET 20
-#define Y_POSITION_OFFSET 10
-#define Z_POSITION_OFFSET 0
+#define POSITION_BITMASK  0x3Fu
+#define X_POSITION_OFFSET 26
+#define Y_POSITION_OFFSET 20
+#define Z_POSITION_OFFSET 14
+
+#define ANIMATION_FRAME_COUNT_BITMASK   0xFFu
+#define ANIMATION_FRAME_COUNT_OFFSET    6
+#define ANIMATION_FPS_BITMASK           0x3Fu
+#define ANIMATION_FPS_OFFSET            0
 
 #define TEXINDEX_BITMASK 0xFFu
 #define TEXINDEX_OFFSET 16
@@ -37,11 +42,11 @@ uniform vec3 u_chunkPosition;
 #define PositiveZ 4u
 #define NegativeZ 5u
 
-vec3 decodePosition(uint compressedPosition) {
+vec3 decodePosition(uint compressedData) {
     uvec3 pos;
-    pos.x = GET_BITS(compressedPosition, POSITION_BITMASK, X_POSITION_OFFSET);
-    pos.y = GET_BITS(compressedPosition, POSITION_BITMASK, Y_POSITION_OFFSET);
-    pos.z = GET_BITS(compressedPosition, POSITION_BITMASK, Z_POSITION_OFFSET);
+    pos.x = GET_BITS(compressedData, POSITION_BITMASK, X_POSITION_OFFSET);
+    pos.y = GET_BITS(compressedData, POSITION_BITMASK, Y_POSITION_OFFSET);
+    pos.z = GET_BITS(compressedData, POSITION_BITMASK, Z_POSITION_OFFSET);
     return vec3(pos);
 }
 
