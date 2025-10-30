@@ -159,6 +159,8 @@ void Renderer::render(const ApplicationContext& context) {
     m_currentRenderContext.currScreenRes = glm::uvec2(context.screenWidth, context.screenHeight);
     m_currentRenderContext.deltaTime = context.instance->gameState.deltaTime;
     m_currentRenderContext.elapsedTime = context.instance->gameState.elapsedGameTime;
+    // Update camera aspect ratio just in case it changed via resize of screen.
+    context.instance->m_player->getCamera()->setAspectRatio(static_cast<float>(context.screenWidth) / static_cast<float>(context.screenHeight));
 
     RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
     std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;
