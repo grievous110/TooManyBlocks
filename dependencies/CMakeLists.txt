@@ -52,6 +52,9 @@ add_subdirectory(glm)
 
 # ======================== miniaudio ======================
 # Configuration: Excluding unessecary features / backends
+set(MINIAUDIO_NO_ENGINE ON CACHE BOOL "High level api is not used" FORCE)
+set(MINIAUDIO_NO_RESOURCE_MANAGER ON CACHE BOOL "Ressources are managed manually" FORCE)
+set(MINIAUDIO_NO_NODE_GRAPH ON CACHE BOOL "No Nodes since mixing is done manually" FORCE)
 set(MINIAUDIO_NO_EXTRA_NODES ON CACHE BOOL "No advanced effets needed" FORCE)
 set(MINIAUDIO_NO_FLAC ON CACHE BOOL "MP3 and WAV suffice" FORCE)
 set(MINIAUDIO_NO_JACK  ON CACHE BOOL "Linux music production backend" FORCE)
