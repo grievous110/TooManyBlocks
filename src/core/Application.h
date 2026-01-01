@@ -7,6 +7,7 @@ struct GLFWwindow;
 class Provider;
 class Application;
 class Renderer;
+class AudioEngine;
 class GameInstance;
 class FontPool;
 class AppIO;
@@ -28,6 +29,7 @@ struct ApplicationContext {
     GLFWwindow* window;
     Provider* provider;
     Renderer* renderer;
+    AudioEngine* audioEngine;
     GameInstance* instance;
     UI::Window* currentWindow;
     UI::Window* nextWindow;

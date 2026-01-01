@@ -10,6 +10,7 @@
 #include "AppConstants.h"
 #include "Logger.h"
 #include "engine/GameInstance.h"
+#include "engine/audio/AudioEngine.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/ui/AboutScreen.h"
@@ -86,19 +87,13 @@ void Application::setCurrentContext(ApplicationContext* context) {
 }
 
 ApplicationContext* Application::createContext() {
-    ApplicationContext* context = new ApplicationContext;
-    context->screenWidth = 0;
-    context->screenHeight = 0;
-    context->lastMousepositionX = 0;
-    context->lastMousepositionY = 0;
-
-    context->deltaAppTime = 0.0f;
-    context->elapsedAppTime = 0.0f;
+    ApplicationContext* context = new ApplicationContext{};
 
     context->workerPool = new ThreadPool(WORKER_COUNT);
     context->window = nullptr;
     context->provider = new Provider;
     context->renderer = new Renderer;
+    context->audioEngine = new AudioEngine;
     context->instance = new GameInstance;
     context->currentWindow = nullptr;
     context->nextWindow = nullptr;
@@ -119,12 +114,14 @@ void Application::deleteCurrentContext() {
         if (context->currentWindow) {
             delete context->currentWindow;
         }
+        delete context->audioEngine;
         delete context->fontPool;
         delete context->io;
 
         // Keep as last deletion!!!
         if (context->window) {
-            glfwDestroyWindow(context->window
+            glfwDestroyWindow(
+                context->window
             );  // This implicitly destroys open gl context -> gl calls afterwards will cause error
         }
         delete context;
