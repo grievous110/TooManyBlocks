@@ -4,6 +4,7 @@
 
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
+#include <cstring>
 
 thread_local unsigned int VertexBuffer::currentlyBoundVBO = 0;
 
@@ -51,6 +52,14 @@ void VertexBuffer::updateData(const void* data, size_t size, size_t offset) cons
     if (offset + size > m_size) throw std::runtime_error("VBO update exceeds buffer size");
 
     GLCALL(glBufferSubData(GL_ARRAY_BUFFER, offset, size, data));
+}
+
+void VertexBuffer::clearData() const {
+    bind();
+    void* ptr = nullptr;
+    GLCALL(ptr = glMapBufferRange(GL_ARRAY_BUFFER, 0, m_size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT));
+    std::memset(ptr, 0, m_size);
+    GLCALL(glUnmapBuffer(GL_ARRAY_BUFFER));
 }
 
 void VertexBuffer::bind() const {
