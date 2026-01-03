@@ -32,7 +32,7 @@ void ParticleMaterial::bindForObjectDraw(PassType passType, const RenderContext&
         );
         m_tfShader->setUniform("u_spawnCount", context.pInfo.spawnCount);
         m_tfShader->setUniform("u_particleSpawnOffset", context.pInfo.particleSpawnOffset);
-        m_tfShader->setUniform("u_maxParticleCount", context.pInfo.maxParticleCount);
+        m_tfShader->setUniform("u_allocatedParticleCount", context.pInfo.allocatedParticleCount);
         m_tfShader->setUniform("u_flags", context.pInfo.flags);
     } else if (passType == PassType::MainPass) {
         m_mainShader->use();

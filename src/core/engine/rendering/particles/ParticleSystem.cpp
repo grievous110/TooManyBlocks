@@ -28,7 +28,7 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
       m_spawnCount(0U),
       m_particleSpawnOffset(0U),
       m_newParticleSpawnOffset(0U),
-      m_maxParticleCount(0U),
+      m_allocatedParticleCount(0U),
       m_flags(0U) {
     if (modules.size() > MAX_PARTICLE_MODULES)
         throw std::runtime_error(
@@ -52,7 +52,7 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
                     throw std::runtime_error(
                         "Cannot define SpawnFixedParticleCount when already having a dynamic spawn rate module"
                     );
-                m_maxParticleCount = static_cast<size_t>(module.params[0].x);
+                m_allocatedParticleCount = static_cast<size_t>(module.params[0].x);
                 hasFixedParticleCount = true;
             } else if (module.type == ModuleType::SpawnRate) {
                 if (hasFixedParticleCount)
@@ -106,15 +106,15 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
         // Add safety margin. Otherwise accumulated spawns may not happen because particles are just barely alive.
         // Then it waits till the next accumulated spawn which causes spawn issues.
         size_t safetyMargin = std::max<size_t>(3, static_cast<size_t>(std::ceil(m_spawnRate * 0.05f)));
-        m_maxParticleCount = static_cast<size_t>(std::ceil(worstCaseActiveParticles)) + safetyMargin;
+        m_allocatedParticleCount = static_cast<size_t>(std::ceil(worstCaseActiveParticles)) + safetyMargin;
     }
 
     m_tfFeedbackVAO1 = VertexArray::create();
-    m_instanceDataVBO1 = VertexBuffer::create(nullptr, m_maxParticleCount * sizeof(Particle));
+    m_instanceDataVBO1 = VertexBuffer::create(nullptr, m_allocatedParticleCount * sizeof(Particle));
     m_instanceDataVBO1.clearData(); // Zero buffer memory
 
     m_tfFeedbackVAO2 = VertexArray::create();
-    m_instanceDataVBO2 = VertexBuffer::create(nullptr, m_maxParticleCount * sizeof(Particle));
+    m_instanceDataVBO2 = VertexBuffer::create(nullptr, m_allocatedParticleCount * sizeof(Particle));
     m_instanceDataVBO2.clearData(); // Zero buffer memory
 
     VertexBufferLayout layout;
@@ -161,7 +161,7 @@ void ParticleSystem::compute() {
         GLCALL(glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_instanceDataVBO2.rendererId()));
     }
     GLCALL(glBeginTransformFeedback(GL_POINTS));
-    GLCALL(glDrawArrays(GL_POINTS, 0, m_maxParticleCount));
+    GLCALL(glDrawArrays(GL_POINTS, 0, m_allocatedParticleCount));
     GLCALL(glEndTransformFeedback());
 }
 
@@ -171,7 +171,7 @@ void ParticleSystem::draw() const {
     } else {
         m_renderVAO2.bind();
     }
-    GLCALL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_maxParticleCount));
+    GLCALL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_allocatedParticleCount));
 }
 
 void ParticleSystem::reset() {
@@ -200,6 +200,6 @@ void ParticleSystem::update(float deltaTime) {
         m_spawnAccumulator -= spawnAmount;
         m_spawnCount = static_cast<unsigned int>(spawnAmount);
         m_particleSpawnOffset = m_newParticleSpawnOffset;
-        m_newParticleSpawnOffset = (m_particleSpawnOffset + m_spawnCount) % m_maxParticleCount;
+        m_newParticleSpawnOffset = (m_particleSpawnOffset + m_spawnCount) % m_allocatedParticleCount;
     }
 }

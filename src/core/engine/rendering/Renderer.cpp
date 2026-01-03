@@ -180,7 +180,7 @@ void Renderer::render(const ApplicationContext& context) {
                 m_currentRenderContext.pInfo.pModulesBuff = ps->getModulesUBO();
                 m_currentRenderContext.pInfo.spawnCount = ps->getSpawnCount();
                 m_currentRenderContext.pInfo.particleSpawnOffset = ps->getParticleSpawnOffset();
-                m_currentRenderContext.pInfo.maxParticleCount = ps->getMaxParticleCount();
+                m_currentRenderContext.pInfo.allocatedParticleCount = ps->getAllocatedParticleCount();
                 m_currentRenderContext.pInfo.flags = ps->getFlags();
                 batch.first->bindForObjectDraw(PassType::TransformFeedback, m_currentRenderContext);
                 ps->compute();

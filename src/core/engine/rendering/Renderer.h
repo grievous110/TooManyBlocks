@@ -31,7 +31,7 @@ struct ParticleInfo {
     const UniformBuffer* pModulesBuff;
     unsigned int spawnCount;
     unsigned int particleSpawnOffset;
-    unsigned int maxParticleCount;
+    unsigned int allocatedParticleCount;
     uint32_t flags;
 };
 

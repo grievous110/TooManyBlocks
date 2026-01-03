@@ -76,7 +76,7 @@ layout(std140) uniform ParticleModulesBlock {
 uniform uint u_moduleCount;
 uniform uint u_spawnCount;
 uniform uint u_particleSpawnOffset;
-uniform uint u_maxParticleCount;
+uniform uint u_allocatedParticleCount;
 uniform uint u_flags;
 uniform float u_deltaTime;
 uniform float u_time;
@@ -420,7 +420,7 @@ void main() {
 
             // Spawn based on free ringbuffer slots
             uint begin = u_particleSpawnOffset;
-            uint end = (u_particleSpawnOffset + u_spawnCount - 1) % u_maxParticleCount;
+            uint end = (u_particleSpawnOffset + u_spawnCount - 1) % u_allocatedParticleCount;
             
             if (begin <= end && (gl_VertexID >= begin && gl_VertexID <= end)) {
                 // Normal case, no wrap
