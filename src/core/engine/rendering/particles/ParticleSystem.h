@@ -40,7 +40,7 @@ private:
     float m_accumulatedTime;
     float m_spawnAccumulator;
     float m_spawnRate;
-    std::vector<std::tuple<float, float, bool>> m_burstSpawns;
+    std::vector<std::tuple<float, float, bool>> m_burstSpawns; // Delay, Amount, Fired flag
 
     unsigned int m_spawnCount;
     unsigned int m_particleSpawnOffset;
