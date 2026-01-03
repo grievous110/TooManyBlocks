@@ -45,7 +45,7 @@ private:
     unsigned int m_spawnCount;
     unsigned int m_particleSpawnOffset;
     unsigned int m_newParticleSpawnOffset;
-    unsigned int m_maxParticleCount;
+    unsigned int m_allocatedParticleCount;
     uint32_t m_flags;
 
     virtual void draw() const override;
@@ -70,7 +70,7 @@ public:
 
     unsigned int getParticleSpawnOffset() const { return m_particleSpawnOffset; }
 
-    unsigned int getMaxParticleCount() const { return m_maxParticleCount; }
+    unsigned int getAllocatedParticleCount() const { return m_allocatedParticleCount; }
 
     uint32_t getFlags() const { return m_flags; }
 };
