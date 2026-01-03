@@ -20,6 +20,7 @@ layout(location = 8) in uint in_metadata;
 out vec2 uv;
 flat out vec4 color;
 flat out uint texIndex;
+flat out float timeToLive;
 
 uniform mat4 u_mvp;
 uniform vec3 u_cameraRight;
@@ -32,6 +33,7 @@ void main() {
     uv = v_uv;
     color = in_color;
     texIndex = GET_BITS(in_metadata, TEXINDEX_BITMASK, TEXINDEX_OFFSET);
+    timeToLive = in_timeToLive;
 
     gl_Position = u_mvp * vec4(position, 1.0);
 }

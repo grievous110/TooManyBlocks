@@ -103,14 +103,19 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
 
     if (m_flags & DYNAMIC_SPAWNRATE) {
         float worstCaseActiveParticles = m_spawnRate * maxLifetime + totalBurstParticleCount;
-        m_maxParticleCount = static_cast<size_t>(std::ceil(worstCaseActiveParticles));
+        // Add safety margin. Otherwise accumulated spawns may not happen because particles are just barely alive.
+        // Then it waits till the next accumulated spawn which causes spawn issues.
+        size_t safetyMargin = std::max<size_t>(3, static_cast<size_t>(std::ceil(m_spawnRate * 0.05f)));
+        m_maxParticleCount = static_cast<size_t>(std::ceil(worstCaseActiveParticles)) + safetyMargin;
     }
 
     m_tfFeedbackVAO1 = VertexArray::create();
     m_instanceDataVBO1 = VertexBuffer::create(nullptr, m_maxParticleCount * sizeof(Particle));
+    m_instanceDataVBO1.clearData(); // Zero buffer memory
 
     m_tfFeedbackVAO2 = VertexArray::create();
     m_instanceDataVBO2 = VertexBuffer::create(nullptr, m_maxParticleCount * sizeof(Particle));
+    m_instanceDataVBO2.clearData(); // Zero buffer memory
 
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 4);

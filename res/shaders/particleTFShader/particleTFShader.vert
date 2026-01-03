@@ -94,6 +94,16 @@ float rand01(inout uint seedState) {
     return float(pcg_hash(seedState)) / UINT_MAX_FLOAT;
 }
 
+void copyParticle() {
+    tf_color = in_color;
+    tf_velocity = in_velocity;
+    tf_position = in_position;
+    tf_timeToLive = in_timeToLive;
+    tf_initialTimeToLive = in_initialTimeToLive;
+    tf_size = in_size;
+    tf_metadata = in_metadata;
+}
+
 void spawnParticle() {
     uint seed = floatBitsToUint(u_time) + gl_VertexID;
 
@@ -101,7 +111,7 @@ void spawnParticle() {
     tf_velocity = vec3(0.0);
     tf_position = vec3(0.0);
     tf_timeToLive = 0.0;
-    tf_initialTimeToLive = 0.0f;
+    tf_initialTimeToLive = 0.0;
     tf_size = 1.0;
     tf_metadata = 0U;
 
@@ -250,13 +260,12 @@ void spawnParticle() {
 void updateParticle() {
     uint seed = floatBitsToUint(u_time) + gl_VertexID;
 
-    tf_color = in_color;
-    tf_velocity = in_velocity;
     tf_position = in_position + in_velocity * u_deltaTime;
     tf_timeToLive = in_timeToLive - u_deltaTime;
-    tf_initialTimeToLive = in_initialTimeToLive;
-    tf_size = in_size;
-    tf_metadata = in_metadata;
+    
+    if (tf_timeToLive <= 0) {
+        return;
+    }
 
     float dragCoefficient = 0.0;
     vec3 jitterVel = vec3(0.0);
@@ -402,20 +411,26 @@ void updateParticle() {
 }
 
 void main() {
+    copyParticle();
     if (in_timeToLive <= 0.0) {        
         if ((u_flags & DYNAMIC_SPAWNRATE) != 0) {
+            if (u_spawnCount == 0) {
+                return;
+            }
+
             // Spawn based on free ringbuffer slots
             uint begin = u_particleSpawnOffset;
-            uint end = (u_particleSpawnOffset + u_spawnCount) % u_maxParticleCount;
+            uint end = (u_particleSpawnOffset + u_spawnCount - 1) % u_maxParticleCount;
             
-            if (begin < end && (gl_VertexID >= begin && gl_VertexID < end)) {
+            if (begin <= end && (gl_VertexID >= begin && gl_VertexID <= end)) {
                 // Normal case, no wrap
                 spawnParticle();
-            } else if (begin > end && (gl_VertexID >= begin || gl_VertexID < end)) {
+            } else if (begin > end && (gl_VertexID >= begin || gl_VertexID <= end)) {
                 // Wrapped case
                 spawnParticle();
             }
         } else {
+            // Force respawn all
             spawnParticle();
         }        
     } else {

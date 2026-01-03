@@ -3,6 +3,7 @@
 in vec2 uv;
 flat in vec4 color;
 flat in uint texIndex;
+flat in float timeToLive;
 
 layout(location = 0) out vec4 outColor;
 
@@ -30,6 +31,10 @@ vec4 sampleFromTexAtlas(vec2 uv_coord) {
 }
 
 void main() {
+    if (timeToLive <= 0.0) {
+        discard; // Discard pixels that belong to dead particles
+    }
+
     vec4 fragColor = vec4(0.0);
 
     if (u_useTexture) {

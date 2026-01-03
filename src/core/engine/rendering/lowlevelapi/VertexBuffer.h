@@ -61,6 +61,12 @@ public:
     void updateData(const void* data, size_t size, size_t offset = 0) const;
 
     /**
+     * @brief Completely fills vertex buffer memory with zero. May discard old buffer.
+     * @throws std::runtime_error If the buffer ID is 0 (uninitialized or moved-from).
+     */
+    void clearData() const;
+
+    /**
      * @brief Binds the vertex buffer to GL_ELEMENT_ARRAY_BUFFER if not already bound.
      *
      * @throws std::runtime_error If the buffer ID is 0 (uninitialized or moved-from).
