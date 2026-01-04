@@ -35,29 +35,25 @@ struct alignas(16) GPULight {
 
 class Light : public SceneComponent {
 protected:
-    glm::vec3 m_color;
-    float m_intensity;
-    float m_range;
-    LightPriority m_priority;
-    int m_shadowAtlasIndex;
+    GPULight m_internal;
 
 public:
-    Light(const glm::vec3& color, float intensity, float range)
-        : m_color(color), m_intensity(intensity), m_range(range) {}
+    Light(LightType type, const glm::vec3& color, float intensity, float range);
     virtual ~Light() = default;
 
-    inline glm::vec3 getColor() const { return m_color; }
-    inline float getIntensity() const { return m_intensity; }
-    inline float getRange() const { return m_range; }
-    inline LightPriority getPriotity() const { return m_priority; }
-    inline int getShadowAtlasIndex() const { return m_shadowAtlasIndex; }
+    inline glm::vec3 getColor() const { return m_internal.color; }
+    inline float getIntensity() const { return m_internal.intensity; }
+    inline float getRange() const { return m_internal.range; }
+    inline LightPriority getPriotity() const { return static_cast<LightPriority>(m_internal.priority); }
+    inline int getShadowAtlasIndex() const { return m_internal.shadowMapIndex; }
 
-    inline void setColor(const glm::vec3& color) { m_color = color; }
-    inline void setIntensity(float intensity) { m_intensity = intensity; }
-    inline void setRange(float range) { m_range = range; }
-    inline void setPriotity(LightPriority prio) { m_priority = prio; }
-    inline void setShadowAtlasIndex(int index) { m_shadowAtlasIndex = index; }
+    inline void setColor(const glm::vec3& color) { m_internal.color = color; }
+    inline void setIntensity(float intensity) { m_internal.intensity = intensity; }
+    inline void setRange(float range) { m_internal.range = range; }
+    inline void setPriotity(LightPriority prio) { m_internal.priority = static_cast<unsigned int>(prio); }
+    inline void setShadowAtlasIndex(int index) { m_internal.shadowMapIndex = index; }
 
+    virtual GPULight toGPULight();
     virtual LightType getType() const = 0;
     virtual glm::mat4 getProjectionMatrix() const = 0;
     virtual glm::mat4 getViewMatrix() const = 0;
