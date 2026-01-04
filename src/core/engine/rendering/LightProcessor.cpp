@@ -135,23 +135,7 @@ void LightProcessor::updateBuffers(const RawBuffer<Light*>& activeLights) {
         m_lightViewProjectionBuffer.clear();
 
         for (Light* currLight : activeLights) {
-            Transform lTr = currLight->getGlobalTransform();
-
-            GPULight lightStruct;
-            lightStruct.lightType = static_cast<unsigned int>(currLight->getType());
-            lightStruct.priority = static_cast<unsigned int>(currLight->getPriotity());
-            lightStruct.shadowMapIndex = static_cast<unsigned int>(currLight->getShadowAtlasIndex());
-            lightStruct.lightPosition = lTr.getPosition();
-            lightStruct.direction = lTr.getForward();
-            lightStruct.color = currLight->getColor();
-            lightStruct.intensity = currLight->getIntensity();
-            lightStruct.range = currLight->getRange();
-            if (Spotlight* lSpot = dynamic_cast<Spotlight*>(currLight)) {
-                lightStruct.fovy = lSpot->getFovy();
-                lightStruct.innerCutoffAngle = lSpot->getInnerCutoffAngle();
-            }
-
-            m_lightBuffer.push_back(lightStruct);
+            m_lightBuffer.push_back(currLight->toGPULight());
             m_lightViewProjectionBuffer.push_back(currLight->getViewProjMatrix());
         }
 
