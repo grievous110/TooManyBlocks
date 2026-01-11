@@ -1,8 +1,8 @@
 #include "SystemMetrics.h"
 
 #ifdef _WIN32
-#include <psapi.h>
 #include <windows.h>
+#include <psapi.h>
 
 MemoryInfo getSystemMemoryInfo() {
     MEMORYSTATUSEX status{};
@@ -33,8 +33,8 @@ ProcessIO getProcessIO() {
     ProcessIO io;
     io.bytesRead = counters.ReadTransferCount;
     io.bytesWritten = counters.WriteTransferCount;
-    io.readOps = counters.ReadOperationCount;
-    io.writeOps = counters.WriteOperationCount;
+    io.readCalls = counters.ReadOperationCount;
+    io.writeCalls = counters.WriteOperationCount;
 
     return io;
 }
@@ -47,7 +47,7 @@ CpuTimes getCpuTimes() {
     const uint64_t kernel100ns = (uint64_t(kernel.dwHighDateTime) << 32) | kernel.dwLowDateTime;
 
     CpuTimes times;
-    times.userNs = kernel100ns * 100;
+    times.userNs = user100ns * 100;
     times.kernelNs = kernel100ns * 100;
     return times;
 }
