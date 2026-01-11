@@ -3,16 +3,18 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 
-#include <glm/vec3.hpp>
-
 #include "Application.h"
-#include "datatypes/Transform.h"
+#include "engine/GameInstance.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/entity/Entity.h"
 #include "engine/ui/fonts/FontUtil.h"
 
 void UI::GameOverlay::render(ApplicationContext& context) {
     ImGuiIO& io = ImGui::GetIO();
+
+    if (ImGui::IsKeyPressed(ImGuiKey_F3, false)) {
+        m_showStats = !m_showStats;
+    }
 
     ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse |
                                     ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar;
@@ -22,34 +24,28 @@ void UI::GameOverlay::render(ApplicationContext& context) {
     {
         ScopedFont font(context.fontPool->getFont(20));
 
-        Transform& cameraTransform = context.instance->m_player->getCamera()->getLocalTransform();
-        glm::vec3 camRotation = cameraTransform.getRotationEuler();
-        glm::vec3 camForward = cameraTransform.getForward();
-        glm::vec3 playerPos = context.instance->m_player->getTransform().getPosition();
-        glm::vec3 velocity = context.instance->m_player->getVelocity();
-
-        ImGui::Text("Application average: %.1f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
-        ImGui::Text("Player Position: x=%.1f, y=%.1f, z=%.1f", playerPos.x, playerPos.y, playerPos.z);
-        ImGui::Text("Cam Rotation: x=%.1f, y=%.1f, z=%.1f", camRotation.x, camRotation.y, camRotation.z);
-        ImGui::Text("Cam Forward Vec: x=%.1f, y=%.1f, z=%.1f", camForward.x, camForward.y, camForward.z);
-        ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);
+        if (m_showStats) {
+            m_statScreen.render(context);
+        }
 
         ImVec2 pos(io.DisplaySize.x - 110, 10);  // Adjust X for width
         ImGui::SetNextWindowPos(pos, ImGuiCond_Always);
+        ImGui::PushItemWidth(200);
         ImGui::SetNextWindowBgAlpha(0.0f);  // transparent background
 
         if (ImGui::BeginCombo("##Dropdown", "Movement Mode", ImGuiComboFlags_NoArrowButton)) {
-            if (ImGui::Button("Walk")) {
+            if (ImGui::Selectable("Walk")) {
                 context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Walk);
             }
-            if (ImGui::Button("Fly")) {
+            if (ImGui::Selectable("Fly")) {
                 context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Fly);
             }
-            if (ImGui::Button("Spectator")) {
+            if (ImGui::Selectable("Spectator")) {
                 context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Spectator);
             }
             ImGui::EndCombo();
         }
+        ImGui::PopItemWidth();
 
         UI::Util::DrawCrosshair(35.0f, 3.0f);
 

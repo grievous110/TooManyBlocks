@@ -65,7 +65,7 @@ namespace UI {
                 if (hasError()) {
                     float errorWidth = ImGui::CalcTextSize(getError()).x;
                     ImGui::SetCursorPosX((io.DisplaySize.x - errorWidth) * 0.5f);
-                    ImGui::TextColored(ImVec4(1, 0, 0, 1), getError());
+                    ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", getError());
                 } else {
                     if (m_content.empty()) {
                         ImGui::Text("Loading...");

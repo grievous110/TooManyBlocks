@@ -1,7 +1,9 @@
 #ifndef TOOMANYBLOCKS_APPLICATION_H
 #define TOOMANYBLOCKS_APPLICATION_H
 
+#include <stddef.h>
 #include "datatypes/KeyMouseIO.h"
+#include "util/SystemMetrics.h"
 
 struct GLFWwindow;
 class Provider;
@@ -17,13 +19,23 @@ namespace UI {
 };
 
 struct ApplicationContext {
-    unsigned int screenWidth;
-    unsigned int screenHeight;
-    int lastMousepositionX;
-    int lastMousepositionY;
+    struct AppState {
+        unsigned int screenWidth;
+        unsigned int screenHeight;
+        int lastMousepositionX;
+        int lastMousepositionY;
+    } state;
 
-    float deltaAppTime;
-    float elapsedAppTime;
+    struct Stats {
+        float deltaAppTime;
+        float elapsedAppTime;
+
+        float cpuUsage;
+        uint64_t processUsedBytes;
+        MemoryInfo memInfo;
+        ProcessIO processIo;
+        CpuTimes cpuTimes;
+    } stats;
 
     ThreadPool* workerPool;
     GLFWwindow* window;
