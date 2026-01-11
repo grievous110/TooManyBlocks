@@ -246,13 +246,13 @@ void Renderer::render(const ApplicationContext& context) {
     endAmbientOcclusionPass(context);
     testTime += std::chrono::high_resolution_clock::now() - testTimerStart;
 
+    // GLCALL(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
     beginMainpass(context);
 
     // No culling since main pass uses same view
     // cullMeshesOutOfView(scene.meshes, culledMeshBuffer,
     // m_currentRenderContext.viewProjection);
     batchByMaterialForPass(materialBatches, culledObjectBuffer, PassType::MainPass);
-
     for (const auto& batch : materialBatches) {
         batch.first->bindForPass(PassType::MainPass, m_currentRenderContext);
 
@@ -269,6 +269,7 @@ void Renderer::render(const ApplicationContext& context) {
     }
 
     endMainpass(context);
+    // GLCALL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
     totalTime += std::chrono::high_resolution_clock::now() - totalTimerStart;
 
     // Logging
