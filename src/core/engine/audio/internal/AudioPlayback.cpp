@@ -177,11 +177,11 @@ static float computeSpatialPan(const AudioInstanceSlot& slot, const ListenerStat
 }
 
 static float computeAlphaLowpass(const LowpassConfig& lowpassConf) {
-    return 1.0f - expf(-2.0f * M_PIf * lowpassConf.cutoffHz / FORMAT_FRAME_RATE);
+    return 1.0f - expf(-2.0f * M_PI * lowpassConf.cutoffHz / FORMAT_FRAME_RATE);
 }
 
 static float computeAlphaHighpass(const HighpassConfig& highpassConf) {
-    return expf(-2.0f * M_PIf * highpassConf.cutoffHz / FORMAT_FRAME_RATE);
+    return expf(-2.0f * M_PI * highpassConf.cutoffHz / FORMAT_FRAME_RATE);
 }
 
 static float processLowpass(LowpassState& state, float x) {
