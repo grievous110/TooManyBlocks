@@ -31,7 +31,7 @@ if(UNIX AND NOT APPLE)
     target_link_libraries(TooManyBlocks PRIVATE GL X11 pthread)
 elseif(WIN32)
     message(STATUS "Detected Windows - Linking additional Windows-specific libraries")
-    target_link_libraries(TooManyBlocks PRIVATE opengl32 glu32 User32 gdi32 Shell32)
+    target_link_libraries(TooManyBlocks PRIVATE opengl32 glu32 User32 gdi32 Shell32 psapi)
 
     # In Release mode, define WinMain Entrypoint to get rid of console window
     if(CMAKE_BUILD_TYPE STREQUAL "Release")

@@ -102,8 +102,8 @@ void SSAOProcessor::initialize() {
 }
 
 void SSAOProcessor::validateBuffers(const ApplicationContext& context) {
-    unsigned int halfWidth = std::max<unsigned int>(context.screenWidth / 2, 2);
-    unsigned int halfHeight = std::max<unsigned int>(context.screenHeight / 2, 2);
+    unsigned int halfWidth = std::max<unsigned int>(context.state.screenWidth / 2, 2);
+    unsigned int halfHeight = std::max<unsigned int>(context.state.screenHeight / 2, 2);
     if (m_ssaoBufferWidth != halfWidth || m_ssaoBufferHeight != halfHeight) {
         m_ssaoBufferWidth = halfWidth;
         m_ssaoBufferHeight = halfHeight;

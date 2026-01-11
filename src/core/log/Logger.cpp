@@ -5,7 +5,7 @@
 #include <iostream>
 #include <sstream>
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 #include <windows.h>
 #else
 #include <unistd.h>
@@ -24,10 +24,10 @@ namespace lgr {
     std::string Logger::getCurrentTime() const noexcept {
         std::time_t now = std::time(nullptr);
         std::tm localTime{};
-        #if defined(_WIN32) || defined(_WIN64)
-            localtime_s(&localTime, &now);
+        #ifdef _WIN32
+        localtime_s(&localTime, &now);
         #else
-            localtime_r(&now, &localTime);
+        localtime_r(&now, &localTime);
         #endif
         std::ostringstream oss;
         oss << std::put_time(&localTime, "%Y-%m-%d %H:%M:%S");
@@ -72,11 +72,10 @@ namespace lgr {
     }
 
     Logger::Logger() noexcept {
-#ifdef _WIN32
+        #ifdef _WIN32
         // Check if console is available on windows
-        if (GetConsoleWindow() != nullptr) {
-            m_consoleAvailable = true;
-
+        m_consoleAvailable = GetConsoleWindow() != nullptr;
+        if (m_consoleAvailable) {
             // Try and configure console for colored text ouput
             HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
             if (hOut != INVALID_HANDLE_VALUE) {
@@ -86,19 +85,14 @@ namespace lgr {
                     SetConsoleMode(hOut, dwMode);
                 };
             }
-        } else {
-            m_consoleAvailable = false;
-            m_logFile.open("log.txt", std::ios::out | std::ios::trunc);
         }
-#else
+        #else
         // Check if console is available on other platform
-        if (isatty(fileno(stdout))) {
-            m_consoleAvailable = true;
-        } else {
-            m_consoleAvailable = false;
+        m_consoleAvailable = isatty(fileno(stdout));
+        #endif
+        if (!m_consoleAvailable) {
             m_logFile.open("log.txt", std::ios::out | std::ios::trunc);
         }
-#endif
     }
 
     Logger::~Logger() noexcept {

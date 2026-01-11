@@ -63,19 +63,19 @@ static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffs
 static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
     if (ApplicationContext* context = Application::getContext()) {
         MouseEventData data;
-        data.delta.x = xpos - context->lastMousepositionX;
-        data.delta.y = ypos - context->lastMousepositionY;
+        data.delta.x = xpos - context->state.lastMousepositionX;
+        data.delta.y = ypos - context->state.lastMousepositionY;
 
         context->io->mouseAdapter().notifyObservers(MousEvent::Move, data);
-        context->lastMousepositionX = xpos;
-        context->lastMousepositionY = ypos;
+        context->state.lastMousepositionX = xpos;
+        context->state.lastMousepositionY = ypos;
     }
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height) {
     if (ApplicationContext* context = Application::getContext()) {
-        context->screenWidth = static_cast<unsigned int>(width);
-        context->screenHeight = static_cast<unsigned int>(height);
+        context->state.screenWidth = static_cast<unsigned int>(width);
+        context->state.screenHeight = static_cast<unsigned int>(height);
     }
 }
 
@@ -148,12 +148,12 @@ void Application::run() {
         // Create current context
         ApplicationContext* context = Application::createContext();
         // Set initial screen dimensions
-        context->screenWidth = 960;
-        context->screenHeight = 540;
+        context->state.screenWidth = 960;
+        context->state.screenHeight = 540;
         Application::setCurrentContext(context);
 
         // Create a windowed mode window and its OpenGL context
-        context->window = glfwCreateWindow(context->screenWidth, context->screenHeight, "TooManyBlocks", NULL, NULL);
+        context->window = glfwCreateWindow(context->state.screenWidth, context->state.screenHeight, "TooManyBlocks", NULL, NULL);
         if (!context->window) {
             glfwTerminate();
             throw std::runtime_error("Could not create window!");
@@ -211,15 +211,27 @@ void Application::run() {
         try {
             context->renderer->initialize();
             float previousTime = static_cast<float>(glfwGetTime());
-
+            float statUpdateAccumulator = previousTime;
             while (!glfwWindowShouldClose(context->window) && !context->instance->gameState.quitGame) {
-                context->elapsedAppTime = static_cast<float>(glfwGetTime());
-                context->deltaAppTime = context->elapsedAppTime - previousTime;
-                previousTime = context->elapsedAppTime;
+                context->stats.elapsedAppTime = static_cast<float>(glfwGetTime());
+                context->stats.deltaAppTime = context->stats.elapsedAppTime - previousTime;
+                previousTime = context->stats.elapsedAppTime;
+                statUpdateAccumulator += context->stats.deltaAppTime;
+
+                if (statUpdateAccumulator >= 1.0f) {
+                    CpuTimes currentCpuTimes = getCpuTimes();
+                    context->stats.cpuUsage = getCpuUsage(context->stats.cpuTimes, currentCpuTimes, statUpdateAccumulator);
+                    context->stats.memInfo = getSystemMemoryInfo();
+                    context->stats.processUsedBytes = getProcessUsedBytes();
+                    context->stats.processIo = getProcessIO();
+                    context->stats.cpuTimes = currentCpuTimes;
+
+                    statUpdateAccumulator = 0.0f;;
+                }
 
                 if (context->instance->isWorldInitialized()) {
                     if (!context->instance->gameState.gamePaused) {
-                        context->instance->update(context->deltaAppTime);
+                        context->instance->update(context->stats.deltaAppTime);
                         context->provider->processWorkerResults();  // Does this need to be paused?
                     } else {
                         context->instance->gameState.deltaTime = 0.0f;
