@@ -37,16 +37,16 @@ void UI::StatScreen::render(ApplicationContext& context) {
         ImGui::Text("%.1f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("%.2f %% CPU Usage", context.stats.cpuUsage * 100.0f);
         ImGui::Text(
-            "%s / %s RAM System Memory", formatBytes(context.stats.memInfo.bytesInUse, ByteUnit::Bytes).c_str(),
-            formatBytes(context.stats.memInfo.totalBytes, ByteUnit::Bytes).c_str()
+            "%s / %s RAM System Memory", formatBytes(context.stats.memInfo.bytesInUse, ByteUnit::Bytes),
+            formatBytes(context.stats.memInfo.totalBytes, ByteUnit::Bytes)
         );
-        ImGui::Text("%s allocated by this process", formatBytes(context.stats.processUsedBytes, ByteUnit::Bytes).c_str());
+        ImGui::Text("%s allocated by this process", formatBytes(context.stats.processUsedBytes, ByteUnit::Bytes));
         ImGui::Text(
-            "%s read | %lu read calls", formatBytes(context.stats.processIo.bytesRead, ByteUnit::Bytes).c_str(),
+            "%s read | %lu read calls", formatBytes(context.stats.processIo.bytesRead, ByteUnit::Bytes),
             context.stats.processIo.readCalls
         );
         ImGui::Text(
-            "%s written | %lu write calls", formatBytes(context.stats.processIo.bytesWritten, ByteUnit::Bytes).c_str(),
+            "%s written | %lu write calls", formatBytes(context.stats.processIo.bytesWritten, ByteUnit::Bytes),
             context.stats.processIo.writeCalls
         );
         ImGui::SeparatorText("Player");
