@@ -1,5 +1,21 @@
 #include "PrettyPrint.h"
 
+#include <string>
+
+#define BUFFER_COUNT 8
+#define BUFFER_SIZE 64
+
+struct ThreadLocalBufferRing {
+    thread_local static inline char buffers[BUFFER_COUNT][BUFFER_SIZE];
+    thread_local static inline size_t index = 0;
+
+    static char* next() {
+        char* buf = buffers[index];
+        index = (index + 1) % BUFFER_COUNT;
+        return buf;
+    }
+};
+
 struct UnitDef {
     const char* name;
     double toNext; // scale factor to next larger unit (0.0 = last)
@@ -30,7 +46,8 @@ constexpr const UnitDef lengthUnits[] = {
     { "km", 0.0    }
 };
 
-static std::string formatUnitImpl(
+static void formatUnitImpl(
+    char* out,
     double value,
     const UnitDef* units,
     size_t unitCount,
@@ -51,20 +68,23 @@ static std::string formatUnitImpl(
         unit--;
     }
 
-    char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), "%.*f %s", precision, value, units[unit].name);
-
-    return buffer;
+    std::snprintf(out, BUFFER_SIZE, "%.*f %s", precision, value, units[unit].name);
 }
 
-std::string formatTime(double value, TimeUnit unit, int precision) {
-    return formatUnitImpl(value, timeUnits, std::size(timeUnits), static_cast<size_t>(unit), precision);
+const char* formatTime(double value, TimeUnit unit, int precision) {
+    char* buff = ThreadLocalBufferRing::next();
+    formatUnitImpl(buff, value, timeUnits, std::size(timeUnits), static_cast<size_t>(unit), precision);
+    return buff;
 }
 
-std::string formatBytes(double value, ByteUnit unit, int precision) {
-    return formatUnitImpl(value, byteUnits, std::size(byteUnits), static_cast<size_t>(unit), precision);
+const char* formatBytes(double value, ByteUnit unit, int precision) {
+    char* buff = ThreadLocalBufferRing::next();
+    formatUnitImpl(buff, value, byteUnits, std::size(byteUnits), static_cast<size_t>(unit), precision);
+    return buff;
 }
 
-std::string formatLength(double value, LengthUnit unit, int precision) {
-    return formatUnitImpl(value, lengthUnits, std::size(lengthUnits), static_cast<size_t>(unit), precision);
+const char* formatLength(double value, LengthUnit unit, int precision) {
+    char* buff = ThreadLocalBufferRing::next();
+    formatUnitImpl(buff, value, lengthUnits, std::size(lengthUnits), static_cast<size_t>(unit), precision);
+    return buff;
 }

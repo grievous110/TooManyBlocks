@@ -1,9 +1,7 @@
 #ifndef TOOMANYBLOCKS_PRETTYPRINT_H
 #define TOOMANYBLOCKS_PRETTYPRINT_H
 
-#include <string>
-
-enum class TimeUnit : size_t {
+enum class TimeUnit : unsigned int {
     Nanoseconds,
     Microseconds,
     Milliseconds,
@@ -13,7 +11,7 @@ enum class TimeUnit : size_t {
     Days
 };
 
-enum class ByteUnit : size_t {
+enum class ByteUnit : unsigned int {
     Bytes,
     KiB,
     MiB,
@@ -21,18 +19,17 @@ enum class ByteUnit : size_t {
     TiB
 };
 
-enum class LengthUnit : size_t {
+enum class LengthUnit : unsigned int {
     Millimeters,
     Centimeters,
     Meters,
     Kilometers
 };
 
+const char* formatTime(double value, TimeUnit unit, int precision = 1);
 
-std::string formatTime(double value, TimeUnit unit, int precision = 1);
+const char* formatBytes(double value, ByteUnit unit, int precision = 1);
 
-std::string formatBytes(double value, ByteUnit unit, int precision = 1);
-
-std::string formatLength(double value, LengthUnit unit, int precision = 1);
+const char* formatLength(double value, LengthUnit unit, int precision = 1);
 
 #endif
