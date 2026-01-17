@@ -32,8 +32,8 @@ namespace UI {
         std::lock_guard<std::mutex> lock(m_mtx);
         if (m_shouldLoadInfo) {
             m_shouldLoadInfo = false;
-            ThreadPool* worker = Application::getContext()->workerPool;
-            worker->pushJob(this, [this] {
+            
+            Future<void> future([this] {
                 Json::JsonArray infoArray;
                 fs::path savedDir = getAppDataPath() / "saved";
                 if (!fs::exists(savedDir)) {
@@ -44,23 +44,21 @@ namespace UI {
                     for (const auto& entry : fs::directory_iterator(savedDir)) {
                         fs::path infoPath = entry.path() / "info.json";
                         if (fs::exists(infoPath)) {
-                            std::ifstream file(infoPath.string(), std::ios::binary);
-                            Json::JsonValue info = Json::parseJson(
-                                std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>())
-                            );
+                            Json::JsonValue info = Json::parseJson(readFile(infoPath));
                             infoArray.push_back(info);
-                            file.close();
                         }
                     }
                 }
                 lgr::lout.debug("Saves directory: " + savedDir.string());
-
+                
                 {
                     std::lock_guard<std::mutex> lock(m_mtx);
                     m_worldInfos = std::move(infoArray);
                     m_selectedWorld = nullptr;
                 }
             });
+
+            Application::getContext()->workerPool->pushJob(this, future);
         }
     }
 

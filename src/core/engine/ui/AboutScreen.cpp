@@ -8,14 +8,15 @@
 #include "Logger.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "threading/ThreadPool.h"
+#include "util/Utility.h"
 
 namespace UI {
     void AboutScreen::loadContent() {
         std::lock_guard<std::mutex> lock(m_mtx);
         if (m_shouldLoadContent) {
             m_shouldLoadContent = false;
-            ThreadPool* worker = Application::getContext()->workerPool;
-            worker->pushJob(this, [this] {
+
+            Future<void> future([this] {
                 const std::string filePath = "third_party.txt";
                 std::ifstream file(filePath.c_str(), std::ios::in);
                 if (!file.is_open()) {
@@ -24,14 +25,16 @@ namespace UI {
                     return;
                 }
 
-                std::string content =
-                    std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                std::string content = readFile(filePath);
 
                 {
                     std::lock_guard<std::mutex> lock(m_mtx);
                     m_content = std::move(content);
                 }
             });
+
+            ThreadPool* worker = Application::getContext()->workerPool;
+            worker->pushJob(this, future);
         }
     }
 

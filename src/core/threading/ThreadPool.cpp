@@ -1,9 +1,5 @@
 #include "ThreadPool.h"
 
-#include <stdexcept>
-
-#include "Logger.h"
-
 void ThreadPool::loop() {
     while (true) {
         Job job;
@@ -18,19 +14,16 @@ void ThreadPool::loop() {
             m_jobs.pop_front();
         }
         // Execute job + Release lock
+        job.task();  // This will never throw since errors are captured by the internal future object
 
-        try {
-            job.task();
-        } catch (const std::exception& e) {
-            lgr::lout.error("Failed thread pool taks: " + std::string(e.what()));
-        }
         {
             std::lock_guard<std::mutex> lock(m_mtx);
-            if (--m_ownerTaskCount[job.owner] == 0) {
-                if (m_ownerWaitingThreads[job.owner] == 0) {
-                    erasePerOwnerEntrys(job.owner);
+            JobTrackingState& state = m_ownerTackingState[job.owner];
+            if (--state.taskCount == 0) {
+                if (state.waitingThreadCount == 0) {
+                    eraseOwnerJobTrackingEntry(job.owner);
                 } else {
-                    m_ownerWaitCvars[job.owner].notify_all();  // Notify any waiting threads for this owner
+                    state.waitCvar.notify_all();  // Notify any waiting threads for this owner
                 }
             }
 
@@ -41,16 +34,13 @@ void ThreadPool::loop() {
     }
 }
 
-void ThreadPool::erasePerOwnerEntrys(const void* owner) {
-    m_ownerTaskCount.erase(owner);
-    m_ownerWaitCvars.erase(owner);
-    m_ownerWaitingThreads.erase(owner);
-}
+void ThreadPool::eraseOwnerJobTrackingEntry(const void* owner) { m_ownerTackingState.erase(owner); }
 
 ThreadPool::ThreadPool(size_t numThreads) : m_terminateFlag(false), m_totalTaskCount(0) {
-    const unsigned int maxThreads = std::thread::hardware_concurrency();
-    for (unsigned int i = 0; i < numThreads && i < maxThreads; i++) {
-        m_threads.emplace_back(std::thread(&ThreadPool::loop, this));
+    size_t maxThreads = std::min<size_t>(std::thread::hardware_concurrency(), numThreads);
+    m_threads.reserve(maxThreads);
+    for (size_t i = 0; i < maxThreads; i++) {
+        m_threads.emplace_back(&ThreadPool::loop, this);
     }
 }
 
@@ -65,7 +55,6 @@ ThreadPool::~ThreadPool() {
     for (std::thread& activeThread : m_threads) {
         activeThread.join();
     }
-    m_threads.clear();
 }
 
 void ThreadPool::waitForCompletion() {
@@ -75,22 +64,12 @@ void ThreadPool::waitForCompletion() {
 
 void ThreadPool::waitForOwnerCompletion(const void* owner) {
     std::unique_lock<std::mutex> lock(m_mtx);
-    m_ownerWaitingThreads[owner]++;
-    m_ownerWaitCvars[owner].wait(lock, [this, owner] { return m_ownerTaskCount[owner] == 0; });
-    if (--m_ownerWaitingThreads[owner] == 0) {
-        erasePerOwnerEntrys(owner);  // Last waiting thread cleans up per owner entrys
+    JobTrackingState& state = m_ownerTackingState[owner];
+    state.waitingThreadCount++;
+    state.waitCvar.wait(lock, [this, &state] { return state.taskCount == 0; });
+    if (--state.waitingThreadCount == 0) {
+        eraseOwnerJobTrackingEntry(owner);  // Last waiting thread cleans up per owner entrys
     }
-}
-
-void ThreadPool::pushJob(const void* owner, std::function<void()> job) {
-    {
-        std::lock_guard<std::mutex> lock(m_mtx);
-        m_jobs.push_back({owner, std::move(job)});
-        m_ownerTaskCount[owner]++;
-        m_totalTaskCount++;
-    }
-    // Notify one worker cause job is available
-    m_taskAvailableCvar.notify_one();
 }
 
 void ThreadPool::cancelJobs(const void* owner) {
@@ -99,13 +78,14 @@ void ThreadPool::cancelJobs(const void* owner) {
     auto it = m_jobs.begin();
     while (it != m_jobs.end()) {
         if (it->owner == owner) {
+            JobTrackingState& state = m_ownerTackingState[it->owner];
             it = m_jobs.erase(it);
             m_totalTaskCount--;
-            if (--m_ownerTaskCount[owner] == 0) {
-                if (m_ownerWaitingThreads[owner] == 0) {
-                    erasePerOwnerEntrys(owner);
+            if (--state.taskCount == 0) {
+                if (state.waitingThreadCount == 0) {
+                    eraseOwnerJobTrackingEntry(owner);
                 } else {
-                    m_ownerWaitCvars[owner].notify_all();  // Notify any waiting threads for this owner
+                    state.waitCvar.notify_all();  // Notify any waiting threads for this owner
                 }
             }
         } else {
@@ -122,11 +102,12 @@ void ThreadPool::forceCancelAllJobs() {
     std::lock_guard<std::mutex> lock(m_mtx);
     for (const Job& job : m_jobs) {
         m_totalTaskCount--;
-        if (--m_ownerTaskCount[job.owner] == 0) {
-            if (m_ownerWaitingThreads[job.owner] == 0) {
-                erasePerOwnerEntrys(job.owner);
+        JobTrackingState& state = m_ownerTackingState[job.owner];
+        if (--state.taskCount == 0) {
+            if (state.waitingThreadCount == 0) {
+                eraseOwnerJobTrackingEntry(job.owner);
             } else {
-                m_ownerWaitCvars[job.owner].notify_all();  // Notify any waiting threads for this owner
+                state.waitCvar.notify_all();  // Notify any waiting threads for this owner
             }
         }
     }

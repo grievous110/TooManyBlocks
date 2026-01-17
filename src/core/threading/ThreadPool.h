@@ -5,9 +5,15 @@
 #include <deque>
 #include <functional>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
+#include <typeinfo>
 #include <unordered_map>
 #include <vector>
+
+#include "Future.h"
+
+#define MAX_TASK_COUNT 2048
 
 class ThreadPool {
 private:
@@ -16,15 +22,19 @@ private:
         std::function<void()> task;
     };
 
+    struct JobTrackingState {
+        size_t taskCount;
+        size_t waitingThreadCount;
+        std::condition_variable waitCvar;
+    };
+
     bool m_terminateFlag;
     std::mutex m_mtx;
     std::condition_variable m_taskAvailableCvar;
     std::condition_variable m_globalWaitCvar;
     std::vector<std::thread> m_threads;
     std::deque<Job> m_jobs;
-    std::unordered_map<const void*, size_t> m_ownerTaskCount;
-    std::unordered_map<const void*, std::condition_variable> m_ownerWaitCvars;
-    std::unordered_map<const void*, size_t> m_ownerWaitingThreads;
+    std::unordered_map<const void*, JobTrackingState> m_ownerTackingState;
     size_t m_totalTaskCount;
 
     /**
@@ -41,7 +51,7 @@ private:
      *
      * @param owner Pointer used to identify the owner of submitted jobs.
      */
-    void erasePerOwnerEntrys(const void* owner);
+    void eraseOwnerJobTrackingEntry(const void* owner);
 
 public:
     /**
@@ -79,9 +89,22 @@ public:
      * @brief Adds a job to the thread pool for execution.
      *
      * @param owner Pointer identifying the owner of the job (nullptr is also a valid owner).
-     * @param job The task to be executed by a worker thread.
+     * @param future The task to be executed by a worker thread.
      */
-    void pushJob(const void* owner, std::function<void()> job);
+    template <typename T>
+    void pushJob(const void* owner, Future<T> future) {
+        if (future.isEmpty()) return;
+        
+        {
+            std::lock_guard<std::mutex> lock(m_mtx);
+            if (m_totalTaskCount >= MAX_TASK_COUNT) throw std::runtime_error("Maximum of number of pending tasks reached!");
+            m_jobs.push_back({owner, [future]() mutable { future(); }});
+            m_ownerTackingState[owner].taskCount++;
+            m_totalTaskCount++;
+        }
+        // Notify one worker cause job is available
+        m_taskAvailableCvar.notify_one();
+    }
 
     /**
      * @brief Cancels all jobs associated with a specific owner.
