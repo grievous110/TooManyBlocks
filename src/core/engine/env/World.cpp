@@ -162,17 +162,19 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
         if (activeChunks.find(it->first) == activeChunks.end()) {
             if (it->second.isMarkedForSave()) {
                 // Save chunk that will be unloaded but has changes
-                ThreadPool* tPool = Application::getContext()->workerPool;
-
                 glm::ivec3 chunkPos = it->first;
                 std::shared_ptr<Block[]> blockData = std::move(it->second.m_blocks);
-                tPool->pushJob(this, [this, chunkPos, blockData] {
+
+                Future<void> future([this, chunkPos, blockData] {
                     try {
                         m_cStorage.saveChunkData(chunkPos, blockData.get());
                     } catch (const std::exception& e) {
                         lgr::lout.error(e.what());
                     }
                 });
+
+                ThreadPool* tPool = Application::getContext()->workerPool;
+                tPool->pushJob<void>(this, future);
             }
             it = m_loadedChunks.erase(it);
         } else {
@@ -201,8 +203,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             m_loadedChunks[chunkPos] = Chunk();
 
             // Create new one
-            ThreadPool* tPool = Application::getContext()->workerPool;
-            tPool->pushJob(this, [this, chunkPos] {
+            Future<void> future([this, chunkPos] {
                 std::unique_ptr<Block[]> blocks;
                 if (m_cStorage.hasChunk(chunkPos)) {
                     blocks = m_cStorage.loadChunkData(chunkPos);
@@ -218,10 +219,12 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                     m_workerResultQueue.push({chunkPos, std::move(blocks), std::move(meshBp)});
                 }
             });
+
+            ThreadPool* tPool = Application::getContext()->workerPool;
+            tPool->pushJob<void>(this, future);
         } else if (it->second.isChanged() && !it->second.isBeingRebuild()) {
             // Chunk already exists and needs a rebuild (and no other worker is currently rebuilding this) -> rebuild
             // only mesh data
-            ThreadPool* tPool = Application::getContext()->workerPool;
 
             // Make copy of blockdata
             std::shared_ptr<Block[]> blocksCopy(new Block[BLOCKS_PER_CHUNK], std::default_delete<Block[]>());
@@ -230,7 +233,8 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
 
             it->second.m_isBeingRebuild = true;
             it->second.m_changed = false;
-            tPool->pushJob(this, [this, chunkPos, blocksCopy] {
+
+            Future<void> future([this, chunkPos, blocksCopy] {
                 std::unique_ptr<IBlueprint> meshBp = generateMeshForChunkGreedy(blocksCopy.get(), texMap);
 
                 {
@@ -238,6 +242,8 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
                     m_workerResultQueue.push({chunkPos, nullptr, std::move(meshBp)});
                 }
             });
+            ThreadPool* tPool = Application::getContext()->workerPool;
+            tPool->pushJob(this, future);
         }
     }
 }

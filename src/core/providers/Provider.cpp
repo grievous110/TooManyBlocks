@@ -122,7 +122,8 @@ std::shared_ptr<Texture> Provider::getTextureFromFile(const std::string& texture
 std::shared_ptr<StaticMesh> Provider::getStaticMeshFromFile(const std::string& meshPath) {
     auto it = m_staticMeshBpCache.find(meshPath);
     if (it != m_staticMeshBpCache.end()) {
-        return std::make_shared<StaticMesh>(std::static_pointer_cast<StaticMesh::Internal>(it->second->createInstance())
+        return std::make_shared<StaticMesh>(
+            std::static_pointer_cast<StaticMesh::Internal>(it->second->createInstance())
         );
     }
 
@@ -133,7 +134,7 @@ std::shared_ptr<StaticMesh> Provider::getStaticMeshFromFile(const std::string& m
 
         if (!m_isLoading[meshPath]) {
             // Async creation of mesh blueprint
-            context->workerPool->pushJob(this, [this, meshPath] {
+            Future<void> future([this, meshPath] {
                 std::unique_ptr<IBlueprint> meshBlueprint = readMeshDataFromObjFile(meshPath, true);
                 // !No baking in seperate thread since this must be done on the opengl thread!
                 {
@@ -141,6 +142,7 @@ std::shared_ptr<StaticMesh> Provider::getStaticMeshFromFile(const std::string& m
                     m_loadedStaticMeshBps.push({std::move(meshPath), std::move(meshBlueprint)});
                 }
             });
+            context->workerPool->pushJob(this, future);
         }
 
         return emptyMesh;
@@ -165,7 +167,7 @@ std::shared_ptr<SkeletalMesh> Provider::getSkeletalMeshFromFile(const std::strin
 
         if (!m_isLoading[meshPath]) {
             // Async creation of mesh blueprint
-            context->workerPool->pushJob(this, [this, meshPath] {
+            Future<void> future([this, meshPath] {
                 std::unique_ptr<IBlueprint> meshBlueprint = readSkeletalMeshFromGlbFile(meshPath, true);
                 // !No baking in seperate thread since this must be done on the opengl thread!
                 {
@@ -173,6 +175,7 @@ std::shared_ptr<SkeletalMesh> Provider::getSkeletalMeshFromFile(const std::strin
                     m_loadedSkeletalMeshBps.push({std::move(meshPath), std::move(meshBlueprint)});
                 }
             });
+            context->workerPool->pushJob(this, future);
             m_isLoading[meshPath] = true;
         }
 
