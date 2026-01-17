@@ -37,3 +37,11 @@ std::string readFile(const std::string& filepath) {
     }
     return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
 }
+
+std::string readFile(const std::filesystem::path& filepath) {
+    std::ifstream file(filepath, std::ios::in);
+    if (!file.is_open()) {
+        throw std::runtime_error("Failed to open file: " + filepath.string());
+    }
+    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+}

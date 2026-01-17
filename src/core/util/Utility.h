@@ -12,4 +12,6 @@ std::filesystem::path getAppDataPath();
 
 std::string readFile(const std::string& filepath);
 
+std::string readFile(const std::filesystem::path& filepath);
+
 #endif
