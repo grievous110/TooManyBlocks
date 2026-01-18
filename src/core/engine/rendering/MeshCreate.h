@@ -13,26 +13,26 @@
 #include "engine/rendering/StaticMesh.h"
 #include "util/BitOperations.h"
 
-#define POSITION_BITMASK  0x3F
-#define X_POSITION_OFFSET 26
-#define Y_POSITION_OFFSET 20
-#define Z_POSITION_OFFSET 14
+#define POSITION_BITMASK              0x3F
+#define X_POSITION_OFFSET             26
+#define Y_POSITION_OFFSET             20
+#define Z_POSITION_OFFSET             14
 
-#define ANIMATION_FRAME_COUNT_BITMASK   0xFF
-#define ANIMATION_FRAME_COUNT_OFFSET    6
-#define ANIMATION_FPS_BITMASK           0x3F
-#define ANIMATION_FPS_OFFSET            0
+#define ANIMATION_FRAME_COUNT_BITMASK 0xFF
+#define ANIMATION_FRAME_COUNT_OFFSET  6
+#define ANIMATION_FPS_BITMASK         0x3F
+#define ANIMATION_FPS_OFFSET          0
 
-#define TEXINDEX_BITMASK  0xFFFF
-#define TEXINDEX_OFFSET   16
+#define TEXINDEX_BITMASK              0xFFFF
+#define TEXINDEX_OFFSET               16
 
-#define X_UV_BITMASK      0x3F
-#define Y_UV_BITMASK      0x3F
-#define X_UV_OFFSET       10
-#define Y_UV_OFFSET       4
+#define X_UV_BITMASK                  0x3F
+#define Y_UV_BITMASK                  0x3F
+#define X_UV_OFFSET                   10
+#define Y_UV_OFFSET                   4
 
-#define NORMAL_BITMASK    0x07
-#define NORMAL_OFFSET     0
+#define NORMAL_BITMASK                0x07
+#define NORMAL_OFFSET                 0
 
 struct UVCoord {
     uint8_t x : 6;
@@ -40,11 +40,13 @@ struct UVCoord {
 };
 
 struct CompactChunkVertex {
-    uint32_t packedData1;    // 4 bytes compressed for data (position, frame count, fps)
+    uint32_t packedData1;  // 4 bytes compressed for data (position, frame count, fps)
     uint32_t packedData2;  // 4 bytes for compressed data (texIndex, normal, uv)
 
+    CompactChunkVertex() = default;
+
     CompactChunkVertex(
-        const glm::ivec3& pos = glm::ivec3(0),
+        const glm::ivec3& pos,
         uint8_t frameCount = 0,
         uint8_t fps = 0,
         uint16_t texIndex = 0,
