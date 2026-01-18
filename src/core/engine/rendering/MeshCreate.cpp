@@ -28,6 +28,13 @@
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
 #include "util/BitOperations.h"
 
+#define OBJ_PREFIX_V_POS "v"
+#define OBJ_PREFIX_V_TEX_COORD "vt"
+#define OBJ_PREFIX_V_NORMAL "vn"
+#define OBJ_PREFIX_FACE "f"
+#define OBJ_IDENT_OBJECT "o"
+#define OBJ_IDENT_GROUP "g"
+
 #define GLB_JSON_CHUNK   0x4E4F534A
 #define GLB_BIN_CHUNK    0x004E4942
 #define GLB_MAGIC_NUMBER 0x46546C67
@@ -42,18 +49,15 @@ struct CompactChunkFace {
 
 static void zeroFillPlanes(BinaryPlaneArray planes, size_t size) {
     for (size_t slice = 0; slice < size; slice++) {
-        for (size_t row = 0; row < size; row++) {
-            planes[slice][row] = 0U;
-        }
+        std::memset(planes[slice], 0, size * sizeof(unsigned int));
     }
 }
 
 static BinaryPlaneArray allocateBinaryPlanes(size_t size) {
     BinaryPlaneArray planes = new BinaryPlane[size];
     for (size_t slice = 0; slice < size; slice++) {
-        planes[slice] = new unsigned int[size];
+        planes[slice] = new unsigned int[size]{};
     }
-    zeroFillPlanes(planes, size);
     return planes;
 }
 
@@ -145,9 +149,7 @@ static CompactChunkFace generateCompactChunkFace(
 
     // Quickfix for wrong uvs
     if (faceDirection == AxisDirection::PositiveZ || faceDirection == AxisDirection::NegativeZ) {
-        int tmp = height;
-        height = width;
-        width = tmp;
+        std::swap(height, width);
     }
 
     // UV coordinates scaled by width and height (63 is max value since UVCoord stores 6 bit values)
@@ -408,24 +410,24 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
         }
 
         std::string line;
+        char prefix[4];
         while (std::getline(file, line)) {
             std::istringstream ss(line);
-            std::string prefix;
             ss >> prefix;
 
-            if (prefix == "v") {  // Parse position
+            if (std::strcmp(prefix, OBJ_PREFIX_V_POS) == 0) {
                 glm::vec3 pos;
                 ss >> pos.x >> pos.y >> pos.z;
                 positions.push_back(pos);
-            } else if (prefix == "vt") {  // Parse texture coordinate
+            } else if (std::strcmp(prefix, OBJ_PREFIX_V_TEX_COORD) == 0) {
                 glm::vec2 tex;
                 ss >> tex.x >> tex.y;
                 uvs.push_back(tex);
-            } else if (prefix == "vn") {  // Parse normal
+            } else if (std::strcmp(prefix, OBJ_PREFIX_V_NORMAL) == 0) {
                 glm::vec3 normal;
                 ss >> normal.x >> normal.y >> normal.z;
                 normals.push_back(normal);
-            } else if (prefix == "f") {  // Parse face
+            } else if (std::strcmp(prefix, OBJ_PREFIX_FACE) == 0) {
                 std::vector<unsigned int> faceIndices;
                 std::string vertexInfo;
 
@@ -478,7 +480,7 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
                 } else {
                     lgr::lout.warn("Ignoring a face with less than 3 vertices");
                 }
-            } else if (prefix == "o" || prefix == "g") {
+            } else if (std::strcmp(prefix, OBJ_IDENT_GROUP) == 0 || std::strcmp(prefix, OBJ_IDENT_GROUP) == 0) {
                 // Parse new object or group
                 if (!currentMesh.vertices.empty()) {
                     meshes.push_back(std::move(currentMesh));
@@ -502,11 +504,7 @@ std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath,
         lgr::lout.warn("There are multiple objects in that file, ignoring all except first object in: " + filePath);
     }
 
-    CPURenderData<Vertex>& obj = meshes[0];
-    std::unique_ptr<CPURenderData<Vertex>> meshData = std::make_unique<CPURenderData<Vertex>>();
-    meshData->name = std::move(obj.name);
-    meshData->vertices = std::move(obj.vertices);
-    meshData->indices = std::move(obj.indices);
+    std::unique_ptr<CPURenderData<Vertex>> meshData = std::make_unique<CPURenderData<Vertex>>(std::move(meshes[0]));
     meshData->bounds = calculateMeshBounds(meshData->vertices);
     return std::make_unique<StaticMeshBlueprint>(std::move(meshData));
 }
@@ -547,7 +545,8 @@ std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& fileP
             file.read(reinterpret_cast<char*>(&chunkType), sizeof(uint32_t));
             bytesRead += 2 * sizeof(uint32_t);
 
-            std::vector<char> chunkData(chunkLength);
+            std::vector<char> chunkData;
+            chunkData.reserve(chunkLength);
             file.read(chunkData.data(), chunkLength);
             bytesRead += chunkLength;
 
