@@ -5,7 +5,6 @@ UseTab: Never
 
 SortIncludes: true
 IncludeBlocks: Regroup
-
 DerivePointerAlignment: false
 PointerAlignment: Left
 BreakBeforeBraces: Attach
@@ -17,6 +16,7 @@ AlignConsecutiveMacros: AcrossEmptyLinesAndComments
 NamespaceIndentation: All
 
 BinPackParameters: false
+BinPackArguments: false
 
 ColumnLimit: 120
 AllowAllParametersOfDeclarationOnNextLine: true
