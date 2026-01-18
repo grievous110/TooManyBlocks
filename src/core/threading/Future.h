@@ -80,9 +80,9 @@ public:
 
     inline bool isEmpty() const { return !state; }
 
-    inline bool isReady() const { return state->ready.load(); }
+    inline bool isReady() const { return state && state->ready.load(); }
 
-    inline bool hasError() const { return state->failed.load(); }
+    inline bool hasError() const { return state && state->failed.load(); }
 
     inline void await() const {
         if (isEmpty()) throw std::runtime_error("Cannot await empty future");
@@ -93,20 +93,20 @@ public:
 
     template <typename U = T>
     std::enable_if_t<!std::is_void_v<U>, const U&> value() const {
-        if (isEmpty() || !isReady()) throw std::runtime_error("Acessing unfinished or empty future");
+        if (!isReady()) throw std::runtime_error("Acessing unfinished or empty future");
         if (hasError()) std::rethrow_exception(state->exception);
         return *state->value;
     }
 
     template <typename U = T>
     std::enable_if_t<!std::is_void_v<U>, const U&> value() {
-        if (isEmpty() || !isReady()) throw std::runtime_error("Acessing unfinished or empty future");
+        if (!isReady()) throw std::runtime_error("Acessing unfinished or empty future");
         if (hasError()) std::rethrow_exception(state->exception);
         return *state->value;
     }
 
     inline std::exception_ptr getException() const {
-        if (isEmpty() || !hasError()) return nullptr;
+        if (!hasError()) return nullptr;
         return state->exception;
     }
 };
