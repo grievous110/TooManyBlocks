@@ -3,25 +3,23 @@
 
 #include <json/JsonParser.h>
 
-#include <mutex>
 #include <string>
 
 #include "engine/ui/Ui.h"
+#include "threading/Future.h"
 
 namespace UI {
     class WorldSelection : public Window {
     private:
-        std::mutex m_mtx;
-        Json::JsonArray m_worldInfos;
+        Future<Json::JsonArray> m_worldInfos;
         Json::JsonValue* m_selectedWorld;
-        bool m_shouldLoadInfo;
 
         char m_newWorldName[64];
         uint32_t m_newWorldSeed;
 
         void randomSeed();
 
-        void loadWorldInfoOnce();
+        void loadWorldInfo();
 
         void createNewWorld(const std::string& name);
 
@@ -30,7 +28,7 @@ namespace UI {
         void deleteWorld();
 
     public:
-        WorldSelection() : m_selectedWorld(nullptr), m_shouldLoadInfo(true) {}
+        WorldSelection() : m_selectedWorld(nullptr) {}
 
         virtual ~WorldSelection() = default;
 

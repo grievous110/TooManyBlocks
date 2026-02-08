@@ -7,6 +7,7 @@
 
 #include "datatypes/DatatypeDefs.h"
 #include "engine/rendering/StaticMesh.h"
+#include "threading/Future.h"
 
 constexpr int CHUNK_SIZE = 32;
 constexpr int CHUNK_WIDTH = CHUNK_SIZE;
@@ -35,24 +36,26 @@ class Chunk {
     friend class World;
 
 private:
-    bool m_isBeingRebuild;   // true if a worker is currently building its mesh
     bool m_changed;          // If any block has been changed since the last rebuild started
     bool m_isMarkedForSave;  // If there are changes that need to be written back chunk file
-    std::unique_ptr<Block[]> m_blocks;
-    std::unique_ptr<StaticMesh> m_mesh;
+    Future<std::unique_ptr<Block[]>> m_blocks;
+    StaticMesh m_mesh;
+    Future<StaticMesh::Internal> m_pendingRebuildMesh;
 
 public:
     static glm::ivec3 worldToChunkOrigin(const glm::vec3& worldPos);
     static glm::ivec3 worldToChunkLocal(const glm::ivec3& chunkOrigin, const glm::ivec3& worldBlockPos);
 
-    Chunk() : m_isBeingRebuild(false), m_changed(false), m_isMarkedForSave(false) {}
+    Chunk() : m_changed(false), m_isMarkedForSave(false) {}
 
-    inline bool isBeingRebuild() const { return m_isBeingRebuild; }
+    void tryCommitRebuild();
+
+    inline bool isBeingRebuild() const { return m_pendingRebuildMesh.isReady(); }
     inline bool isChanged() const { return m_changed; }
     inline bool isMarkedForSave() const { return m_isMarkedForSave; }
-    inline bool isLoaded() const { return m_blocks != nullptr; }
-    inline const Block* blocks() const { return m_blocks.get(); }
-    inline StaticMesh* getMesh() const { return m_mesh.get(); }
+    inline bool isLoaded() const { return m_blocks.isReady(); }
+    inline const Block* blocks() const { return m_blocks.isReady() ? m_blocks.value().get() : nullptr; }
+    inline StaticMesh* getMesh() { return &m_mesh; }
 };
 
 constexpr int chunkBlockIndex(int x, int y, int z) { return z * CHUNK_SLICE_SIZE + y * CHUNK_WIDTH + x; }

@@ -11,37 +11,26 @@
 #include "util/Utility.h"
 
 namespace UI {
-    void AboutScreen::loadContent() {
-        std::lock_guard<std::mutex> lock(m_mtx);
-        if (m_shouldLoadContent) {
-            m_shouldLoadContent = false;
+    void AboutScreen::startLoadingContent() {
+        m_content = Future<std::string>([]() {
+            return readFile(std::string("third_party.txt"));
+        });
 
-            Future<void> future([this] {
-                const std::string filePath = "third_party.txt";
-                std::ifstream file(filePath.c_str(), std::ios::in);
-                if (!file.is_open()) {
-                    std::lock_guard<std::mutex> lock(m_mtx);
-                    setError("Failed to open file: " + filePath);
-                    return;
-                }
-
-                std::string content = readFile(filePath);
-
-                {
-                    std::lock_guard<std::mutex> lock(m_mtx);
-                    m_content = std::move(content);
-                }
-            });
-
-            ThreadPool* worker = Application::getContext()->workerPool;
-            worker->pushJob(this, future);
-        }
+        m_content.start();
     }
 
     void AboutScreen::render(ApplicationContext& context) {
-        loadContent();
-
-        std::lock_guard<std::mutex> lock(m_mtx);
+        if (m_content.isEmpty()) {
+            startLoadingContent();
+        }
+        if (m_content.hasError()) {
+            try {
+                std::rethrow_exception(m_content.getException());
+            } catch(const std::exception& e) {
+                setError(e.what());
+            }
+            m_content.reset();
+        }
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -70,11 +59,11 @@ namespace UI {
                     ImGui::SetCursorPosX((io.DisplaySize.x - errorWidth) * 0.5f);
                     ImGui::TextColored(ImVec4(1, 0, 0, 1), "%s", getError());
                 } else {
-                    if (m_content.empty()) {
+                    if (!m_content.isReady()) {
                         ImGui::Text("Loading...");
                     } else {
                         ScopedFont contentFont(context.fontPool->getFont(20));
-                        ImGui::TextUnformatted(m_content.c_str());
+                        ImGui::TextUnformatted(m_content.value().c_str());
                     }
                 }
             }

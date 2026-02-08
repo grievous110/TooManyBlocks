@@ -123,6 +123,8 @@ std::unique_ptr<Block[]> ChunkStorage::loadChunkData(const glm::ivec3& chunkPos)
 }
 
 void ChunkStorage::saveChunkData(const glm::ivec3& chunkPos, const Block* blocks) {
+    if (!blocks) return;
+
     std::shared_ptr<std::mutex> fileAccessMutex = getChunkMutex(chunkPos);
     std::lock_guard<std::mutex> lock(*fileAccessMutex);
 

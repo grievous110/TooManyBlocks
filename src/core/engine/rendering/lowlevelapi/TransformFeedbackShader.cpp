@@ -23,11 +23,11 @@ TransformFeedbackShader::TransformFeedbackShader(
 }
 
 TransformFeedbackShader TransformFeedbackShader::create(
-    const std::string& shaderPath, const std::vector<std::string>& varyings, const ShaderDefines& defines
+    const std::string& vertexShaderCode,
+    const std::vector<std::string>& varyings,
+    const ShaderDefines& defines
 ) {
-    std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
-    std::string vertFile = shaderPath + "/" + basename + ".vert";
-    return TransformFeedbackShader({{GL_VERTEX_SHADER, readFile(vertFile)}}, varyings, defines);
+    return TransformFeedbackShader({{GL_VERTEX_SHADER, vertexShaderCode}}, varyings, defines);
 }
 
 TransformFeedbackShader::TransformFeedbackShader(TransformFeedbackShader&& other) noexcept

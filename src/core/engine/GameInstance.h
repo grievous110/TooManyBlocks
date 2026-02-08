@@ -49,7 +49,7 @@ public:
 
     inline bool isWorldInitialized() const { return m_world != nullptr; }
 
-    void pushWorldRenderData() const;
+    void pushWorldRenderData();
 
     void update(float deltaTime) override;
 };

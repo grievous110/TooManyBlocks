@@ -2,9 +2,15 @@
 
 #include <GL/glew.h>
 
-static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<SkeletalVertex>& data) {
-    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(SkeletalVertex));
-    // Vertex Attribute Pointer
+#include "engine/rendering/lowlevelapi/IndexBuffer.h"
+#include "engine/rendering/lowlevelapi/VertexArray.h"
+#include "engine/rendering/lowlevelapi/VertexBuffer.h"
+
+std::shared_ptr<SkeletalMesh::Shared> createSharedState(const CPUSkeletalMeshData& cpuSkeletalMesh) {
+    VertexBuffer vbo = VertexBuffer::create(
+        cpuSkeletalMesh.meshData.vertices.data(), cpuSkeletalMesh.meshData.vertices.size() * sizeof(SkeletalVertex)
+    );
+
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);         // Position
     layout.push(GL_FLOAT, 2);         // UV
@@ -13,82 +19,76 @@ static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Skeletal
     layout.push(GL_FLOAT, 4);         // Joint weights
     vbo.setLayout(layout);
 
-    // Vertex Array Object (VAO)
     VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
 
-    if (data.isIndexed()) {
-        // Index Buffer Object (IBO)
-        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
-        return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+    std::unique_ptr<RenderData> renderData;
+    if (cpuSkeletalMesh.meshData.isIndexed()) {
+        IndexBuffer ibo = IndexBuffer::create(
+            cpuSkeletalMesh.meshData.indices.data(), cpuSkeletalMesh.meshData.indices.size()
+        );
+        renderData = std::make_unique<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
     } else {
-        return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));
+        renderData = std::make_unique<NonIndexedRenderData>(std::move(vao), std::move(vbo));
     }
+
+    UniformBuffer inverseBindMatricesUBO = UniformBuffer::create(
+        cpuSkeletalMesh.inverseBindMatrices.data(), cpuSkeletalMesh.inverseBindMatrices.size() * sizeof(glm::mat4)
+    );
+
+    return std::make_shared<SkeletalMesh::Shared>(SkeletalMesh::Shared{
+        std::move(renderData),
+        std::move(inverseBindMatricesUBO),
+        cpuSkeletalMesh.inverseBindMatrices,
+        cpuSkeletalMesh.jointNodeIndices
+    });
 }
 
-void SkeletalMeshBlueprint::bake() {
-    if (m_raw) {
-        m_baked = std::make_unique<Baked>();
-        m_baked->meshData = packToRenderData(m_raw->meshData);
-        m_baked->nodeArray = std::move(m_raw->nodeArray);
-        m_baked->animatedMeshNodeIndex = m_raw->animatedMeshNodeIndex;
-        m_baked->inverseBindMatricesUBO = std::make_shared<UniformBuffer>(UniformBuffer::create(
-            m_raw->inverseBindMatrices.data(), m_raw->inverseBindMatrices.size() * sizeof(glm::mat4)
-        ));
-        m_baked->inverseBindMatrices = std::make_shared<std::vector<glm::mat4>>(std::move(m_raw->inverseBindMatrices));
-        m_baked->jointNodeIndices = std::make_shared<std::vector<int>>(std::move(m_raw->jointNodeIndices));
-        m_baked->animations = std::move(m_raw->animations);
-        m_baked->bounds = BoundingBox::notCullable();  // TODO: Remove, this is just for testing
-
-        m_raw.reset();
+SkeletalMesh::Instance createInstanceState(const CPUSkeletalMeshData& cpuSkeletalMesh) {
+    std::vector<SceneComponent> sceneCompArray(cpuSkeletalMesh.nodeArray.size());
+    for (size_t i = 0; i < sceneCompArray.size(); i++) {
+        sceneCompArray[i].getLocalTransform() = cpuSkeletalMesh.nodeArray[i].localTransform;
+        for (int childIndex : cpuSkeletalMesh.nodeArray[i].childIndices) {
+            sceneCompArray[cpuSkeletalMesh.nodeArray[childIndex].parentIndex].attachChild(&sceneCompArray[childIndex]);
+        }
     }
-}
 
-std::shared_ptr<void> SkeletalMeshBlueprint::createInstance() const {
-    if (m_baked) {
-        std::vector<SceneComponent> sceneCompArray(m_baked->nodeArray.size());
-        for (size_t i = 0; i < sceneCompArray.size(); i++) {
-            sceneCompArray[i].getLocalTransform() = m_baked->nodeArray[i].localTransform;
-            for (int childIndex : m_baked->nodeArray[i].childIndices) {
-                sceneCompArray[m_baked->nodeArray[childIndex].parentIndex].attachChild(&sceneCompArray[childIndex]);
+    std::vector<glm::mat4> initalMatrices(std::max<int>(cpuSkeletalMesh.jointNodeIndices.size(), 4));
+    for (size_t i = 0; i < initalMatrices.size(); i++) {
+        initalMatrices[i] = glm::mat4(1.0f);
+    }
+
+    std::vector<Animation> animInstances;
+    animInstances.reserve(cpuSkeletalMesh.animations.size());
+
+    for (const AnimationdDeclare& anim : cpuSkeletalMesh.animations) {
+        Animation animInstance(anim.name);
+        for (const ChannelDeclare& channelDecl : anim.channels) {
+            if (channelDecl.property == AnimationProperty::Translation) {
+                animInstance.addTranslationChannel(
+                    &sceneCompArray[channelDecl.targetNodeIndex],
+                    std::static_pointer_cast<Timeline<glm::vec3>>(channelDecl.timeline)
+                );
+            } else if (channelDecl.property == AnimationProperty::Rotation) {
+                animInstance.addRotationChannel(
+                    &sceneCompArray[channelDecl.targetNodeIndex],
+                    std::static_pointer_cast<Timeline<glm::quat>>(channelDecl.timeline)
+                );
+            } else if (channelDecl.property == AnimationProperty::Scale) {
+                animInstance.addScaleChannel(
+                    &sceneCompArray[channelDecl.targetNodeIndex],
+                    std::static_pointer_cast<Timeline<float>>(channelDecl.timeline)
+                );
             }
         }
-
-        std::vector<glm::mat4> initalMatrices(std::max<int>(m_baked->jointNodeIndices->size(), 4));
-        for (size_t i = 0; i < initalMatrices.size(); i++) {
-            initalMatrices[i] = glm::mat4(1.0f);
-        }
-
-        std::vector<Animation> animInstances;
-        for (const AnimationdDeclare& anim : m_baked->animations) {
-            Animation animInstance(anim.name);
-            for (const ChannelDeclare& channelDecl : anim.channels) {
-                if (channelDecl.property == AnimationProperty::Translation) {
-                    animInstance.addTranslationChannel(
-                        &sceneCompArray[channelDecl.targetNodeIndex],
-                        std::static_pointer_cast<Timeline<glm::vec3>>(channelDecl.timeline)
-                    );
-                } else if (channelDecl.property == AnimationProperty::Rotation) {
-                    animInstance.addRotationChannel(
-                        &sceneCompArray[channelDecl.targetNodeIndex],
-                        std::static_pointer_cast<Timeline<glm::quat>>(channelDecl.timeline)
-                    );
-                } else if (channelDecl.property == AnimationProperty::Scale) {
-                    animInstance.addScaleChannel(
-                        &sceneCompArray[channelDecl.targetNodeIndex],
-                        std::static_pointer_cast<Timeline<float>>(channelDecl.timeline)
-                    );
-                }
-            }
-            animInstances.push_back(std::move(animInstance));
-        }
-
-        return std::make_shared<SkeletalMesh::Internal>(SkeletalMesh::Internal{
-            m_baked->meshData, std::move(sceneCompArray), m_baked->animatedMeshNodeIndex,
-            UniformBuffer::create(initalMatrices.data(), initalMatrices.size() * sizeof(glm::mat4)),
-            m_baked->inverseBindMatricesUBO, m_baked->inverseBindMatrices, m_baked->jointNodeIndices,
-            std::move(animInstances), m_baked->bounds
-        });
+        animInstances.push_back(std::move(animInstance));
     }
-    return nullptr;
+
+    return {
+        cpuSkeletalMesh.animatedMeshNodeIndex,
+        std::move(sceneCompArray),
+        std::move(animInstances),
+        UniformBuffer::create(initalMatrices.data(), initalMatrices.size() * sizeof(glm::mat4)),
+        cpuSkeletalMesh.meshData.bounds
+    };
 }

@@ -6,7 +6,7 @@
 #include "util/SystemMetrics.h"
 
 struct GLFWwindow;
-class Provider;
+class CPUAssetProvider;
 class Application;
 class Renderer;
 class AudioEngine;
@@ -39,7 +39,7 @@ struct ApplicationContext {
 
     ThreadPool* workerPool;
     GLFWwindow* window;
-    Provider* provider;
+    CPUAssetProvider* provider;
     Renderer* renderer;
     AudioEngine* audioEngine;
     GameInstance* instance;
@@ -67,6 +67,12 @@ public:
 class Application {
 private:
     static ApplicationContext* currentContext;
+
+    void init();
+
+    void updateStats(float deltaTime);
+
+    void shutdown();
 
 public:
     static void setCurrentContext(ApplicationContext* context);

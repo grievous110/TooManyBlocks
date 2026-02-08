@@ -15,7 +15,7 @@ private:
     std::unordered_map<std::string, std::string> m_defines;
 
 public:
-    inline void add(const std::string& key, const std::string& value = "") { m_defines[key] = value; }
+    inline void add(const std::string& key, const std::string& value = "") { m_defines.emplace(key, value); }
 
     inline const std::unordered_map<std::string, std::string>& definitions() const { return m_defines; }
 };
@@ -27,7 +27,7 @@ public:
  */
 class Shader : public RenderApiObject {
 private:
-    std::vector<unsigned int> m_attachedShaders; // Just holds shader references until link() is called
+    std::vector<unsigned int> m_attachedShaders;  // Just holds shader references until link() is called
 
 protected:
     struct BlockBindInfo {
@@ -72,7 +72,7 @@ protected:
     Shader(
         const std::unordered_map<unsigned int, std::string>& shaderTypeAndSource,
         const ShaderDefines& defines,
-        bool deferLinking = false // Wether to link or not
+        bool deferLinking = false  // Wether to link or not
     );
 
 public:
@@ -93,7 +93,11 @@ public:
      * @param shaderPath Path to the shader files directory.
      * @param defines Optional list of preprocessor macro definitions.
      */
-    static Shader create(const std::string& shaderPath, const ShaderDefines& defines = ShaderDefines());
+    static Shader create(
+        const std::string& vertexShaderPath,
+        const std::string& fragmentShaderPath,
+        const ShaderDefines& defines = ShaderDefines()
+    );
 
     Shader() noexcept : m_nextUBOBindingPoint(0), m_nextSSBOBindingPoint(0) {}
     Shader(Shader&& other) noexcept;

@@ -39,14 +39,4 @@ public:
     virtual void drawAs(unsigned int type) const override;
 };
 
-template <typename T>
-struct CPURenderData {
-    std::string name;
-    std::vector<T> vertices;
-    std::vector<unsigned int> indices;
-    BoundingBox bounds;
-
-    inline bool isIndexed() const { return !indices.empty(); }
-};
-
 #endif

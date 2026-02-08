@@ -16,9 +16,10 @@ public:
 
     virtual bool isTransparent() const { return false; }
 
+    virtual bool isReady() const { return false; }
     virtual bool supportsPass(PassType passType) const = 0;
-    virtual void bindForPass(PassType passType, const RenderContext& context) const = 0;
-    virtual void bindForObjectDraw(PassType passType, const RenderContext& context) const = 0;
+    virtual void bindForPass(PassType passType, const RenderContext& context) = 0;
+    virtual void bindForObjectDraw(PassType passType, const RenderContext& context) = 0;
 };
 
 #endif

@@ -1,12 +1,59 @@
 #ifndef TOOMANYBLOCKS_FUTURE_H
 #define TOOMANYBLOCKS_FUTURE_H
 
+#include <stddef.h>
+
 #include <atomic>
+#include <condition_variable>
+#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
 #include <stdexcept>
+#include <vector>
+
+constexpr uint64_t DEFAULT_TASKCONTEXT = 0;
+
+enum class Executor {
+    Worker,
+    Main
+};
+
+enum class FutureStatus {
+    // State allows increasing the dependency count
+    Building,
+    Finalized,
+    Pending,
+    Running,
+    Completed,
+    Failed
+};
+
+class FutureBase {
+    template <typename T>
+    friend class Future;
+
+private:
+    virtual void addDependent(const std::shared_ptr<FutureBase>& other) = 0;
+
+    virtual void dependecyFinished() = 0;
+
+public:
+    inline static void (*scheduleCallback)(std::unique_ptr<FutureBase>, Executor) = nullptr;
+
+    virtual ~FutureBase() = default;
+
+    virtual uint64_t getContext() const = 0;
+
+    virtual bool isEmpty() const = 0;
+
+    virtual bool isReady() const = 0;
+
+    virtual void execute() = 0;
+
+    virtual void cancel() = 0;
+};
 
 /**
  * Advanced future class for async tasks. Once the task finished, the future is no longer responsible
@@ -14,18 +61,23 @@
  * pointing to the result value. All futures can only be executed once.
  */
 template <typename T>
-class Future {
+class Future : public FutureBase {
 private:
-    struct TaskState {
-        std::atomic<bool> executed = false;
-        std::atomic<bool> ready = false;
-        std::atomic<bool> failed = false;
+    template <typename U>
+    friend class Future;
 
-        std::function<T()> task;
+    struct TaskState {
+        std::atomic<FutureStatus> status{FutureStatus::Building};
+        Executor executor;
+        uint64_t taskContext;
 
         std::mutex mtx;
         std::condition_variable cv;
 
+        std::atomic<int> unresolvedDeps{0};
+        std::vector<std::shared_ptr<FutureBase>> dependents;
+
+        std::function<T()> task;
         std::conditional_t<!std::is_void_v<T>, std::optional<T>, char> value;
         std::exception_ptr exception;
     };
@@ -33,31 +85,126 @@ private:
     std::shared_ptr<TaskState> state;
 
     void completeSuccess(std::conditional_t<std::is_void_v<T>, char, T>&& v = 0) {
+        FutureStatus expected = FutureStatus::Running;
+        if (!state->status.compare_exchange_strong(expected, FutureStatus::Completed)) {
+            return;  // already completed by other means
+        }
+
+        std::lock_guard lock(state->mtx);
         if constexpr (!std::is_void_v<T>) {
             state->value.emplace(std::move(v));
         }
-        state->failed.store(false);
-        state->ready.store(true);
-        state->cv.notify_all();
+
+        onCompleted();
     }
 
     void completeFailure(const std::exception_ptr& e) {
+        FutureStatus expected = FutureStatus::Running;
+        if (!state->status.compare_exchange_strong(expected, FutureStatus::Failed)) {
+            return;  // already completed by other means
+        }
+
+        std::lock_guard lock(state->mtx);
         state->exception = e;
-        state->failed.store(true);
-        state->ready.store(true);
+
+        onCompleted();
+    }
+
+    void onCompleted() {
+        for (const std::shared_ptr<FutureBase>& weakRef : state->dependents) {
+            // Decrement remaining dependency count
+            weakRef->dependecyFinished();
+        }
+
+        state->dependents.clear();
         state->cv.notify_all();
+    }
+
+    virtual void addDependent(const std::shared_ptr<FutureBase>& other) override {
+        state->dependents.emplace_back(other);
+    }
+
+    virtual void dependecyFinished() override {
+        int val = state->unresolvedDeps.fetch_sub(1);
+        if (val == 1) {
+            schedule();
+        } else {
+        }
+    }
+
+    virtual uint64_t getContext() const override {
+        return state->taskContext;
+    }
+
+    void schedule() {
+        if (isEmpty()) throw std::runtime_error("Cannot schedule empty future");
+
+        std::lock_guard(state->mtx);
+        if (state->unresolvedDeps.load() > 0) {
+            return;
+        }
+
+        FutureStatus expected = FutureStatus::Finalized;
+        if (!state->status.compare_exchange_strong(expected, FutureStatus::Pending)) {
+            return;  // already scheduled by someone else
+        }
+
+        std::unique_ptr<Future<T>> selfRef = std::make_unique<Future<T>>();
+        selfRef->state = state;
+        FutureBase::scheduleCallback(std::move(selfRef), state->executor);
     }
 
 public:
     Future() = default;
 
-    Future(std::function<T()> fn) : state(std::make_shared<TaskState>()) { state->task = std::move(fn); }
+    Future(std::function<T()> fn, uint64_t taskContext = DEFAULT_TASKCONTEXT, Executor executor = Executor::Worker)
+        : state(std::make_shared<TaskState>()) {
+        state->task = std::move(fn);
+        state->taskContext = taskContext;
+        state->executor = executor;
+    }
 
-    void operator()() {
+    virtual ~Future() = default;
+
+    void debug() {
+        if (state) state->debug.store(true);
+    }
+
+    template <typename U>
+    inline Future<T>& dependsOn(Future<U> other) {
+        if (isEmpty() || other.isEmpty()) throw std::runtime_error("Cannot depend on empty future");
+
+        if (state->status.load() != FutureStatus::Building)
+            throw std::runtime_error("Trying to add dependency to a finalized future");
+
+        std::lock_guard lock(state->mtx);
+        std::lock_guard otherLock(other.state->mtx);
+
+        if (other.isReady()) return *this;
+
+        state->unresolvedDeps.fetch_add(1);
+
+        std::shared_ptr<Future<T>> selfRef = std::make_shared<Future<T>>();
+        selfRef->state = state;
+        other.addDependent(selfRef);
+
+        return *this;
+    }
+
+    inline Future<T>& start() {
+        if (isEmpty()) throw std::runtime_error("Cannot start empty future");
+        FutureStatus expected = FutureStatus::Building;
+        state->status.compare_exchange_strong(expected, FutureStatus::Finalized);
+
+        schedule();
+        return *this;
+    }
+
+    virtual inline void execute() override {
         if (isEmpty()) throw std::runtime_error("Cannot execute empty future");
 
-        bool expected = false;
-        if (!state->executed.compare_exchange_strong(expected, true)) {
+        FutureStatus expected = FutureStatus::Pending;
+        if (!state->status.compare_exchange_strong(expected, FutureStatus::Running)) {
             return;  // already executed by someone else
         }
 
@@ -78,28 +225,51 @@ public:
         }
     }
 
-    inline bool isEmpty() const { return !state; }
+    virtual inline void cancel() override {
+        if (isEmpty() || isReady()) return;
 
-    inline bool isReady() const { return state && state->ready.load(); }
+        // Make running if pending
+        FutureStatus expected = FutureStatus::Building;
+        state->status.compare_exchange_strong(expected, FutureStatus::Finalized);
+        // Make running if pending
+        expected = FutureStatus::Pending;
+        state->status.compare_exchange_strong(expected, FutureStatus::Running);
 
-    inline bool hasError() const { return state && state->failed.load(); }
-
-    inline void await() const {
-        if (isEmpty()) throw std::runtime_error("Cannot await empty future");
-
-        std::unique_lock lock(state->mtx);
-        state->cv.wait(lock, [this] { return state->ready.load(); });
+        completeFailure(std::make_exception_ptr(std::runtime_error("Task canceled")));
     }
 
+    void await() {
+        if (isEmpty()) return;
+
+        std::unique_lock<std::mutex> lock(state->mtx);
+        state->cv.wait(lock, [this] { return isReady(); });
+    }
+
+    inline void reset() {
+        if (state) state.reset();
+    }
+
+    virtual inline bool isEmpty() const override { return !state; }
+
+    virtual inline bool isReady() const {
+        if (!state) return false;
+        FutureStatus status = state->status.load();
+        return status == FutureStatus::Completed || status == FutureStatus::Failed;
+    }
+
+    inline bool hasError() const { return state && state->status.load() == FutureStatus::Failed; }
+
+    inline size_t useCount() const { return state ? state.use_count() : 0; }
+
     template <typename U = T>
-    std::enable_if_t<!std::is_void_v<U>, const U&> value() const {
+    std::enable_if_t<!std::is_void_v<U>, const U&> inline value() const {
         if (!isReady()) throw std::runtime_error("Acessing unfinished or empty future");
         if (hasError()) std::rethrow_exception(state->exception);
         return *state->value;
     }
 
     template <typename U = T>
-    std::enable_if_t<!std::is_void_v<U>, const U&> value() {
+    std::enable_if_t<!std::is_void_v<U>, U&> inline value() {
         if (!isReady()) throw std::runtime_error("Acessing unfinished or empty future");
         if (hasError()) std::rethrow_exception(state->exception);
         return *state->value;

@@ -1,6 +1,7 @@
 #include "Chunk.h"
 
 #include <stdexcept>
+#include "Logger.h"
 
 glm::ivec3 Chunk::worldToChunkOrigin(const glm::vec3& worldPos) {
     glm::vec3 chunkSize(CHUNK_WIDTH, CHUNK_HEIGHT, CHUNK_DEPTH);
@@ -10,6 +11,15 @@ glm::ivec3 Chunk::worldToChunkOrigin(const glm::vec3& worldPos) {
 
 glm::ivec3 Chunk::worldToChunkLocal(const glm::ivec3& chunkOrigin, const glm::ivec3& worldBlockPos) {
     return worldBlockPos - chunkOrigin;
+}
+
+void Chunk::tryCommitRebuild() {
+    if (m_pendingRebuildMesh.isReady()) {
+        lgr::lout.debug("Commiting rebuild");
+        m_mesh.getAssetHandle() = std::move(m_pendingRebuildMesh);
+
+        m_pendingRebuildMesh.reset();
+    }
 }
 
 bool isBlockFaceVisible(const Block* blocks, int x, int y, int z, AxisDirection faceDirection) {

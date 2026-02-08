@@ -25,14 +25,15 @@ private:
 
 public:
     /**
-     * @brief Constructs a new Shader from a file path, defines captured varying outputs and optional preprocessor definitions.
+     * @brief Constructs a new Shader from a file path, defines captured varying outputs and optional preprocessor
+     * definitions.
      *
      * @param shaderPath Path to the shader files directory.
      * @param varyings List of varying variable names to capture (Order matters).
      * @param defines Optional list of preprocessor macro definitions.
      */
     static TransformFeedbackShader create(
-        const std::string& shaderPath,
+        const std::string& vertexShaderCode,
         const std::vector<std::string>& varyings,
         const ShaderDefines& defines = ShaderDefines()
     );

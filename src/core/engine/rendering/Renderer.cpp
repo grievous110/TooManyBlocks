@@ -145,7 +145,10 @@ void Renderer::initialize() {
 
 void Renderer::submitLight(Light* light) { m_lightsToRender.push_back(light); }
 
-void Renderer::submitRenderable(Renderable* obj) { m_objectsToRender.push_back(obj); }
+void Renderer::submitRenderable(Renderable* obj) {
+    if (!obj->isReady()) return;
+    m_objectsToRender.push_back(obj);
+}
 
 void Renderer::render(const ApplicationContext& context) {
     static auto lastLogTime = std::chrono::high_resolution_clock::now();
@@ -160,7 +163,9 @@ void Renderer::render(const ApplicationContext& context) {
     m_currentRenderContext.deltaTime = context.instance->gameState.deltaTime;
     m_currentRenderContext.elapsedTime = context.instance->gameState.elapsedGameTime;
     // Update camera aspect ratio just in case it changed via resize of screen.
-    context.instance->m_player->getCamera()->setAspectRatio(static_cast<float>(context.state.screenWidth) / static_cast<float>(context.state.screenHeight));
+    context.instance->m_player->getCamera()->setAspectRatio(
+        static_cast<float>(context.state.screenWidth) / static_cast<float>(context.state.screenHeight)
+    );
 
     RawBuffer<Renderable*> culledObjectBuffer = RawBuffer<Renderable*>(m_objectsToRender.size());
     std::unordered_map<Material*, std::vector<Renderable*>> materialBatches;
