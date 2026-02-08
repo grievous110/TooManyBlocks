@@ -13,6 +13,8 @@
 #include "engine/entity/Player.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
+#include "engine/resource/providers/CPUAssetProvider.h"
+#include "engine/resource/loaders/ShaderLoader.h"
 
 static constexpr float PI = 3.14159265f;
 static constexpr size_t NOISE_TEXTURE_SIZE = 4U;
@@ -27,7 +29,12 @@ void SSAOProcessor::createBuffers() {
     );
     m_ssaoGBuffer.attachTexture(
         std::make_shared<Texture>(Texture::create(
-            TextureType::Depth, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
+            TextureType::Depth,
+            m_ssaoBufferWidth,
+            m_ssaoBufferHeight,
+            1,
+            nullptr,
+            TextureFilter::Nearest,
             TextureWrap::ClampToEdge
         ))
     );
@@ -35,7 +42,12 @@ void SSAOProcessor::createBuffers() {
     m_ssaoPassBuffer.clearAttachedTextures();
     m_ssaoPassBuffer.attachTexture(
         std::make_shared<Texture>(Texture::create(
-            TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
+            TextureType::Float16,
+            m_ssaoBufferWidth,
+            m_ssaoBufferHeight,
+            1,
+            nullptr,
+            TextureFilter::Nearest,
             TextureWrap::ClampToEdge
         ))
     );
@@ -43,7 +55,12 @@ void SSAOProcessor::createBuffers() {
     m_ssaoBlurBuffer.clearAttachedTextures();
     m_ssaoBlurBuffer.attachTexture(
         std::make_shared<Texture>(Texture::create(
-            TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 1, nullptr, TextureFilter::Nearest,
+            TextureType::Float16,
+            m_ssaoBufferWidth,
+            m_ssaoBufferHeight,
+            1,
+            nullptr,
+            TextureFilter::Nearest,
             TextureWrap::ClampToEdge
         ))
     );
@@ -57,11 +74,13 @@ SSAOProcessor::~SSAOProcessor() {
 
 void SSAOProcessor::initialize() {
     if (!isInitialized) {
+        ApplicationContext* context = Application::getContext();
+
         srand(time(NULL));
         m_ssaoGBuffer = FrameBuffer::create();
         m_ssaoPassBuffer = FrameBuffer::create();
         m_ssaoBlurBuffer = FrameBuffer::create();
-        validateBuffers(*Application::getContext());
+        validateBuffers(*context);
 
         // Random samples kernel in tagent space
         m_ssaoSamples = new glm::vec3[SSAO_SAMPLE_COUNT];
@@ -89,13 +108,21 @@ void SSAOProcessor::initialize() {
             noiseData[i * 2 + 1] = sin(angle);
         }
         m_ssaoNoiseTexture = Texture::create(
-            TextureType::Float16, NOISE_TEXTURE_SIZE, NOISE_TEXTURE_SIZE, 2, noiseData, TextureFilter::Nearest,
+            TextureType::Float16,
+            NOISE_TEXTURE_SIZE,
+            NOISE_TEXTURE_SIZE,
+            2,
+            noiseData,
+            TextureFilter::Nearest,
             TextureWrap::Repeat
         );
         delete[] noiseData;
 
-        m_ssaoPassShader = Shader::create(Res::Shader::SSAO_PASS);
-        m_ssaoBlurShader = Shader::create(Res::Shader::SSAO_BLUR);
+        CPUShader ssaoPassShaderCPU = loadShaderFromFile(Res::Shader::SSAO_PASS, ShaderLoadOption::VertexAndFragment);
+        CPUShader ssaoBlurShaderCPU = loadShaderFromFile(Res::Shader::SSAO_BLUR, ShaderLoadOption::VertexAndFragment);
+
+        m_ssaoPassShader = Shader::create(ssaoPassShaderCPU.vertexShader, ssaoPassShaderCPU.fragmentShader);
+        m_ssaoBlurShader = Shader::create(ssaoBlurShaderCPU.vertexShader, ssaoBlurShaderCPU.fragmentShader);
 
         isInitialized = true;
     }

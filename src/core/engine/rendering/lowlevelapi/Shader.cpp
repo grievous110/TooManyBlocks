@@ -182,11 +182,12 @@ void Shader::syncUsage() {
     Shader::currentlyUsedShader = static_cast<unsigned int>(binding);
 }
 
-Shader Shader::create(const std::string& shaderPath, const ShaderDefines& defines) {
-    std::string basename = shaderPath.substr(shaderPath.find_last_of("/\\") + 1);
-    std::string vertFile = shaderPath + "/" + basename + ".vert";
-    std::string fragFile = shaderPath + "/" + basename + ".frag";
-    return Shader({{GL_VERTEX_SHADER, readFile(vertFile)}, {GL_FRAGMENT_SHADER, readFile(fragFile)}}, defines);
+Shader Shader::create(
+    const std::string& vertexShaderCode,
+    const std::string& fragmentShaderCode,
+    const ShaderDefines& defines
+) {
+    return Shader({{GL_VERTEX_SHADER, vertexShaderCode}, {GL_FRAGMENT_SHADER, fragmentShaderCode}}, defines);
 }
 
 Shader::Shader(Shader&& other) noexcept

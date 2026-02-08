@@ -6,23 +6,26 @@
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
+#include "threading/Future.h"
 
 class SkeletalMaterial : public Material {
 private:
-    std::shared_ptr<Shader> m_mainShader;
-    std::shared_ptr<Texture> m_texture;
+    Future<Shader> m_mainShader;
+    Future<Texture> m_texture;
 
 public:
-    SkeletalMaterial(std::shared_ptr<Shader> mainShader, std::shared_ptr<Texture> texture)
+    SkeletalMaterial(Future<Shader> mainShader, Future<Texture> texture)
         : m_mainShader(mainShader), m_texture(texture) {}
 
     virtual ~SkeletalMaterial() = default;
 
+    bool isReady() const override;
+
     bool supportsPass(PassType passType) const override;
 
-    void bindForPass(PassType passType, const RenderContext& context) const override;
+    void bindForPass(PassType passType, const RenderContext& context) override;
 
-    void bindForObjectDraw(PassType passType, const RenderContext& context) const override;
+    void bindForObjectDraw(PassType passType, const RenderContext& context) override;
 };
 
 #endif

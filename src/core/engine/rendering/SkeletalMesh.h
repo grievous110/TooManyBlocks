@@ -3,51 +3,56 @@
 
 #include <memory>
 
-#include "datatypes/AssetHandle.h"
 #include "engine/animation/Animation.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
 #include "engine/rendering/lowlevelapi/UniformBuffer.h"
+#include "threading/Future.h"
 
 class SkeletalMesh : public Renderable, public Updatable {
 public:
-    struct Internal {
-        std::shared_ptr<RenderData> meshData;
-        std::vector<SceneComponent> nodeArray;
+    struct Shared {
+        std::unique_ptr<RenderData> meshData;
+        UniformBuffer inverseBindMatricesUBO;
+        std::vector<glm::mat4> inverseBindMatrices;
+        std::vector<int> jointNodeIndices;  // indexed by joint index (Needed to build joint matrices)
+    };
+
+    struct Instance {
         int animatedMeshNodeIndex;
-        UniformBuffer jointMatricesUBO;  // Instance specific for calculating the joint matrices for each joint
-        std::shared_ptr<UniformBuffer> inverseBindMatricesUBO;
-        std::shared_ptr<std::vector<glm::mat4>> inverseBindMatrices;
-        std::shared_ptr<std::vector<int>> jointNodeIndices;  // indexed by joint index (Needed to build joint matrices)
+        std::vector<SceneComponent> nodeArray;
         std::vector<Animation> animations;
+        UniformBuffer jointMatricesUBO;
         BoundingBox bounds;
     };
 
+    struct Internal {
+        std::shared_ptr<Shared> shared;
+        Instance instance;
+    };
+
 private:
-    std::shared_ptr<AssetHandle<Internal>> m_assetHandle;
+    Future<Internal> m_internalHandle;
     Animation* m_activeAnim;
 
     void draw() const override;
 
 public:
-    SkeletalMesh() : m_assetHandle(std::make_shared<AssetHandle<Internal>>()), m_activeAnim(nullptr) {}
-    SkeletalMesh(std::shared_ptr<Internal> internalAsset, std::shared_ptr<Material> material = nullptr)
-        : Renderable(material), m_assetHandle(std::make_shared<AssetHandle<Internal>>()), m_activeAnim(nullptr) {
-        if (internalAsset) {
-            m_assetHandle->asset = internalAsset;
-            m_assetHandle->ready.store(true);
-        }
-    }
+    SkeletalMesh() : m_activeAnim(nullptr) {}
+    SkeletalMesh(const Future<Internal>& internalHandle, std::shared_ptr<Material> material = nullptr)
+        : Renderable(material), m_internalHandle(internalHandle), m_activeAnim(nullptr) {}
     virtual ~SkeletalMesh() = default;
 
     bool playAnimation(const std::string& animation, bool loop = false, bool restart = true);
 
     void stopAnimation();
 
+    inline bool isReady() const override { return Renderable::isReady() && m_internalHandle.isReady(); }
+
     inline const Animation* getActiveAnimation() const { return m_activeAnim; }
 
-    inline std::weak_ptr<AssetHandle<Internal>> getAssetHandle() const { return m_assetHandle; }
+    inline Future<Internal>& getAssetHandle() { return m_internalHandle; }
 
     const UniformBuffer* getJointMatrices() const;
 

@@ -4,42 +4,38 @@
 #include <filesystem>
 #include <glm/vec3.hpp>
 #include <memory>
-#include <mutex>
-#include <queue>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "engine/blueprints/Blueprint.h"
 #include "engine/env/Chunk.h"
 #include "engine/persistence/ChunkStorage.h"
 #include "engine/rendering/BlockToTextureMapping.h"
-#include "engine/rendering/MeshCreate.h"
+#include "engine/rendering/Vertices.h"
+#include "engine/rendering/mat/ChunkMaterial.h"
+#include "engine/resource/cpu/CPURenderData.h"
+#include "threading/Future.h"
 #include "threading/ThreadPool.h"
 
 class World {
 private:
-    struct WorkerResult {
-        glm::ivec3 chunkPos;
-        std::unique_ptr<Block[]> blockData;  // nullptr if just rebuild
-        std::unique_ptr<IBlueprint> meshBlueprint;
-    };
+    uint64_t m_taskContext;
 
     uint32_t m_seed;
     const std::filesystem::path m_worldDir;
     ChunkStorage m_cStorage;
     std::unordered_map<glm::ivec3, Chunk, coord_hash> m_loadedChunks;
+    std::shared_ptr<Material> m_chunkMaterial;
+
     std::unordered_map<glm::ivec3, uint16_t, coord_hash> m_pendingChanges;
-    std::queue<WorkerResult> m_workerResultQueue;
-    std::mutex m_chunkGenQueueMtx;
 
     std::unordered_set<glm::ivec3, coord_hash> determineActiveChunks(const glm::ivec3& position, int renderDistance);
-
-    void processDataFromWorkers();
 
 public:
     const BlockToTextureMap texMap;
 
     World(const std::filesystem::path& worldDir);
+
+    ~World();
 
     uint32_t seed() const { return m_seed; }
 
@@ -51,7 +47,7 @@ public:
 
     void setBlock(const glm::ivec3& position, uint16_t newBlocks);
 
-    const std::unordered_map<glm::ivec3, Chunk, coord_hash>& loadedChunks() const { return m_loadedChunks; }
+    std::unordered_map<glm::ivec3, Chunk, coord_hash>& loadedChunks() { return m_loadedChunks; }
 };
 
 #endif

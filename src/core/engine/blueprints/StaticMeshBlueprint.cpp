@@ -2,28 +2,10 @@
 
 #include <GL/glew.h>
 
-static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<CompactChunkVertex>& data) {
-    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(CompactChunkVertex));
-
-    VertexBufferLayout layout;
-    // Compressed data
-    layout.push(GL_UNSIGNED_INT, 1);
-    layout.push(GL_UNSIGNED_INT, 1);
-    vbo.setLayout(layout);
-
-    VertexArray vao = VertexArray::create();
-    vao.addBuffer(vbo);
-
-    if (data.isIndexed()) {
-        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
-        return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
-    } else {
-        return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));
-    }
-}
-
-static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>& data) {
-    VertexBuffer vbo = VertexBuffer::create(data.vertices.data(), data.vertices.size() * sizeof(Vertex));
+std::shared_ptr<StaticMesh::Shared> createSharedState(const CPURenderData<Vertex>& cpuStaticMesh) {
+    VertexBuffer vbo = VertexBuffer::create(
+        cpuStaticMesh.vertices.data(), cpuStaticMesh.vertices.size() * sizeof(Vertex)
+    );
 
     VertexBufferLayout layout;
     layout.push(GL_FLOAT, 3);  // Position
@@ -34,38 +16,18 @@ static std::shared_ptr<RenderData> packToRenderData(const CPURenderData<Vertex>&
     VertexArray vao = VertexArray::create();
     vao.addBuffer(vbo);
 
-    if (data.isIndexed()) {
-        IndexBuffer ibo = IndexBuffer::create(data.indices.data(), data.indices.size());
-        return std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
+    if (cpuStaticMesh.isIndexed()) {
+        IndexBuffer ibo = IndexBuffer::create(cpuStaticMesh.indices.data(), cpuStaticMesh.indices.size());
+        std::unique_ptr<RenderData> renderData = std::make_unique<IndexedRenderData>(
+            std::move(vao), std::move(vbo), std::move(ibo)
+        );
+        return std::make_shared<StaticMesh::Shared>(StaticMesh::Shared{std::move(renderData)});
     } else {
-        return std::make_shared<NonIndexedRenderData>(std::move(vao), std::move(vbo));
+        std::unique_ptr<RenderData> renderData = std::make_unique<NonIndexedRenderData>(std::move(vao), std::move(vbo));
+        return std::make_shared<StaticMesh::Shared>(StaticMesh::Shared{std::move(renderData)});
     }
 }
 
-void StaticMeshBlueprint::bake() {
-    if (m_raw) {
-        m_baked = std::make_unique<Baked>(Baked{packToRenderData(*m_raw), m_raw->bounds});
-        m_raw.reset();
-    }
-}
-
-std::shared_ptr<void> StaticMeshBlueprint::createInstance() const {
-    if (m_baked) {
-        return std::make_shared<StaticMesh::Internal>(StaticMesh::Internal{m_baked->renderData, m_baked->bounds});
-    }
-    return nullptr;
-}
-
-void StaticChunkMeshBlueprint::bake() {
-    if (m_raw) {
-        m_baked = std::make_unique<Baked>(Baked{packToRenderData(*m_raw), m_raw->bounds});
-        m_raw.reset();
-    }
-}
-
-std::shared_ptr<void> StaticChunkMeshBlueprint::createInstance() const {
-    if (m_baked) {
-        return std::make_shared<StaticMesh::Internal>(StaticMesh::Internal{m_baked->renderData, m_baked->bounds});
-    }
-    return nullptr;
+StaticMesh::Instance createInstanceState(const CPURenderData<Vertex>& cpuStaticMesh) {
+    return StaticMesh::Instance{cpuStaticMesh.bounds};
 }

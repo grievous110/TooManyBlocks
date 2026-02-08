@@ -9,10 +9,13 @@
 #include "AppConstants.h"
 #include "Application.h"
 #include "Logger.h"
+#include "engine/builders/ShaderBuilder.h"
+#include "engine/builders/SkeletalMeshBuilder.h"
+#include "engine/builders/StaticMeshBuilder.h"
+#include "engine/builders/TextureBuilder.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/env/lights/Spotlight.h"
 #include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/MeshCreate.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/rendering/lowlevelapi/TransformFeedbackShader.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
@@ -20,8 +23,11 @@
 #include "engine/rendering/mat/ParticleMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/mat/SkeletalMaterial.h"
-#include "providers/Provider.h"
+#include "engine/resource/cpu/CPUShader.h"
+#include "engine/resource/cpu/CPUTexture.h"
+#include "engine/resource/providers/CPUAssetProvider.h"
 #include "rendering/StaticMesh.h"
+#include "threading/Future.h"
 #include "threading/ThreadPool.h"
 
 GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr) {}
@@ -41,7 +47,7 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_world = newWorld;
         m_playerController->possess(m_player);
 
-        Provider* provider = Application::getContext()->provider;
+        CPUAssetProvider* provider = Application::getContext()->provider;
 
         std::uniform_real_distribution<float> positionDist(-50.0f, 50.0f);
         std::uniform_real_distribution<float> lookAtDist(-50.0f, 50.0f);
@@ -61,13 +67,16 @@ void GameInstance::initializeWorld(World* newWorld) {
             m_lights.push_back(light);
         }
 
-        std::shared_ptr<Shader> shader = provider->getShaderFromFile(Res::Shader::SIMPLE);
-        std::shared_ptr<Texture> texture = provider->getTextureFromFile(Res::Texture::TESTBLOCK_TEXTURE);
+        Future<Shader> shader = build(provider->getShader(Res::Shader::SIMPLE));
+        Future<Texture> texture = build(provider->getTexture(Res::Texture::TESTBLOCK_TEXTURE));
+
         std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
         std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
-        m_mesh1 = provider->getStaticMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
+        Future<CPURenderData<Vertex>> cpuStaticMesh = provider->getStaticMesh(Res::Model::TEST_UNIT_BLOCK);
+        m_mesh1 = std::make_shared<StaticMesh>(build(cpuStaticMesh));
         m_mesh1->assignMaterial(testMaterial1);
-        m_mesh2 = provider->getStaticMeshFromFile(Res::Model::TEST_UNIT_BLOCK);
+
+        m_mesh2 = std::make_shared<StaticMesh>(build(cpuStaticMesh));
         m_mesh2->assignMaterial(testMaterial2);
 
         m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
@@ -75,15 +84,17 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
         m_mesh2->getLocalTransform().translate(glm::vec3(0.0f, 3.0f, 0.0f));
 
-        std::shared_ptr<Shader> lineShader = provider->getShaderFromFile(Res::Shader::LINE);
-        m_focusedBlockOutline =
-            std::make_shared<Wireframe>(Wireframe::fromBoundigBox({glm::vec3(-0.005), glm::vec3(1.005)}));
+        Future<Shader> lineShader = build(provider->getShader(Res::Shader::LINE));
+
+        m_focusedBlockOutline = std::make_shared<Wireframe>(
+            Wireframe::fromBoundigBox({glm::vec3(-0.005), glm::vec3(1.005)})
+        );
         m_focusedBlockOutline->assignMaterial(std::make_shared<LineMaterial>(lineShader, glm::vec3(0.05, 0.05, 0.05)));
         m_focusedBlockOutline->setLineWidth(3.5f);
 
-        std::shared_ptr<Shader> skeletalShader = provider->getShaderFromFile(Res::Shader::SKELETAL_MESH);
-        std::shared_ptr<Texture> skeletalTexture = provider->getTextureFromFile(Res::Texture::TESTFLY_TEXTURE);
-        m_skeletalMesh = provider->getSkeletalMeshFromFile(Res::Model::TESTFLY);
+        Future<Shader> skeletalShader = build(provider->getShader(Res::Shader::SKELETAL_MESH));
+        Future<Texture> skeletalTexture = build(provider->getTexture(Res::Texture::TESTFLY_TEXTURE));
+        m_skeletalMesh = std::make_shared<SkeletalMesh>(build(provider->getSkeletalMesh(Res::Model::TESTFLY)));
         m_skeletalMesh->assignMaterial(std::make_shared<SkeletalMaterial>(skeletalShader, skeletalTexture));
         m_skeletalMesh->getLocalTransform().setPosition(glm::vec3(10.0f, 8.0f, 5.0f));
 
@@ -98,25 +109,27 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::InitialLifetime(1.5f, 3.0f),
             ParticleModules::InitialSize(0.5f),
             ParticleModules::AnimatedTexture(4, 7, 3, 0.2f),
-            ParticleModules::ColorOverLife({
-                {0.0f, glm::vec3(1, 1, 0.5)},
-                {0.5f, glm::vec3(0.5, 1, 0.5)},
-                {1.0f, glm::vec3(0, 0.5, 1)}
-            }),
-            ParticleModules::AlphaOverLife({
-                {0.3f, 1.0f},
-                {0.5f, 0.5f},
-                {1.0f, 0.0f}
-            })
+            ParticleModules::ColorOverLife(
+                {{0.0f, glm::vec3(1, 1, 0.5)}, {0.5f, glm::vec3(0.5, 1, 0.5)}, {1.0f, glm::vec3(0, 0.5, 1)}}
+            ),
+            ParticleModules::AlphaOverLife({{0.3f, 1.0f}, {0.5f, 0.5f}, {1.0f, 0.0f}})
         });
-        std::shared_ptr<Texture> testBlockTextures = provider->getTextureFromFile(Res::Texture::BLOCK_TEX_ATLAS);
-        std::shared_ptr<Shader> particleTFShader =
-            std::make_shared<TransformFeedbackShader>(TransformFeedbackShader::create(
-                "res/shaders/particleTFShader", {"tf_color", "tf_velocity", "tf_position", "tf_timeToLive",
-                                                 "tf_initialTimeToLive", "tf_size", "tf_metadata"}
-            ));
-        std::shared_ptr<Shader> particleShader = provider->getShaderFromFile("res/shaders/particleShader");
-        m_particles->assignMaterial(std::make_shared<ParticleMaterial>(particleShader, particleTFShader, testBlockTextures));
+        Future<CPUTexture> cpuTestBlockTextures = provider->getTexture(Res::Texture::BLOCK_TEX_ATLAS);
+        Future<CPUShader> cpuParticleTfShader = provider->getTFShader("res/shaders/particleTFShader");
+        Future<TransformFeedbackShader> particleTfShader = buildTFShader(
+            cpuParticleTfShader,
+            {"tf_color",
+             "tf_velocity",
+             "tf_position",
+             "tf_timeToLive",
+             "tf_initialTimeToLive",
+             "tf_size",
+             "tf_metadata"}
+        );
+        Future<Shader> particleShader = build(provider->getShader("res/shaders/particleShader"));
+        m_particles->assignMaterial(
+            std::make_shared<ParticleMaterial>(particleShader, particleTfShader, build(cpuTestBlockTextures))
+        );
         m_particles->getLocalTransform().setPosition(glm::vec3(10.0f, 12.0f, 5.0f));
     }
 }
@@ -137,22 +150,20 @@ void GameInstance::deinitWorld() {
             lgr::lout.error(e.what());
         }
         if (ApplicationContext* context = Application::getContext()) {
-            context->workerPool->cancelJobs(m_world);
-            context->workerPool->waitForOwnerCompletion(m_world);
             delete m_world;
             m_world = nullptr;
         }
     }
 }
 
-void GameInstance::pushWorldRenderData() const {
+void GameInstance::pushWorldRenderData() {
     if (ApplicationContext* context = Application::getContext()) {
         Renderer* renderer = context->renderer;
         for (const auto& light : m_lights) {
             renderer->submitLight(light.get());
         }
 
-        for (const auto& val : m_world->loadedChunks()) {
+        for (auto& val : m_world->loadedChunks()) {
             if (val.second.getMesh()) {
                 renderer->submitRenderable(val.second.getMesh());
             }

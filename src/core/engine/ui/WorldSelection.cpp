@@ -28,38 +28,28 @@ namespace UI {
         m_newWorldSeed = distribution(generator);
     }
 
-    void WorldSelection::loadWorldInfoOnce() {
-        std::lock_guard<std::mutex> lock(m_mtx);
-        if (m_shouldLoadInfo) {
-            m_shouldLoadInfo = false;
-            
-            Future<void> future([this] {
-                Json::JsonArray infoArray;
-                fs::path savedDir = getAppDataPath() / "saved";
-                if (!fs::exists(savedDir)) {
-                    if (!fs::create_directories(savedDir)) {
-                        throw std::runtime_error("Could not create directory: " + savedDir.string());
-                    }
-                } else {
-                    for (const auto& entry : fs::directory_iterator(savedDir)) {
-                        fs::path infoPath = entry.path() / "info.json";
-                        if (fs::exists(infoPath)) {
-                            Json::JsonValue info = Json::parseJson(readFile(infoPath));
-                            infoArray.push_back(info);
-                        }
+    void WorldSelection::loadWorldInfo() {
+        m_worldInfos = Future<Json::JsonArray>([]() {
+            Json::JsonArray infoArray;
+            fs::path savedDir = getAppDataPath() / "saved";
+            if (!fs::exists(savedDir)) {
+                if (!fs::create_directories(savedDir)) {
+                    throw std::runtime_error("Could not create directory: " + savedDir.string());
+                }
+            } else {
+                for (const auto& entry : fs::directory_iterator(savedDir)) {
+                    fs::path infoPath = entry.path() / "info.json";
+                    if (fs::exists(infoPath)) {
+                        Json::JsonValue info = Json::parseJson(readFile(infoPath));
+                        infoArray.push_back(info);
                     }
                 }
-                lgr::lout.debug("Saves directory: " + savedDir.string());
-                
-                {
-                    std::lock_guard<std::mutex> lock(m_mtx);
-                    m_worldInfos = std::move(infoArray);
-                    m_selectedWorld = nullptr;
-                }
-            });
+            }
+            lgr::lout.debug("Saves directory: " + savedDir.string());
 
-            Application::getContext()->workerPool->pushJob(this, future);
-        }
+            return infoArray;
+        });
+        m_worldInfos.start();
     }
 
     void WorldSelection::createNewWorld(const std::string& name) {
@@ -103,8 +93,18 @@ namespace UI {
     }
 
     void WorldSelection::render(ApplicationContext& context) {
-        loadWorldInfoOnce();
-        std::lock_guard<std::mutex> lock(m_mtx);
+        if (m_worldInfos.isEmpty()) {
+            loadWorldInfo();
+        }
+        if (m_worldInfos.hasError()) {
+            lgr::lout.debug("TEST");
+            try {
+                std::rethrow_exception(m_worldInfos.getException());
+            } catch (const std::exception& e) {
+                setError(e.what());
+            }
+            m_worldInfos.reset();
+        }
 
         ImGuiIO& io = ImGui::GetIO();
 
@@ -130,32 +130,39 @@ namespace UI {
             ImVec2 childSize = ImVec2(available.x * 0.8f, available.y * 0.6f);  // Adjust child siz
             ImGui::SetCursorPosX((available.x - childSize.x) * 0.5f);
             ImGui::BeginChild("ButtonList", childSize, true, ImGuiWindowFlags_HorizontalScrollbar);
-            if (m_worldInfos.empty()) {
-                ImGui::Text("No Worlds");
-            } else {
-                for (Json::JsonValue& worldInfo : m_worldInfos) {
-                    std::string label = worldInfo["worldName"].toString() + "\n";
-                    label += "Seed: " + worldInfo["seed"].toString() + "\n";
+            if (!m_worldInfos.isReady()) {
+                ImGui::Text("Loading...");
+            } else if (!m_worldInfos.hasError() && m_worldInfos.isReady()) {
+                Json::JsonArray& infos = m_worldInfos.value();
 
-                    bool isSelected = m_selectedWorld == &worldInfo;
-                    float buttonHeight = 70.0f;
-                    if (ImGui::Button(label.c_str(), ImVec2(400.0f, buttonHeight))) {
-                        if (isSelected) {
-                            m_selectedWorld = nullptr;
-                        } else {
-                            m_selectedWorld = &worldInfo;
+                if (infos.size() == 0) {
+                    ImGui::Text("No Worlds");
+                } else {
+                    for (Json::JsonValue& worldInfo : infos) {
+                        std::string label = worldInfo["worldName"].toString() + "\n";
+                        label += "Seed: " + worldInfo["seed"].toString() + "\n";
+
+                        bool isSelected = m_selectedWorld == &worldInfo;
+                        float buttonHeight = 70.0f;
+                        if (ImGui::Button(label.c_str(), ImVec2(400.0f, buttonHeight))) {
+                            if (isSelected) {
+                                m_selectedWorld = nullptr;
+                            } else {
+                                m_selectedWorld = &worldInfo;
+                            }
                         }
-                    }
-                    if (isSelected) {
-                        ImGui::SameLine();
-                        ImDrawList* drawList = ImGui::GetWindowDrawList();
-                        ImVec2 blockPos = ImGui::GetCursorScreenPos();
-                        ImVec2 blockSize = ImVec2(10, buttonHeight);
-                        drawList->AddRectFilled(
-                            blockPos, ImVec2(blockPos.x + blockSize.x, blockPos.y + blockSize.y),
-                            IM_COL32(0, 255, 0, 255)
-                        );
-                        ImGui::NewLine();
+                        if (isSelected) {
+                            ImGui::SameLine();
+                            ImDrawList* drawList = ImGui::GetWindowDrawList();
+                            ImVec2 blockPos = ImGui::GetCursorScreenPos();
+                            ImVec2 blockSize = ImVec2(10, buttonHeight);
+                            drawList->AddRectFilled(
+                                blockPos,
+                                ImVec2(blockPos.x + blockSize.x, blockPos.y + blockSize.y),
+                                IM_COL32(0, 255, 0, 255)
+                            );
+                            ImGui::NewLine();
+                        }
                     }
                 }
             }
@@ -247,18 +254,23 @@ namespace UI {
                     if (worldName.empty()) {
                         setError("Please enter a valid name!");
                     } else {
-                        auto it =
-                            std::find_if(m_worldInfos.begin(), m_worldInfos.end(), [worldName](Json::JsonValue& value) {
-                                return value["worldName"] == worldName;
-                            });
-                        if (it != m_worldInfos.end()) {
-                            setError("World with that name already exists!");
-                        } else {
-                            createNewWorld(worldName);
-                            m_shouldLoadInfo = true;
+                        if (m_worldInfos.isReady() && !m_worldInfos.hasError()) {
+                            auto it = std::find_if(
+                                m_worldInfos.value().begin(),
+                                m_worldInfos.value().end(),
+                                [worldName](Json::JsonValue& value) { return value["worldName"] == worldName; }
+                            );
+                            if (it != m_worldInfos.value().end()) {
+                                setError("World with that name already exists!");
+                            } else {
+                                createNewWorld(worldName);
+                                m_worldInfos.reset();
 
-                            ImGui::CloseCurrentPopup();
-                            clearError();
+                                ImGui::CloseCurrentPopup();
+                                clearError();
+                            }
+                        } else {
+                            setError("Currently loading worlds. Please try again.");
                         }
                     }
                 }
@@ -292,18 +304,23 @@ namespace UI {
                     if (worldName.empty()) {
                         setError("Please enter a valid name!");
                     } else {
-                        auto it =
-                            std::find_if(m_worldInfos.begin(), m_worldInfos.end(), [worldName](Json::JsonValue& value) {
-                                return value["worldName"] == worldName;
-                            });
-                        if (it != m_worldInfos.end()) {
-                            setError("World with that name already exists!");
-                        } else {
-                            renameWorld(worldName);
-                            m_shouldLoadInfo = true;
+                        if (m_worldInfos.isReady() && !m_worldInfos.hasError()) {
+                            auto it = std::find_if(
+                                m_worldInfos.value().begin(), m_worldInfos.value().end(), [worldName](Json::JsonValue& value) {
+                                    return value["worldName"] == worldName;
+                                }
+                            );
+                            if (it != m_worldInfos.value().end()) {
+                                setError("World with that name already exists!");
+                            } else {
+                                renameWorld(worldName);
+                                m_worldInfos.reset();
 
-                            ImGui::CloseCurrentPopup();
-                            clearError();
+                                ImGui::CloseCurrentPopup();
+                                clearError();
+                            }
+                        } else {
+                            setError("Currently loading worlds. Please try again.");
                         }
                     }
                 }
@@ -331,7 +348,7 @@ namespace UI {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.1f, 0.1f, 1.0f));
                 if (ImGui::Button("DELETE", ImVec2(100.0f, 35.0f))) {
                     deleteWorld();
-                    m_shouldLoadInfo = true;
+                    m_worldInfos.reset();
 
                     ImGui::CloseCurrentPopup();
                     clearError();

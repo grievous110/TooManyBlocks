@@ -19,7 +19,10 @@ BinPackParameters: false
 BinPackArguments: false
 
 ColumnLimit: 120
-AllowAllParametersOfDeclarationOnNextLine: true
+PenaltyBreakAssignment: 10000
+PenaltyReturnTypeOnItsOwnLine: 10000
+
+AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortEnumsOnASingleLine: false
 AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: true

@@ -1,16 +1,20 @@
 #include "SkeletalMaterial.h"
 
-#include "engine/rendering/Renderer.h"
 #include "Logger.h"
+#include "engine/rendering/Renderer.h"
+
+bool SkeletalMaterial::isReady() const { return m_mainShader.isReady() && m_texture.isReady(); }
 
 bool SkeletalMaterial::supportsPass(PassType passType) const { return passType == PassType::MainPass; }
 
-void SkeletalMaterial::bindForPass(PassType passType, const RenderContext& context) const {
+void SkeletalMaterial::bindForPass(PassType passType, const RenderContext& context) {
     if (passType == PassType::MainPass) {
-        m_mainShader->use();
-        if (m_texture) {
-            m_texture->bindToUnit(0);
-            m_mainShader->setUniform("u_texture", 0);
+        Shader& mainShader = m_mainShader.value();
+
+        mainShader.use();
+        if (m_texture.isReady()) {
+            m_texture.value().bindToUnit(0);
+            mainShader.setUniform("u_texture", 0);
         } else {
             lgr::lout.error("SkeletalMaterial has no texture");
         }
@@ -19,12 +23,14 @@ void SkeletalMaterial::bindForPass(PassType passType, const RenderContext& conte
     }
 }
 
-void SkeletalMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) const {
+void SkeletalMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) {
     if (passType == PassType::MainPass) {
-        m_mainShader->use();
-        m_mainShader->setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
-        if (context.skInfo.jointMatrices){
-            m_mainShader->bindUniformBuffer("JointMatrices", *context.skInfo.jointMatrices);
+        Shader& mainShader = m_mainShader.value();
+
+        mainShader.use();
+        mainShader.setUniform("u_mvp", context.tInfo.viewProjection * context.tInfo.meshTransform.getModelMatrix());
+        if (context.skInfo.jointMatrices) {
+            mainShader.bindUniformBuffer("JointMatrices", *context.skInfo.jointMatrices);
         } else {
             lgr::lout.error("UBO for joint matrices was not set");
         }

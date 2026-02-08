@@ -1,16 +1,11 @@
-#ifndef TOOMANYBLOCKS_MESHCREATE_H
-#define TOOMANYBLOCKS_MESHCREATE_H
+#ifndef TOOMANYBLOCKS_VERTICES_H
+#define TOOMANYBLOCKS_VERTICES_H
 
-#include <cstdint>
+#include <stdint.h>
+
 #include <glm/glm.hpp>
-#include <memory>
 
-#include "engine/blueprints/Blueprint.h"
-#include "engine/env/Chunk.h"
-#include "engine/geometry/BoundingVolume.h"
-#include "engine/rendering/BlockToTextureMapping.h"
-#include "engine/rendering/RenderData.h"
-#include "engine/rendering/StaticMesh.h"
+#include "datatypes/DatatypeDefs.h"
 #include "util/BitOperations.h"
 
 #define POSITION_BITMASK              0x3F
@@ -153,13 +148,5 @@ struct SkeletalVertex {
     glm::uvec4 joints;
     glm::vec4 weights;
 };
-
-std::unique_ptr<IBlueprint> generateMeshForChunk(const Block* blocks, const BlockToTextureMap& texMap);
-
-std::unique_ptr<IBlueprint> generateMeshForChunkGreedy(const Block* blocks, const BlockToTextureMap& texMap);
-
-std::unique_ptr<IBlueprint> readMeshDataFromObjFile(const std::string& filePath, bool flipWinding = false);
-
-std::unique_ptr<IBlueprint> readSkeletalMeshFromGlbFile(const std::string& filePath, bool flipWinding = false);
 
 #endif

@@ -3,35 +3,39 @@
 
 #include <memory>
 
-#include "datatypes/AssetHandle.h"
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
+#include "threading/Future.h"
 
 class StaticMesh : public Renderable {
 public:
-    struct Internal {
-        std::shared_ptr<RenderData> renderData;
+    struct Shared {
+        std::unique_ptr<RenderData> renderData;
+    };
+    struct Instance {
         BoundingBox bounds;
     };
 
+    struct Internal {
+       std::shared_ptr<Shared> shared;
+       Instance instance;
+    };
+
 private:
-    std::shared_ptr<AssetHandle<Internal>> m_assetHandle;
+    Future<Internal> m_internalHandle;
 
     void draw() const override;
 
 public:
-    StaticMesh() : m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {}
-    StaticMesh(std::shared_ptr<Internal> internalAsset, std::shared_ptr<Material> material = nullptr)
-        : Renderable(material), m_assetHandle(std::make_shared<AssetHandle<Internal>>()) {
-        if (internalAsset) {
-            m_assetHandle->asset = internalAsset;
-            m_assetHandle->ready.store(true);
-        }
-    }
+    StaticMesh() = default;
+    StaticMesh(const Future<Internal>& internalHandle, std::shared_ptr<Material> material = nullptr)
+        : Renderable(material), m_internalHandle(internalHandle) {}
     virtual ~StaticMesh() = default;
 
-    inline std::weak_ptr<AssetHandle<Internal>> getAssetHandle() const { return m_assetHandle; }
+    inline bool isReady() const override { return Renderable::isReady() && m_internalHandle.isReady(); }
+
+    inline Future<Internal>& getAssetHandle() { return m_internalHandle; }
 
     virtual BoundingBox getBoundingBox() const override;
 };

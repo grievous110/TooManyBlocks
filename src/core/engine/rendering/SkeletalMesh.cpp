@@ -3,22 +3,22 @@
 #include <GL/glew.h>
 
 void SkeletalMesh::draw() const {
-    if (m_assetHandle->ready.load()) {
-        m_assetHandle->asset->meshData->drawAs(GL_TRIANGLES);
-    }
+    if (!m_internalHandle.isReady()) return;
+
+    m_internalHandle.value().shared->meshData->drawAs(GL_TRIANGLES);
 }
 
 bool SkeletalMesh::playAnimation(const std::string& animName, bool loop, bool restart) {
-    if (m_assetHandle->ready.load()) {
-        for (Animation& anim : m_assetHandle->asset->animations) {
-            if (anim.getName() == animName) {
-                if (restart) {
-                    anim.reset();
-                }
-                anim.setLooping(loop);
-                m_activeAnim = &anim;
-                return true;
+    if (!m_internalHandle.isReady()) return false;
+
+    for (Animation& anim : m_internalHandle.value().instance.animations) {
+        if (anim.getName() == animName) {
+            if (restart) {
+                anim.reset();
             }
+            anim.setLooping(loop);
+            m_activeAnim = &anim;
+            return true;
         }
     }
     return false;
@@ -27,37 +27,38 @@ bool SkeletalMesh::playAnimation(const std::string& animName, bool loop, bool re
 void SkeletalMesh::stopAnimation() { m_activeAnim = nullptr; }
 
 const UniformBuffer* SkeletalMesh::getJointMatrices() const {
-    if (m_assetHandle->ready.load()) {
-        std::vector<glm::mat4> jointMatrices;
-        for (int i = 0; i < m_assetHandle->asset->jointNodeIndices->size(); i++) {
-            int jointIdx = (*m_assetHandle->asset->jointNodeIndices)[i];
+    if (!m_internalHandle.isReady()) return nullptr;
 
-            jointMatrices.push_back(
-                m_assetHandle->asset->nodeArray[jointIdx].getGlobalTransform().getModelMatrix() *
-                (*m_assetHandle->asset->inverseBindMatrices)[i]
-            );
-        }
-        m_assetHandle->asset->jointMatricesUBO.updateData(
-            jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4)
-        );
-        return &m_assetHandle->asset->jointMatricesUBO;
+    const std::vector<int>& jointNodeIndices = m_internalHandle.value().shared->jointNodeIndices;
+
+    std::vector<glm::mat4> jointMatrices;
+    jointMatrices.reserve(jointNodeIndices.size());
+
+    for (int i = 0; i < jointNodeIndices.size(); i++) {
+        int jointIdx = jointNodeIndices[i];
+        const SceneComponent& joint = m_internalHandle.value().instance.nodeArray[jointIdx];
+        const glm::mat4& bindMatrix = m_internalHandle.value().shared->inverseBindMatrices[i];
+
+        jointMatrices.push_back(joint.getGlobalTransform().getModelMatrix() * bindMatrix);
     }
-    return nullptr;
+    m_internalHandle.value().instance.jointMatricesUBO.updateData(
+        jointMatrices.data(), jointMatrices.size() * sizeof(glm::mat4)
+    );
+    return &m_internalHandle.value().instance.jointMatricesUBO;
 }
 
 Transform SkeletalMesh::getRenderableTransform() const {
-    if (m_assetHandle->ready.load()) {
-        return m_assetHandle->asset->nodeArray[m_assetHandle->asset->animatedMeshNodeIndex].getGlobalTransform() *
-               getGlobalTransform();
-    }
-    return Renderable::getRenderableTransform();
+    if (!m_internalHandle.isReady()) return Renderable::getRenderableTransform();
+
+    int animatedNodeIndex = m_internalHandle.value().instance.animatedMeshNodeIndex;
+    const SceneComponent& animatedNode = m_internalHandle.value().instance.nodeArray[animatedNodeIndex];
+    return animatedNode.getGlobalTransform() * getGlobalTransform();
 }
 
 BoundingBox SkeletalMesh::getBoundingBox() const {
-    if (m_assetHandle->ready.load()) {
-        return m_assetHandle->asset->bounds;
-    }
-    return Renderable::getBoundingBox();
+    if (!m_internalHandle.isReady()) return Renderable::getBoundingBox();
+
+    return m_internalHandle.value().instance.bounds;
 }
 
 void SkeletalMesh::update(float deltaTime) {

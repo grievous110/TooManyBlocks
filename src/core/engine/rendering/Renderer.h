@@ -1,6 +1,9 @@
 #ifndef TOOMANYBLOCKS_RENDERER_H
 #define TOOMANYBLOCKS_RENDERER_H
 
+#include <functional>
+#include <mutex>
+
 #include "compatability/Compatability.h"
 #include "engine/env/lights/Light.h"
 #include "engine/rendering/LightProcessor.h"
@@ -47,7 +50,7 @@ struct RenderContext {
     glm::uvec2 currScreenRes;
     float deltaTime;
     float elapsedTime;
-    
+
     TransformInfo tInfo;
     SkeletalMeshInfo skInfo;
     LightingInfo lInfo;
