@@ -266,6 +266,7 @@ void Application::run() {
                 context->renderer->render(*context);
             }
 
+            context->audioEngine->update(context->stats.deltaAppTime);
             context->workerPool->processMainThreadJobs();
             context->workerPool->cleanupFinishedJobs();
 

@@ -113,7 +113,11 @@ World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir), m_cS
     m_chunkMaterial = std::make_shared<ChunkMaterial>(mainShader, depthShader, ssaoGBuffShader, texture);
 }
 
-World::~World() { Application::getContext()->workerPool->destroyTaskContext(m_taskContext); }
+World::~World() { 
+    ThreadPool* pool = Application::getContext()->workerPool;
+    pool->destroyTaskContext(m_taskContext);
+    pool->waitForCurrentActiveTasks();
+}
 
 Chunk* World::getChunk(const glm::ivec3& location) {
     auto it = m_loadedChunks.find(location);
