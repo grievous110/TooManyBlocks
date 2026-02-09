@@ -149,34 +149,32 @@ void GameInstance::deinitWorld() {
         } catch (const std::exception& e) {
             lgr::lout.error(e.what());
         }
-        if (ApplicationContext* context = Application::getContext()) {
-            delete m_world;
-            m_world = nullptr;
-        }
+        delete m_world;
+        m_world = nullptr;
     }
 }
 
 void GameInstance::pushWorldRenderData() {
-    if (ApplicationContext* context = Application::getContext()) {
-        Renderer* renderer = context->renderer;
-        for (const auto& light : m_lights) {
-            renderer->submitLight(light.get());
-        }
+    ApplicationContext* context = Application::getContext();
+    
+    Renderer* renderer = context->renderer;
+    for (const auto& light : m_lights) {
+        renderer->submitLight(light.get());
+    }
 
-        for (auto& val : m_world->loadedChunks()) {
-            if (val.second.getMesh()) {
-                renderer->submitRenderable(val.second.getMesh());
-            }
+    for (auto& val : m_world->loadedChunks()) {
+        if (val.second.getMesh()) {
+            renderer->submitRenderable(val.second.getMesh());
         }
-        renderer->submitRenderable(m_mesh1.get());
-        renderer->submitRenderable(m_mesh2.get());
-        renderer->submitRenderable(m_skeletalMesh.get());
-        renderer->submitRenderable(m_particles.get());
+    }
+    renderer->submitRenderable(m_mesh1.get());
+    renderer->submitRenderable(m_mesh2.get());
+    renderer->submitRenderable(m_skeletalMesh.get());
+    renderer->submitRenderable(m_particles.get());
 
-        if (m_player->isFocusingBlock()) {
-            m_focusedBlockOutline->getLocalTransform().setPosition(m_player->getFocusedBlock());
-            renderer->submitRenderable(m_focusedBlockOutline.get());
-        }
+    if (m_player->isFocusingBlock()) {
+        m_focusedBlockOutline->getLocalTransform().setPosition(m_player->getFocusedBlock());
+        renderer->submitRenderable(m_focusedBlockOutline.get());
     }
 }
 

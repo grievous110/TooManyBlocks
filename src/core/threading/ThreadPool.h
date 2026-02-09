@@ -46,13 +46,17 @@ private:
      * @brief Main worker loop for the thread pool.
      *
      * Continuously waits for new jobs to be available or for termination.
-     * Each job is executed in a try-catch block to prevent thread crashes on exceptions.
      * This function runs in each worker thread and exits when the termination flag is set.
      */
     void loop(unsigned int workerIndex);
 
     bool isContextActive(uint64_t taskContext) const;
 
+    /**
+     * Check for ensuring a snapshot of execution state has fully passed. (All tasks at snapshot time have finished)
+     * @param a The snapshot
+     * @param b The one comparing to
+     */
     bool hasExecutionPassed(const std::vector<ExecutionSlotStatus>& a, const std::vector<ExecutionSlotStatus>& b) const;
 
 public:
@@ -71,23 +75,43 @@ public:
      */
     inline size_t threadCount() const { return m_threads.size(); };
 
+    /**
+     * @brief Creates a new context id and sets it active.
+     * 
+     * @return The newly created context handle.
+     */
     uint64_t getNewTaskContext();
 
+    /**
+     * @brief Destroys the given context. But does not wait for 
+     */
     void destroyTaskContext(uint64_t taskContext);
 
+    /**
+     * @brief Waits for all currently running tasks to finish and only then exits.
+     * Perfect for when a thread needs to ensure all tasks of a context finished after destroying.
+     */
     void waitForCurrentActiveTasks();
 
     /**
      * @brief Adds a job to the thread pool for execution.
      *
-     * @param owner Pointer identifying the owner of the job (nullptr is also a valid owner).
      * @param future The task to be executed by a worker thread.
+     * @param executor Hint to if workers or the main thread should do the job.
      */
     void pushJob(std::unique_ptr<FutureBase> future, Executor executor);
 
+    /**
+     * @brief Executes tasks only the main thread should execute. 
+     */
     void processMainThreadJobs();
 
+    /**
+     * @brief Calling thread distructs all finished tasks.
+     */
     void cleanupFinishedJobs();
+
+    void shutdown();
 };
 
 #endif

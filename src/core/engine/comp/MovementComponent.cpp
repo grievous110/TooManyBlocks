@@ -71,12 +71,7 @@ void MovementComponent::update(float deltaTime) {
             // TODO Declare playerbox somewhere more fitting
             BoundingBox playerBox = {pos + glm::vec3(-0.2f, 0.0f, -0.2f), pos + glm::vec3(0.2f, 1.8f, 0.2f)};
 
-            World* world = nullptr;
-            if (ApplicationContext* context = Application::getContext()) {
-                world = context->instance->m_world;
-            } else {
-                return;
-            }
+            World* world = Application::getContext()->instance->m_world;
 
             // Correcting delta movement according to collisions with terrain
             finalDelta = sweepAndResolve(playerBox, finalDelta, world);

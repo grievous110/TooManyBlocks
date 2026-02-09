@@ -30,61 +30,57 @@
 ApplicationContext* Application::currentContext = nullptr;
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (ApplicationContext* context = Application::getContext()) {
-        if (action == GLFW_PRESS || action == GLFW_RELEASE) {
-            KeyEventData data;
-            data.keycode = key;
-            data.mods = mods;
+    if (action == GLFW_PRESS || action == GLFW_RELEASE) {
+        KeyEventData data;
+        data.keycode = key;
+        data.mods = mods;
 
-            context->io->keyAdapter().notifyObservers(
-                action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp, data
-            );
-        }
-    }
-}
-
-static void mouseKeyCallback(GLFWwindow* window, int button, int action, int mods) {
-    if (ApplicationContext* context = Application::getContext()) {
-        MouseEventData data;
-        data.key.code = button;
-        context->io->mouseAdapter().notifyObservers(
-            action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp, data
+        ApplicationContext* context = Application::getContext();
+        context->io->keyAdapter().notifyObservers(
+            action == GLFW_PRESS ? KeyEvent::ButtonDown : KeyEvent::ButtonUp, data
         );
     }
 }
 
+static void mouseKeyCallback(GLFWwindow* window, int button, int action, int mods) {
+    MouseEventData data;
+    data.key.code = button;
+
+    ApplicationContext* context = Application::getContext();
+    context->io->mouseAdapter().notifyObservers(
+        action == GLFW_PRESS ? MousEvent::ButtonDown : MousEvent::ButtonUp, data
+    );
+}
+
 static void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    if (ApplicationContext* context = Application::getContext()) {
-        MouseEventData data;
-        data.delta.x = xoffset;
-        data.delta.y = yoffset;
-        context->io->mouseAdapter().notifyObservers(MousEvent::Scroll, data);
-    }
+    MouseEventData data;
+    data.delta.x = xoffset;
+    data.delta.y = yoffset;
+
+    ApplicationContext* context = Application::getContext();
+    context->io->mouseAdapter().notifyObservers(MousEvent::Scroll, data);
 }
 
 static void cursorPositionCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (ApplicationContext* context = Application::getContext()) {
-        MouseEventData data;
-        data.delta.x = xpos - context->state.lastMousepositionX;
-        data.delta.y = ypos - context->state.lastMousepositionY;
+    ApplicationContext* context = Application::getContext();
+    MouseEventData data;
+    data.delta.x = xpos - context->state.lastMousepositionX;
+    data.delta.y = ypos - context->state.lastMousepositionY;
 
-        context->io->mouseAdapter().notifyObservers(MousEvent::Move, data);
-        context->state.lastMousepositionX = xpos;
-        context->state.lastMousepositionY = ypos;
-    }
+    context->io->mouseAdapter().notifyObservers(MousEvent::Move, data);
+    context->state.lastMousepositionX = xpos;
+    context->state.lastMousepositionY = ypos;
 }
 
 static void windowResizeCallback(GLFWwindow* window, int width, int height) {
-    if (ApplicationContext* context = Application::getContext()) {
-        context->state.screenWidth = static_cast<unsigned int>(width);
-        context->state.screenHeight = static_cast<unsigned int>(height);
-    }
+    ApplicationContext* context = Application::getContext();
+    context->state.screenWidth = static_cast<unsigned int>(width);
+    context->state.screenHeight = static_cast<unsigned int>(height);
 }
 
 static void scheduleCallback(std::unique_ptr<FutureBase> future, Executor executor) {
-    if (ApplicationContext* context = Application::getContext()) {
-        context->workerPool->pushJob(std::move(future), executor);
-    }
+    ApplicationContext* context = Application::getContext();
+    context->workerPool->pushJob(std::move(future), executor);
 }
 
 void Application::init() {
@@ -210,7 +206,8 @@ ApplicationContext* Application::createContext() {
 
 void Application::deleteCurrentContext() {
     if (ApplicationContext* context = Application::currentContext) {
-        delete context->workerPool;
+        context->workerPool->shutdown();
+
         delete context->provider;
         delete context->renderer;
         delete context->instance;
@@ -218,9 +215,10 @@ void Application::deleteCurrentContext() {
             delete context->currentWindow;
         }
         delete context->audioEngine;
+        delete context->workerPool;
         delete context->fontPool;
         delete context->io;
-
+        
         // Keep as last deletion!!!
         if (context->window) {
             glfwDestroyWindow(
