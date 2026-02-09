@@ -75,12 +75,8 @@ ThreadPool::ThreadPool(size_t numThreads)
 }
 
 ThreadPool::~ThreadPool() {
-    m_terminateFlag.store(true);
-    // Wake up all threads if after setting terminate flag
-    m_workerTaskAvailableCVar.notify_all();
-    // Wait for all threads to finish and exit
-    for (std::thread& activeThread : m_threads) {
-        activeThread.join();
+    if (!m_terminateFlag.load()) {
+        shutdown();
     }
 }
 
@@ -176,4 +172,14 @@ void ThreadPool::processMainThreadJobs() {
 void ThreadPool::cleanupFinishedJobs() {
     std::lock_guard<std::mutex> lock(m_finishedJobsMtx);
     m_finishedJobs.clear();
+}
+
+void ThreadPool::shutdown() {
+    m_terminateFlag.store(true);
+    // Wake up all threads if after setting terminate flag
+    m_workerTaskAvailableCVar.notify_all();
+    // Wait for all threads to finish and exit
+    for (std::thread& activeThread : m_threads) {
+        activeThread.join();
+    }
 }
