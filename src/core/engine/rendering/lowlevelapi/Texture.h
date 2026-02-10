@@ -148,6 +148,47 @@ public:
     void updateData(int xOffset, int yOffset, unsigned int width, unsigned int height, const void* data) const;
 
     /**
+     * @brief Reads the entire texture into CPU memory.
+     *
+     * @param dst Pointer to the destination memory where texture data will be copied into.
+     *
+     * @throws std::runtime_error If dst is nullptr.
+     * @throws std::runtime_error If the texture is uninitialized or has an invalid OpenGL ID.
+     *
+     * @warning This operation forces a GPU-to-CPU synchronization and can be slow.
+     *          Avoid calling this frequently.
+     */
+    void readData(void* dst) const;
+
+    /**
+     * @brief Copies a rectangular region from another texture into this texture (GPU-to-GPU).
+     *
+     * @param src Reference to the source texture.
+     * @param width Width of the region to copy in pixels.
+     * @param height Height of the region to copy in pixels.
+     * @param srcXOffset X offset in the source texture where copying begins.
+     * @param srcYOffset Y offset in the source texture where copying begins.
+     * @param dstXOffset X offset in this texture where the copied data will be written.
+     * @param dstYOffset Y offset in this texture where the copied data will be written.
+     *
+     * @throws std::runtime_error If the source or destination regions are out of bounds.
+     * @throws std::runtime_error If the source and destination textures are the same.
+     * @throws std::runtime_error If the source and destination texture types do not match.
+     * @throws std::runtime_error If either texture is uninitialized or has an invalid OpenGL ID.
+     *
+     * @note This operation performs a GPU-to-GPU copy, avoiding CPU readback.
+     */
+    void copyDataFrom(
+        const Texture& src,
+        unsigned int width,
+        unsigned int height,
+        unsigned int srcXOffset = 0,
+        unsigned int srcYOffset = 0,
+        unsigned int dstXOffset = 0,
+        unsigned int dstYOffset = 0
+    ) const;
+
+    /**
      * Binds the texture to the currently active texture unit if not already bound.
      *
      * @throws std::runtime_error if texture is not valid.

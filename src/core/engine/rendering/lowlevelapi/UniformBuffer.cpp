@@ -2,6 +2,7 @@
 
 #include <GL/glew.h>
 
+#include <cstring>
 #include <stdexcept>
 
 #include "Logger.h"
@@ -53,6 +54,33 @@ void UniformBuffer::updateData(const void* data, size_t size, size_t offset) con
     if (offset + size > m_size) throw std::runtime_error("UBO update exceeds buffer size");
 
     GLCALL(glBufferSubData(GL_UNIFORM_BUFFER, offset, size, data));
+}
+
+void UniformBuffer::readData(void* dst, size_t size, size_t offset) const {
+    bind();
+
+    if (!dst) throw std::runtime_error("UBO read destination is nullptr");
+    if (offset + size > m_size) throw std::runtime_error("UBO read exceeds buffer size");
+    
+    GLCALL(void* src = glMapBufferRange(GL_UNIFORM_BUFFER, offset, size, GL_MAP_READ_BIT));
+    if (!src) throw std::runtime_error("Failed to map UBO for reading");
+
+    std::memcpy(dst, src, size);
+
+    GLCALL(glUnmapBuffer(GL_UNIFORM_BUFFER));
+}
+
+void UniformBuffer::copyDataFrom(const UniformBuffer& src, size_t size, size_t srcOffset, size_t dstOffset) const {
+    size_t srcEnd = srcOffset + size;
+    size_t dstEnd = dstOffset + size;
+    if (srcEnd > src.m_size) throw std::runtime_error("Source UBO copy exceeds buffer size");
+    if (dstEnd > m_size) throw std::runtime_error("Destination UBO copy exceeds buffer size");
+    if (&src == this && srcOffset < dstEnd && dstOffset < srcEnd) throw std::runtime_error("Overlapping UBO copy");
+
+    GLCALL(glBindBuffer(GL_COPY_READ_BUFFER, src.m_rendererId));
+    GLCALL(glBindBuffer(GL_COPY_WRITE_BUFFER, m_rendererId));
+
+    GLCALL(glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, srcOffset, dstOffset, size));
 }
 
 void UniformBuffer::bind() const {

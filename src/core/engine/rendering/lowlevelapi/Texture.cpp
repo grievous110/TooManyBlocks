@@ -2,6 +2,8 @@
 
 #include <GL/glew.h>
 
+#include <stdexcept>
+
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
 
@@ -152,7 +154,8 @@ Texture::Texture(
     GLenum filterParam = toOpenGLFilterMode(filterMode);
     GLenum wrapParam = toOpenGLWrapMode(wrapMode);
     GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filterParam));
-    GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterParam)
+    GLCALL(
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filterParam)
     );  // Note: Depth textures ignore mag filter
     GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapParam));
     GLCALL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapParam));
@@ -293,6 +296,54 @@ void Texture::updateData(int xOffset, int yOffset, unsigned int width, unsigned 
     GLCALL(glTexSubImage2D(GL_TEXTURE_2D, 0, xOffset, yOffset, width, height, format.inputFormat, format.type, data));
 }
 
+void Texture::readData(void* dst) const {
+    if (!dst) throw std::runtime_error("Texture read destination is nullptr");
+
+    bind();
+
+    TextureFormat format = toOpenGLTexFormat(m_type, m_channels);
+
+    GLCALL(glGetTexImage(GL_TEXTURE_2D, 0, format.inputFormat, format.type, dst));
+}
+
+void Texture::copyDataFrom(
+    const Texture& src,
+    unsigned int width,
+    unsigned int height,
+    unsigned int srcXOffset,
+    unsigned int srcYOffset,
+    unsigned int dstXOffset,
+    unsigned int dstYOffset
+) const {
+    if (&src == this) throw std::runtime_error("Cannot copy texture to itself");
+
+    if (src.m_type != m_type) throw std::runtime_error("Texture type mismatch for copy");
+
+    if (srcXOffset + width > src.m_width || srcYOffset + height > src.m_height)
+        throw std::runtime_error("Source texture copy region out of bounds");
+
+    if (dstXOffset + width > m_width || dstYOffset + height > m_height)
+        throw std::runtime_error("Destination texture copy region out of bounds");
+
+    GLCALL(glCopyImageSubData(
+        src.m_rendererId,
+        GL_TEXTURE_2D,
+        0,  // src mip level
+        srcXOffset,
+        srcYOffset,
+        0,  // z offset for 2D texture
+        m_rendererId,
+        GL_TEXTURE_2D,
+        0,  // dst mip level
+        dstXOffset,
+        dstYOffset,
+        0,  // z offset for 2D texture
+        width,
+        height,
+        1  // depth = 1 for 2D textures
+    ));
+}
+
 void Texture::bind() const {
     if (!isValid()) throw std::runtime_error("Invalid state of Texture with id 0");
     if (Texture::currentlyBoundTextures.empty()) {
@@ -318,7 +369,8 @@ void Texture::setTextureFilterMode(TextureFilter filterMode) {
         m_baseFilter = filterMode;
         // Update min filter taking mipmaps into account if they are generated
         GLCALL(glTexParameteri(
-            GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+            GL_TEXTURE_2D,
+            GL_TEXTURE_MIN_FILTER,
             m_hasMipmaps ? toOpenGLMinFilterModeWithMipmap(m_baseFilter, m_mipmapFilter)
                          : toOpenGLFilterMode(m_baseFilter)
         ));
