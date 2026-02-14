@@ -37,18 +37,27 @@ void UI::StatScreen::render(ApplicationContext& context) {
         ImGui::Text("%.1f ms (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate);
         ImGui::Text("%.2f %% CPU Usage", context.stats.cpuUsage * 100.0f);
         ImGui::Text(
-            "%s / %s RAM System Memory", formatBytes(context.stats.memInfo.bytesInUse, ByteUnit::Bytes),
+            "%s / %s RAM System Memory",
+            formatBytes(context.stats.memInfo.bytesInUse, ByteUnit::Bytes),
             formatBytes(context.stats.memInfo.totalBytes, ByteUnit::Bytes)
         );
         ImGui::Text("%s allocated by this process", formatBytes(context.stats.processUsedBytes, ByteUnit::Bytes));
         ImGui::Text(
-            "%s read | %lu read calls", formatBytes(context.stats.processIo.bytesRead, ByteUnit::Bytes),
+            "%s read | %lu read calls",
+            formatBytes(context.stats.processIo.bytesRead, ByteUnit::Bytes),
             context.stats.processIo.readCalls
         );
         ImGui::Text(
-            "%s written | %lu write calls", formatBytes(context.stats.processIo.bytesWritten, ByteUnit::Bytes),
+            "%s written | %lu write calls",
+            formatBytes(context.stats.processIo.bytesWritten, ByteUnit::Bytes),
             context.stats.processIo.writeCalls
         );
+
+        ImGui::SeparatorText("World Info");
+        ImGui::Text("Loaded chunks: %lu", context.instance->m_world->loadedChunks().size());
+        glm::ivec3 currChunkOrigin = Chunk::worldToChunkOrigin(playerPos);
+        ImGui::Text("Current chunk origin: (%d,%d,%d)", currChunkOrigin.x, currChunkOrigin.y, currChunkOrigin.z);
+
         ImGui::SeparatorText("Player");
         ImGui::Text("Player Position: x=%.1f, y=%.1f, z=%.1f", playerPos.x, playerPos.y, playerPos.z);
         ImGui::Text("Velocity: x=%.1f, y=%.1f, z=%.1f", velocity.x, velocity.y, velocity.z);

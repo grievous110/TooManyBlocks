@@ -61,7 +61,7 @@ private:
     void audioLoadWorkerLoop();
 
     void processCmdsFromAudioThread();
-    void trySendAssetData();
+    void resolveAndSendAssetData();
     void sendCommandsToAudioThread();
     bool _isValid(AudioInstance instance) const;
 

@@ -97,7 +97,7 @@ public:
      * @brief Adds a job to the thread pool for execution.
      *
      * @param future The task to be executed by a worker thread.
-     * @param executor Hint to if workers or the main thread should do the job.
+     * @param executor Hint if workers or the main thread should do the job.
      */
     void pushJob(std::unique_ptr<FutureBase> future, Executor executor);
 
