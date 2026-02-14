@@ -4,7 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
-#include <deque>
+#include <queue>
 #include <functional>
 #include <mutex>
 #include <thread>
@@ -31,11 +31,11 @@ private:
     std::condition_variable m_watingForActiveTaskCVar;
 
     std::mutex m_workerJobsMtx;
-    std::deque<std::unique_ptr<FutureBase>> m_workerJobs;
+    std::queue<std::unique_ptr<FutureBase>> m_workerJobs;
     std::condition_variable m_workerTaskAvailableCVar;
 
     std::mutex m_mainThreadJobsMtx;
-    std::deque<std::unique_ptr<FutureBase>> m_mainThreadJobs;
+    std::queue<std::unique_ptr<FutureBase>> m_mainThreadJobs;
 
     // Keep futures alive and only clear them on the main thread
     // to be save to not clear render api ressources on the wrong thread

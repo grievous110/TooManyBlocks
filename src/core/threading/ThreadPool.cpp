@@ -15,7 +15,7 @@ void ThreadPool::loop(unsigned int workerIndex) {
 
             // Get first job in queue
             job = std::move(m_workerJobs.front());
-            m_workerJobs.pop_front();
+            m_workerJobs.pop();
         }
 
         {
@@ -41,6 +41,7 @@ void ThreadPool::loop(unsigned int workerIndex) {
             std::lock_guard<std::mutex> lock(m_schedulingMtx);
             // Adjust tracking
             m_executionPointStatuses[workerIndex].completionCount++;
+            m_executionPointStatuses[workerIndex].isRunning = false;
             m_watingForActiveTaskCVar.notify_all();
         }
     }
@@ -111,12 +112,12 @@ void ThreadPool::pushJob(std::unique_ptr<FutureBase> future, Executor executor) 
     switch (executor) {
         case Executor::Main: {
             std::lock_guard<std::mutex> lock(m_mainThreadJobsMtx);
-            m_mainThreadJobs.emplace_back(std::move(future));
+            m_mainThreadJobs.push(std::move(future));
         } break;
 
         case Executor::Worker: {
             std::lock_guard<std::mutex> lock(m_workerJobsMtx);
-            m_workerJobs.emplace_back(std::move(future));
+            m_workerJobs.push(std::move(future));
             m_workerTaskAvailableCVar.notify_one();
         } break;
 
@@ -137,7 +138,7 @@ void ThreadPool::processMainThreadJobs() {
             if (m_mainThreadJobs.empty()) break;
 
             job = std::move(m_mainThreadJobs.front());
-            m_mainThreadJobs.pop_front();
+            m_mainThreadJobs.pop();
         }
 
         {
@@ -163,6 +164,7 @@ void ThreadPool::processMainThreadJobs() {
             std::lock_guard<std::mutex> lock(m_schedulingMtx);
             // Adjust tracking
             m_executionPointStatuses.back().completionCount++;
+            m_executionPointStatuses.back().isRunning = false;
             m_watingForActiveTaskCVar.notify_all();
         }
         processedJobCount++;
