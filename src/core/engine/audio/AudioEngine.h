@@ -54,10 +54,14 @@ public:
 private:
     struct AudioEngineData* m_data;
     std::thread m_streamingWorker;
-    std::atomic<bool> m_stopStreaming;
+    std::thread m_audioLoaderWorker;
+    std::atomic<bool> m_stopThreads;
 
     void streamWorkerLoop();
+    void audioLoadWorkerLoop();
+
     void processCmdsFromAudioThread();
+    void trySendAssetData();
     void sendCommandsToAudioThread();
     bool _isValid(AudioInstance instance) const;
 

@@ -43,6 +43,9 @@ enum AudioCmdType {
     Play,
     Stop,
 
+    // Async load of asset data
+    AssetLoaded,
+
     // Core playback
     SetPlaying,
     SkipToRequest,
@@ -113,8 +116,7 @@ struct AudioCmd {
         struct {
             void* audioData;
             size_t totalPcmFrames;
-            bool streamed;
-        } play;
+        } assetData;
         struct {
             float normalizedPos;
             size_t newFrameIndex;  // Set by audio thread

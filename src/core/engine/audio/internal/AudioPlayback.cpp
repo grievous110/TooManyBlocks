@@ -14,7 +14,11 @@ enum FetchResult {
 // Reads from the index at specific count of frames. Does NOT handle wrap around, thus may read less frames then
 // requested.
 static FetchResult fetchFrames(
-    AudioInstanceSlot& slot, float* dst, size_t frameIndex, size_t frameCount, size_t* framesRead
+    AudioInstanceSlot& slot,
+    float* dst,
+    size_t frameIndex,
+    size_t frameCount,
+    size_t* framesRead
 ) {
     if (frameIndex >= slot.totalPcmFrames) return FetchResult::EndReached;
 
@@ -51,8 +55,11 @@ static FetchResult bulkFetchIntoPrebuffer(AudioInstanceSlot& slot) {
 
         size_t framesRead = 0;
         res = fetchFrames(
-            slot, slot.state->prebuffer + (slot.state->validPrebufferFrames * FORMAT_CHANNELS), frameFetchPos,
-            PREBUFFER_FRAME_COUNT - slot.state->validPrebufferFrames, &framesRead
+            slot,
+            slot.state->prebuffer + (slot.state->validPrebufferFrames * FORMAT_CHANNELS),
+            frameFetchPos,
+            PREBUFFER_FRAME_COUNT - slot.state->validPrebufferFrames,
+            &framesRead
         );
 
         slot.state->validPrebufferFrames += framesRead;
@@ -365,7 +372,6 @@ static void processCmdsFromMain(AudioThreadContext* context) {
     AudioCmd cmd;
     bool markAllSpatialsAsDirty = false;
     while (rbReadElements<AudioCmd>(&context->shared->mainToAudioQueue, &cmd, 1) == 1) {
-        lgr::lout.debug("AUDIO CMD RECEIVED: " + std::to_string(cmd.type));
         switch (cmd.target) {
             case AudioCmdTarget::NoTarget: {
                 switch (cmd.type) {
@@ -411,9 +417,7 @@ static void processCmdsFromMain(AudioThreadContext* context) {
 
                         slot.isActive = true;
                         slot.isPlaying = true;
-                        slot.audioData = cmd.data.play.audioData;
-                        slot.totalPcmFrames = cmd.data.play.totalPcmFrames;
-                        slot.isStreamed = cmd.data.play.streamed;
+                        slot.isStreamed = cmd.data.singleBool;
                         slot.state = &context->audio->audioInstStates[cmd.instanceId];
                         *slot.state = {};  // Reset state
 
@@ -421,6 +425,11 @@ static void processCmdsFromMain(AudioThreadContext* context) {
                         break;
 
                     case AudioCmdType::Stop: slot.isActive = false; break;
+
+                    case AudioCmdType::AssetLoaded:
+                        slot.audioData = cmd.data.assetData.audioData;
+                        slot.totalPcmFrames = cmd.data.assetData.totalPcmFrames;
+                        break;
 
                     case AudioCmdType::SetPlaying: slot.isPlaying = cmd.data.singleBool; break;
 
