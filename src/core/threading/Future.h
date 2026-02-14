@@ -59,6 +59,9 @@ public:
  * Advanced future class for async tasks. Once the task finished, the future is no longer responsible
  * for the result. It will just cleanly provide the value to all consumers that hold an future instance
  * pointing to the result value. All futures can only be executed once.
+ * 
+ * Futures can also be chained. This way it can be guranteed that once one future runs,all dependency futures
+ * are ready so await never needs to be called.
  */
 template <typename T>
 class Future : public FutureBase {
@@ -111,9 +114,9 @@ private:
     }
 
     void onCompleted() {
-        for (const std::shared_ptr<FutureBase>& weakRef : state->dependents) {
+        for (const std::shared_ptr<FutureBase>& dep : state->dependents) {
             // Decrement remaining dependency count
-            weakRef->dependecyFinished();
+            dep->dependecyFinished();
         }
 
         state->dependents.clear();
@@ -125,10 +128,8 @@ private:
     }
 
     virtual void dependecyFinished() override {
-        int val = state->unresolvedDeps.fetch_sub(1);
-        if (val == 1) {
-            schedule();
-        } else {
+        if (state->unresolvedDeps.fetch_sub(1) == 1) {
+            trySchedule();
         }
     }
 
@@ -136,7 +137,7 @@ private:
         return state->taskContext;
     }
 
-    void schedule() {
+    void trySchedule() {
         if (isEmpty()) throw std::runtime_error("Cannot schedule empty future");
 
         std::lock_guard(state->mtx);
@@ -146,7 +147,7 @@ private:
 
         FutureStatus expected = FutureStatus::Finalized;
         if (!state->status.compare_exchange_strong(expected, FutureStatus::Pending)) {
-            return;  // already scheduled by someone else
+            return;  // already scheduled by someone else or not finalized
         }
 
         std::unique_ptr<Future<T>> selfRef = std::make_unique<Future<T>>();
@@ -155,7 +156,7 @@ private:
     }
 
 public:
-    Future() = default;
+    Future() noexcept = default;
 
     Future(std::function<T()> fn, uint64_t taskContext = DEFAULT_TASKCONTEXT, Executor executor = Executor::Worker)
         : state(std::make_shared<TaskState>()) {
@@ -177,6 +178,7 @@ public:
         if (state->status.load() != FutureStatus::Building)
             throw std::runtime_error("Trying to add dependency to a finalized future");
 
+        // Hold both locks to avoid concurrent state changes
         std::lock_guard lock(state->mtx);
         std::lock_guard otherLock(other.state->mtx);
 
@@ -193,10 +195,12 @@ public:
 
     inline Future<T>& start() {
         if (isEmpty()) throw std::runtime_error("Cannot start empty future");
+
+        // Advance status to Finalized if neeeded
         FutureStatus expected = FutureStatus::Building;
         state->status.compare_exchange_strong(expected, FutureStatus::Finalized);
 
-        schedule();
+        trySchedule();
         return *this;
     }
 
@@ -228,16 +232,18 @@ public:
     virtual inline void cancel() override {
         if (isEmpty() || isReady()) return;
 
-        // Make running if pending
+        // Force advance status to Running so that completeFailure can run
         FutureStatus expected = FutureStatus::Building;
-        state->status.compare_exchange_strong(expected, FutureStatus::Finalized);
-        // Make running if pending
+        state->status.compare_exchange_strong(expected, FutureStatus::Running);
+        expected = FutureStatus::Finalized;
+        state->status.compare_exchange_strong(expected, FutureStatus::Running);
         expected = FutureStatus::Pending;
         state->status.compare_exchange_strong(expected, FutureStatus::Running);
 
         completeFailure(std::make_exception_ptr(std::runtime_error("Task canceled")));
     }
 
+    // Caller suspends until future has been executed / finished with error
     void await() {
         if (isEmpty()) return;
 

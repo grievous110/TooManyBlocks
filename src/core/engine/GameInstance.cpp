@@ -45,6 +45,7 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_playerController = new PlayerController;
         m_player = new Player;
         m_world = newWorld;
+        m_world->setChunkLoadingDistance(2);
         m_playerController->possess(m_player);
 
         CPUAssetProvider* provider = Application::getContext()->provider;
@@ -191,7 +192,7 @@ void GameInstance::update(float deltaTime) {
 
     Transform& mehs1Tr = m_mesh1->getLocalTransform();
     mehs1Tr.rotate(10.0f * deltaTime, WorldUp);
-    m_world->updateChunks(m_player->getTransform().getPosition(), 2);
+    m_world->updateChunks(m_player->getTransform().getPosition());
 
     if (!m_skeletalMesh->getActiveAnimation()) {
         m_skeletalMesh->playAnimation("Idle", true);

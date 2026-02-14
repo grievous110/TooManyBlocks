@@ -3,7 +3,6 @@
 #include <json/JsonParser.h>
 
 #include <algorithm>
-#include <fstream>
 #include <glm/glm.hpp>
 #include <memory>
 #include <vector>
@@ -19,6 +18,8 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/resource/providers/CPUAssetProvider.h"
 #include "engine/worldgen/PerlinNoise.h"
+#include "threading/ThreadPool.h"
+#include "util/Utility.h"
 
 static void generateChunkBlocks(Block* blocks, const glm::ivec3& chunkPos, uint32_t seed) {
     PerlinNoise noiseGenerator(seed);
@@ -66,10 +67,7 @@ static void generateChunkBlocks(Block* blocks, const glm::ivec3& chunkPos, uint3
     }
 }
 
-std::unordered_set<glm::ivec3, coord_hash> World::determineActiveChunks(
-    const glm::ivec3& position,
-    int renderDistance
-) {
+std::unordered_set<glm::ivec3, coord_hash> World::determineActiveChunks(const glm::ivec3& position) {
     std::unordered_set<glm::ivec3, coord_hash> activeChunks;
     glm::ivec3 centerChunk(
         (position.x < 0 ? (position.x - CHUNK_WIDTH + 1) : position.x) / CHUNK_WIDTH * CHUNK_WIDTH,
@@ -78,14 +76,16 @@ std::unordered_set<glm::ivec3, coord_hash> World::determineActiveChunks(
     );
 
     // Compute the range of chunk coordinates to load
-    for (int x = -renderDistance * CHUNK_WIDTH; x <= renderDistance * CHUNK_WIDTH; x += CHUNK_WIDTH) {
-        for (int y = -renderDistance * CHUNK_HEIGHT; y <= renderDistance * CHUNK_HEIGHT; y += CHUNK_HEIGHT) {
-            for (int z = -renderDistance * CHUNK_DEPTH; z <= renderDistance * CHUNK_DEPTH; z += CHUNK_DEPTH) {
+    for (int x = -chunkLoadingDistance * CHUNK_WIDTH; x <= chunkLoadingDistance * CHUNK_WIDTH; x += CHUNK_WIDTH) {
+        for (int y = -chunkLoadingDistance * CHUNK_HEIGHT; y <= chunkLoadingDistance * CHUNK_HEIGHT;
+             y += CHUNK_HEIGHT) {
+            for (int z = -chunkLoadingDistance * CHUNK_DEPTH; z <= chunkLoadingDistance * CHUNK_DEPTH;
+                 z += CHUNK_DEPTH) {
                 glm::ivec3 offset(x * CHUNK_WIDTH, y * CHUNK_HEIGHT, z * CHUNK_DEPTH);
                 glm::ivec3 chunkPos = centerChunk + glm::ivec3(x, y, z);
 
                 // Only include chunks within Euclidean distance
-                if (glm::length(glm::vec3(chunkPos - centerChunk)) <= renderDistance * CHUNK_WIDTH) {
+                if (glm::length(glm::vec3(chunkPos - centerChunk)) <= chunkLoadingDistance * CHUNK_WIDTH) {
                     activeChunks.insert(chunkPos);
                 }
             }
@@ -98,12 +98,8 @@ World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir), m_cS
     m_taskContext = Application::getContext()->workerPool->getNewTaskContext();
 
     // Load world data
-    std::ifstream file((worldDir / "info.json").string(), std::ios::binary);
-    Json::JsonValue info = Json::parseJson(
-        std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>())
-    );
+    Json::JsonValue info = Json::parseJson(readFile(worldDir / "info.json"));
     m_seed = static_cast<uint32_t>(std::stoul(info["seed"].toString()));
-    file.close();
 
     CPUAssetProvider* provider = Application::getContext()->provider;
     Future<Shader> mainShader = build(provider->getShader(Res::Shader::CHUNK));
@@ -113,7 +109,7 @@ World::World(const std::filesystem::path& worldDir) : m_worldDir(worldDir), m_cS
     m_chunkMaterial = std::make_shared<ChunkMaterial>(mainShader, depthShader, ssaoGBuffShader, texture);
 }
 
-World::~World() { 
+World::~World() {
     ThreadPool* pool = Application::getContext()->workerPool;
     pool->destroyTaskContext(m_taskContext);
     pool->waitForCurrentActiveTasks();
@@ -129,9 +125,9 @@ Chunk* World::getChunk(const glm::ivec3& location) {
     return nullptr;
 }
 
-void World::updateChunks(const glm::ivec3& position, int renderDistance) {
+void World::updateChunks(const glm::ivec3& position) {
     // Step 1: Determine active chunk positions
-    std::unordered_set<glm::ivec3, coord_hash> activeChunks = determineActiveChunks(position, renderDistance);
+    std::unordered_set<glm::ivec3, coord_hash> activeChunks = determineActiveChunks(position);
 
     // Step 2: Unload chunks that are no longer in the active set
     for (auto it = m_loadedChunks.begin(); it != m_loadedChunks.end();) {
@@ -192,9 +188,7 @@ void World::updateChunks(const glm::ivec3& position, int renderDistance) {
             blockGenFuture.start();
 
             Future<CPURenderData<CompactChunkVertex>> cpuMeshBuildFuture(
-                [this, blockGenFuture]() {
-                    return generateMeshForChunkGreedy(blockGenFuture.value().get(), texMap);
-                },
+                [this, blockGenFuture]() { return generateMeshForChunkGreedy(blockGenFuture.value().get(), texMap); },
                 m_taskContext
             );
             cpuMeshBuildFuture.dependsOn(blockGenFuture).start();

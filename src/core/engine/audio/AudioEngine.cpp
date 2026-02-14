@@ -200,7 +200,7 @@ static ReverbDesign sanitizeReverbDesign(const ReverbDesign& in) {
     return out;
 }
 
-// Does design needs to be validated beforehand, invalid combs / filters should be discarded before
+// Does design. ReverbDesign needs to be validated beforehand to be sure -> invalid combs / filters should be discarded before
 static ReverbBuffers* allocateReverbBuffers(const ReverbDesign& design) {
     ReverbBuffers* buffers = new ReverbBuffers{};
     buffers->combCount = static_cast<unsigned int>(design.combMsDelays.size());
@@ -614,7 +614,7 @@ void AudioEngine::processCmdsFromAudioThread() {
     }
 }
 
-void AudioEngine::trySendAssetData() {
+void AudioEngine::resolveAndSendAssetData() {
     for (unsigned int i = 0; i < AUDIO_INSTANCE_LIMIT; i++) {
         AudioInstanceSlot& slot = m_data->engine.audioInstSlots[i];
         if (!slot.isActive || slot.audioData != nullptr) continue;
@@ -1661,6 +1661,6 @@ glm::vec3 AudioEngine::getListenerUp() const {
 void AudioEngine::update(float deltaSeconds) {
     std::unique_lock lock(m_data->engine.engineMutex);
     processCmdsFromAudioThread();
-    trySendAssetData();
+    resolveAndSendAssetData();
     sendCommandsToAudioThread();
 }
