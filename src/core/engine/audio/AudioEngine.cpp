@@ -1,12 +1,34 @@
 #include "AudioEngine.h"
 
-#include <iostream>
+#include <condition_variable>
+#include <cstdint>
+#include <queue>
 #include <shared_mutex>
 #include <unordered_map>
 
 #include "Logger.h"
 #include "internal/AudioEngineDefs.h"
 #include "internal/AudioPlayback.h"
+
+struct AudioAsset {
+    enum class State {
+        Unloaded = 0,
+        MetadataLoading,
+        MetadataReady,
+        FullLoading,
+        FullyLoaded,
+        Failed
+    };
+
+    std::string assetPath;
+
+    std::mutex mtx;
+    State state;
+    bool isFullLoadRequested;
+
+    size_t totalFrames;
+    std::vector<float> pcmData;
+};
 
 struct EngineState {
     ma_context context;
@@ -20,7 +42,7 @@ struct EngineState {
     ma_uint32 outputDeviceCount;
     ma_uint32 inputDeviceCount;
 
-    std::unordered_map<std::string, std::vector<float>> loadedAssets;
+    std::unordered_map<std::string, std::unique_ptr<AudioAsset>> loadedAssets;
 
     // Commands
     std::vector<AudioCmdKey> cmdOrdering;                                     // This preserves pushed order
@@ -29,6 +51,7 @@ struct EngineState {
     // Audio instance management
     AudioInstanceSlot audioInstSlots[AUDIO_INSTANCE_LIMIT];
     std::vector<unsigned int> freeSlotIndices;
+    AudioAsset* usedAssets[AUDIO_INSTANCE_LIMIT];
     unsigned int slotVersions[AUDIO_INSTANCE_LIMIT];
 
     // Listener
@@ -39,6 +62,12 @@ struct EngineState {
         StreamBufferSlot streamSlots[STREAM_CAPACITY];
         float* tmpStreamBuffer;
     } streamData;
+
+    struct LoaderData {
+        std::mutex loadMtx;
+        std::condition_variable loaderCV;
+        std::queue<AudioAsset*> pendingLoads;
+    } loaderData;
 
     // Mixing buses
     MixingBus mixingBuses[MIXING_BUS_LIMIT];
@@ -62,6 +91,45 @@ struct AudioEngineData {
 
     AudioThreadContext callbackContext;
 };
+
+void ensureMetadata(AudioAsset* asset, EngineState& engineState) {
+    std::lock_guard assetLock(asset->mtx);
+
+    if (asset->state == AudioAsset::State::Unloaded) {
+        asset->state = AudioAsset::State::MetadataLoading;
+
+        std::lock_guard lock(engineState.loaderData.loadMtx);
+        engineState.loaderData.pendingLoads.push(asset);
+        engineState.loaderData.loaderCV.notify_one();
+    }
+}
+
+void ensureFullyLoaded(AudioAsset* asset, EngineState& engineState) {
+    std::lock_guard assetLock(asset->mtx);
+
+    asset->isFullLoadRequested = true;
+    switch (asset->state) {
+        case AudioAsset::State::Unloaded: {
+            asset->state = AudioAsset::State::MetadataLoading;
+
+            std::lock_guard lock(engineState.loaderData.loadMtx);
+            engineState.loaderData.pendingLoads.push(asset);
+            engineState.loaderData.loaderCV.notify_one();
+            break;
+        }
+
+        case AudioAsset::State::MetadataReady: {
+            asset->state = AudioAsset::State::FullLoading;
+
+            std::lock_guard lock(engineState.loaderData.loadMtx);
+            engineState.loaderData.pendingLoads.push(asset);
+            engineState.loaderData.loaderCV.notify_one();
+            break;
+        }
+
+        default: break;
+    }
+}
 
 static bool createsCyclicBusDependency(const MixingBus* buses, unsigned int busId, int newParentId) {
     if (newParentId < 0) return false;
@@ -317,9 +385,9 @@ ReverbDesign AudioEngine::getReverbDesignPreset() {
 void AudioEngine::streamWorkerLoop() {
     EngineState::StreamData* streamData = &m_data->engine.streamData;
 
-    while (!m_stopStreaming.load()) {
+    while (true) {
         for (StreamBufferSlot& slot : streamData->streamSlots) {
-            if (m_stopStreaming.load()) break;
+            if (m_stopThreads.load()) return;
             std::lock_guard lock(slot.streamingMtx);
             if (!slot.isActive) continue;
 
@@ -334,12 +402,14 @@ void AudioEngine::streamWorkerLoop() {
 
             if (writableSamples < FORMAT_CHANNELS) continue;
 
-            uint32_t framesToDecode =
-                std::min<unsigned int>(writableSamples / FORMAT_CHANNELS, STREAM_FRAMES_PER_CHUNK);
+            uint32_t framesToDecode = std::min<unsigned int>(
+                writableSamples / FORMAT_CHANNELS, STREAM_FRAMES_PER_CHUNK
+            );
 
             ma_uint64 framesRead = 0;
-            ma_result res =
-                ma_decoder_read_pcm_frames(&slot.decoder, streamData->tmpStreamBuffer, framesToDecode, &framesRead);
+            ma_result res = ma_decoder_read_pcm_frames(
+                &slot.decoder, streamData->tmpStreamBuffer, framesToDecode, &framesRead
+            );
 
             if (res != MA_SUCCESS || framesRead == 0) {
                 if (slot.isLooping) {
@@ -352,14 +422,104 @@ void AudioEngine::streamWorkerLoop() {
             }
 
             size_t samplesToWrite = framesRead * FORMAT_CHANNELS;
-            size_t writtenSamples =
-                rbWriteElements<float>(&slot.streamBuffer, streamData->tmpStreamBuffer, samplesToWrite);
+            size_t writtenSamples = rbWriteElements<float>(
+                &slot.streamBuffer, streamData->tmpStreamBuffer, samplesToWrite
+            );
             if (writtenSamples != samplesToWrite) {
                 lgr::lout.error("Written less samples on streaming audio. This should not happen!");
             }
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void AudioEngine::audioLoadWorkerLoop() {
+    EngineState::LoaderData* loadState = &m_data->engine.loaderData;
+
+    while (true) {
+        AudioAsset* asset = nullptr;
+
+        // ---- Wait for work ----
+        {
+            std::unique_lock lock(loadState->loadMtx);
+
+            loadState->loaderCV.wait(lock, [this, loadState] {
+                return !loadState->pendingLoads.empty() || m_stopThreads.load();
+            });
+
+            if (m_stopThreads.load()) return;
+
+            asset = loadState->pendingLoads.front();
+            loadState->pendingLoads.pop();
+        }
+
+        // ---- Init decoder ----
+        ma_decoder decoder;
+        if (ma_decoder_init_file(asset->assetPath.c_str(), &m_data->engine.decoderConfig, &decoder) != MA_SUCCESS) {
+            lgr::lout.error("Failed to init decoder for audio file: " + asset->assetPath);
+
+            std::lock_guard lock(asset->mtx);
+            asset->state = AudioAsset::State::Failed;
+            continue;
+        }
+
+        bool doMetadata;
+
+        // ---- Metadata Stage ----
+        {
+            std::lock_guard lock(asset->mtx);
+            doMetadata = asset->state == AudioAsset::State::MetadataLoading;
+        }
+
+        if (doMetadata) {
+            ma_uint64 frameCount = 0;
+            if (ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount) != MA_SUCCESS) {
+                lgr::lout.error("Failed to read pcm length: " + asset->assetPath);
+
+                std::lock_guard lock(asset->mtx);
+                asset->state = AudioAsset::State::Failed;
+            } else {
+                std::lock_guard lock(asset->mtx);
+
+                asset->totalFrames = frameCount;
+                asset->state = asset->isFullLoadRequested ? AudioAsset::State::FullLoading
+                                                          : AudioAsset::State::MetadataReady;
+            }
+        }
+
+        bool doFullLoad = false;
+        ma_uint64 frameCount = 0;
+
+        {
+            std::lock_guard lock(asset->mtx);
+
+            // If the asset requested full load and it's not yet fully loaded
+            if ((asset->state == AudioAsset::State::FullLoading) ||
+                (asset->state == AudioAsset::State::MetadataReady && asset->isFullLoadRequested)) {
+                doFullLoad = true;
+                asset->state = AudioAsset::State::FullLoading;  // mark as loading
+                frameCount = asset->totalFrames;
+            }
+        }
+        // ---- Full Load Stage ----
+        if (doFullLoad) {
+            std::vector<float> pcm(frameCount * decoder.outputChannels);
+
+            ma_uint64 framesRead = 0;
+            ma_result result = ma_decoder_read_pcm_frames(&decoder, pcm.data(), frameCount, &framesRead);
+
+            std::lock_guard lock(asset->mtx);
+            if (result != MA_SUCCESS || framesRead != frameCount) {
+                lgr::lout.error("Failed to read audio file: " + asset->assetPath);
+                asset->state = AudioAsset::State::Failed;
+            } else {
+                asset->pcmData = std::move(pcm);
+                asset->state = AudioAsset::State::FullyLoaded;
+            }
+        }
+
+        ma_decoder_uninit(&decoder);
     }
 }
 
@@ -453,6 +613,45 @@ void AudioEngine::processCmdsFromAudioThread() {
     }
 }
 
+void AudioEngine::trySendAssetData() {
+    for (unsigned int i = 0; i < AUDIO_INSTANCE_LIMIT; i++) {
+        AudioInstanceSlot& slot = m_data->engine.audioInstSlots[i];
+        if (!slot.isActive || slot.audioData != nullptr) continue;
+
+        AudioAsset* asset = m_data->engine.usedAssets[i];
+        std::lock_guard lock(asset->mtx);
+        if (slot.isStreamed) {
+            if (asset->state == AudioAsset::State::MetadataReady ||
+                asset->state == AudioAsset::State::FullLoading ||
+                asset->state == AudioAsset::State::FullyLoaded) {
+                slot.audioData = &slot.streamSlot->streamBuffer;
+                slot.totalPcmFrames = asset->totalFrames;
+
+                AudioCmd cmd{};
+                cmd.type = AudioCmdType::AssetLoaded;
+                cmd.target = AudioCmdTarget::AudioInstanceTarget;
+                cmd.instanceId = i;
+                cmd.data.assetData.audioData = &slot.streamSlot->streamBuffer;
+                cmd.data.assetData.totalPcmFrames = asset->totalFrames;
+                pushCommand(cmd, m_data->engine);
+            }
+        } else {
+            if (asset->state == AudioAsset::State::FullyLoaded) {
+                slot.audioData = asset->pcmData.data();
+                slot.totalPcmFrames = asset->totalFrames;
+
+                AudioCmd cmd{};
+                cmd.type = AudioCmdType::AssetLoaded;
+                cmd.target = AudioCmdTarget::AudioInstanceTarget;
+                cmd.instanceId = i;
+                cmd.data.assetData.audioData = asset->pcmData.data();
+                cmd.data.assetData.totalPcmFrames = asset->totalFrames;
+                pushCommand(cmd, m_data->engine);
+            }
+        }
+    }
+}
+
 void AudioEngine::sendCommandsToAudioThread() {
     std::vector<unsigned int> sentIndices;
 
@@ -511,7 +710,7 @@ AudioEngine::AudioEngine() {
     m_data->engine.decoderConfig = ma_decoder_config_init(ma_format_f32, FORMAT_CHANNELS, FORMAT_FRAME_RATE);
 
     // Configure streaming slots
-    m_stopStreaming.store(false);
+    m_stopThreads.store(false);
     for (StreamBufferSlot& streamSlot : m_data->engine.streamData.streamSlots) {
         if (ma_rb_init(STREAM_BUFFER_BYTE_SIZE, nullptr, nullptr, &streamSlot.streamBuffer) != MA_SUCCESS) {
             lgr::lout.error("Could not create stream buffer...");
@@ -527,14 +726,17 @@ AudioEngine::AudioEngine() {
     m_data->callbackContext.audio = &m_data->audio;
 
     m_streamingWorker = std::thread(&AudioEngine::streamWorkerLoop, this);
+    m_audioLoaderWorker = std::thread(&AudioEngine::audioLoadWorkerLoop, this);
 }
 
 AudioEngine::~AudioEngine() {
     {
         std::unique_lock lock(m_data->engine.engineMutex);
 
-        m_stopStreaming.store(true);
+        m_stopThreads.store(true);
         m_streamingWorker.join();
+        m_data->engine.loaderData.loaderCV.notify_one();
+        m_audioLoaderWorker.join();
         delete[] m_data->engine.streamData.tmpStreamBuffer;
 
         ma_device_uninit(&m_data->engine.currentOutputDevice);
@@ -616,8 +818,11 @@ bool AudioEngine::loadDevices() {
     m_data->engine.inputDeviceCount = 0;
 
     ma_result result = ma_context_get_devices(
-        &m_data->engine.context, &m_data->engine.outputDeviceInfos, &m_data->engine.outputDeviceCount,
-        &m_data->engine.inputDeviceInfos, &m_data->engine.inputDeviceCount
+        &m_data->engine.context,
+        &m_data->engine.outputDeviceInfos,
+        &m_data->engine.outputDeviceCount,
+        &m_data->engine.inputDeviceInfos,
+        &m_data->engine.inputDeviceCount
     );
     return result == MA_SUCCESS;
 }
@@ -655,47 +860,33 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
         return {};
     }
 
-    ma_decoder decoder;
-    if (ma_decoder_init_file(file.c_str(), &m_data->engine.decoderConfig, &decoder) != MA_SUCCESS) {
-        lgr::lout.error("Failed to load audio file: " + file);
-        return {};
-    }
-
-    ma_uint64 frameCount;
-    ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount);
-
-    float* pcm = nullptr;
-
+    AudioAsset* asset = nullptr;
     auto it = m_data->engine.loadedAssets.find(file);
-    if (it == m_data->engine.loadedAssets.end()) {
-        // Not loaded yet
-        std::vector<float> pcmData(frameCount * decoder.outputChannels);
-
-        ma_uint64 framesRead;
-        ma_result result = ma_decoder_read_pcm_frames(&decoder, pcmData.data(), frameCount, &framesRead);
-
-        pcm = pcmData.data();
-        m_data->engine.loadedAssets[file] = std::move(pcmData);
+    if (it != m_data->engine.loadedAssets.end()) {
+        asset = it->second.get();
     } else {
-        pcm = it->second.data();
+        std::unique_ptr<AudioAsset> newAssetPtr = std::make_unique<AudioAsset>();
+        newAssetPtr->assetPath = file;
+        asset = newAssetPtr.get();
+        m_data->engine.loadedAssets.emplace(file, std::move(newAssetPtr));
     }
-    ma_decoder_uninit(&decoder);
 
     unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
+    m_data->engine.usedAssets[nextIndex] = asset;
+
+    ensureFullyLoaded(asset, m_data->engine);
 
     AudioCmd cmd{};
-    cmd.target = AudioCmdTarget::AudioInstanceTarget;
     cmd.type = AudioCmdType::Play;
+    cmd.target = AudioCmdTarget::AudioInstanceTarget;
     cmd.instanceId = nextIndex;
-    cmd.data.play = {pcm, frameCount, false};
+    cmd.data.singleBool = false; // Not streamed
     pushCommand(cmd, m_data->engine);
 
     AudioInstanceSlot& slot = m_data->engine.audioInstSlots[nextIndex];
     slot = {};  // Reset
     slot.isActive = true;
     slot.isPlaying = true;
-    slot.audioData = pcm;
-    slot.totalPcmFrames = frameCount;
 
     m_data->engine.freeSlotIndices.pop_back();
     return {nextIndex, m_data->engine.slotVersions[nextIndex]};
@@ -704,7 +895,7 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
 AudioInstance AudioEngine::playStreamed(const std::string& file) {
     std::unique_lock lock(m_data->engine.engineMutex);
 
-    if (m_data->engine.freeSlotIndices.empty()) {        
+    if (m_data->engine.freeSlotIndices.empty()) {
         lgr::lout.error("Could not reserve audio instance slot!");
         return {};
     }
@@ -727,16 +918,27 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
         return {};
     }
 
-    unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
+    AudioAsset* asset = nullptr;
+    auto it = m_data->engine.loadedAssets.find(file);
+    if (it != m_data->engine.loadedAssets.end()) {
+        asset = it->second.get();
+    } else {
+        std::unique_ptr<AudioAsset> newAssetPtr = std::make_unique<AudioAsset>();
+        newAssetPtr->assetPath = file;
+        asset = newAssetPtr.get();
+        m_data->engine.loadedAssets.emplace(file, std::move(newAssetPtr));
+    }
 
-    ma_uint64 frameCount;
-    ma_decoder_get_length_in_pcm_frames(&freeSlot->decoder, &frameCount);
+    unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
+    m_data->engine.usedAssets[nextIndex] = asset;
+
+    ensureMetadata(asset, m_data->engine);
 
     AudioCmd cmd{};
     cmd.type = AudioCmdType::Play;
     cmd.target = AudioCmdTarget::AudioInstanceTarget;
     cmd.instanceId = nextIndex;
-    cmd.data.play = {&freeSlot->streamBuffer, frameCount, true};
+    cmd.data.singleBool = true; // Streamed
     pushCommand(cmd, m_data->engine);
 
     AudioInstanceSlot& slot = m_data->engine.audioInstSlots[nextIndex];
@@ -744,8 +946,6 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
     slot.isActive = true;
     slot.isPlaying = true;
     slot.isStreamed = true;
-    slot.audioData = &freeSlot->streamBuffer;
-    slot.totalPcmFrames = frameCount;
     slot.streamSlot = freeSlot;
 
     m_data->engine.freeSlotIndices.pop_back();
@@ -1459,5 +1659,6 @@ glm::vec3 AudioEngine::getListenerUp() const {
 void AudioEngine::update(float deltaSeconds) {
     std::unique_lock lock(m_data->engine.engineMutex);
     processCmdsFromAudioThread();
+    trySendAssetData();
     sendCommandsToAudioThread();
 }
