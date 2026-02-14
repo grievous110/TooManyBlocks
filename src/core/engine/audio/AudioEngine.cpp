@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <queue>
 #include <shared_mutex>
+#include <sstream>
 #include <unordered_map>
 
 #include "Logger.h"
@@ -872,6 +873,8 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
     }
 
     unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
+    m_data->engine.freeSlotIndices.pop_back();
+    
     m_data->engine.usedAssets[nextIndex] = asset;
 
     ensureFullyLoaded(asset, m_data->engine);
@@ -888,7 +891,6 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
     slot.isActive = true;
     slot.isPlaying = true;
 
-    m_data->engine.freeSlotIndices.pop_back();
     return {nextIndex, m_data->engine.slotVersions[nextIndex]};
 }
 
@@ -930,6 +932,8 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
     }
 
     unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
+    m_data->engine.freeSlotIndices.pop_back();
+
     m_data->engine.usedAssets[nextIndex] = asset;
 
     ensureMetadata(asset, m_data->engine);
@@ -947,8 +951,6 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
     slot.isPlaying = true;
     slot.isStreamed = true;
     slot.streamSlot = freeSlot;
-
-    m_data->engine.freeSlotIndices.pop_back();
 
     freeSlot->isActive = true;
 
@@ -1491,7 +1493,7 @@ float AudioEngine::getBusVolume(unsigned int busId) const {
 
 int AudioEngine::getBusParent(unsigned int busId) const {
     std::shared_lock lock(m_data->engine.engineMutex);
-    if (busId >= MIXING_BUS_LIMIT) return 0.0f;
+    if (busId >= MIXING_BUS_LIMIT) return 0;
 
     return m_data->engine.mixingBuses[busId].parent;
 }

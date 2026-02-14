@@ -7,14 +7,14 @@
 
 void Transform::recalculateModelMatrix() const {
     glm::mat3 rot = glm::mat3_cast(m_rotation);
-    rot *= m_scale; // Bake in scale
-    
+    rot *= m_scale;  // Bake in scale
+
     // Directly reassign values in place
     m_modelMatrix[0] = glm::vec4(rot[0], 0.0f);
     m_modelMatrix[1] = glm::vec4(rot[1], 0.0f);
     m_modelMatrix[2] = glm::vec4(rot[2], 0.0f);
     m_modelMatrix[3] = glm::vec4(m_position, 1.0f);
-    
+
     // Commented out original equivalent but slower version cause of matrix multiplications overhead
     // m_modelMatrix = glm::mat4(1.0f);
     // m_modelMatrix = glm::translate(m_modelMatrix, m_position) * glm::mat4_cast(m_rotation) *
@@ -69,8 +69,20 @@ void Transform::scale(float factor) {
 }
 
 void Transform::lookAt(const glm::vec3& target, const glm::vec3& up) {
-    glm::mat4 lookAtMatrix = glm::lookAt(m_position, target, up);
-    m_rotation = glm::quat_cast(lookAtMatrix);
+    // glm::mat4 lookAtMatrix = glm::lookAt(m_position, target, up);
+    // m_rotation = glm::quat_cast(lookAtMatrix);
+
+    // TODO Test if this works
+    glm::vec3 forward = glm::normalize(target - m_position);
+    glm::vec3 right = glm::normalize(glm::cross(up, forward));
+    glm::vec3 newUp = glm::cross(forward, right);
+
+    glm::mat3 rotationMatrix;
+    rotationMatrix[0] = right;
+    rotationMatrix[1] = newUp;
+    rotationMatrix[2] = forward;
+
+    m_rotation = glm::quat_cast(rotationMatrix);
     m_dirty = true;
 }
 
