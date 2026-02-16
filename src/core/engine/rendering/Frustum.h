@@ -2,8 +2,8 @@
 #define TOOMANYBLOCKS_FRUSTUM_H
 
 #include <glm/glm.hpp>
+#include <vector>
 
-#include "datatypes/RawBuffer.h"
 #include "engine/rendering/Renderable.h"
 
 class Frustum {
@@ -19,7 +19,9 @@ public:
 };
 
 void cullObjectsOutOfView(
-    const std::vector<Renderable*>& meshes, RawBuffer<Renderable*>& outputBuffer, const glm::mat4& viewProj
+    const std::vector<Renderable*>& meshes,
+    std::vector<Renderable*>& outputBuffer,
+    const glm::mat4& viewProj
 );
 
 #endif

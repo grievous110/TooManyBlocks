@@ -26,15 +26,11 @@ private:
     Texture m_ssaoNoiseTexture;
     glm::vec3* m_ssaoSamples;
 
-    bool isInitialized;
-
     void createBuffers();
 
 public:
-    SSAOProcessor() : m_ssaoBufferWidth(0), m_ssaoBufferHeight(0), m_ssaoSamples(nullptr), isInitialized(false) {};
+    SSAOProcessor();
     ~SSAOProcessor();
-
-    void initialize();
 
     void validateBuffers(const ApplicationContext& context);
     void prepareSSAOGBufferPass(const ApplicationContext& context);

@@ -150,6 +150,15 @@ ParticleSystem::ParticleSystem(const std::vector<GenericGPUParticleModule>& modu
     m_modulesUBO = UniformBuffer::create(modules.data(), modules.size() * sizeof(GenericGPUParticleModule));
 }
 
+void ParticleSystem::draw() const {
+    if (m_switched) {
+        m_renderVAO1.bind();
+    } else {
+        m_renderVAO2.bind();
+    }
+    GLCALL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_allocatedParticleCount));
+}
+
 void ParticleSystem::switchBuffers() { m_switched = !m_switched; }
 
 void ParticleSystem::compute() {
@@ -163,15 +172,6 @@ void ParticleSystem::compute() {
     GLCALL(glBeginTransformFeedback(GL_POINTS));
     GLCALL(glDrawArrays(GL_POINTS, 0, m_allocatedParticleCount));
     GLCALL(glEndTransformFeedback());
-}
-
-void ParticleSystem::draw() const {
-    if (m_switched) {
-        m_renderVAO1.bind();
-    } else {
-        m_renderVAO2.bind();
-    }
-    GLCALL(glDrawArraysInstanced(GL_TRIANGLES, 0, 6, m_allocatedParticleCount));
 }
 
 void ParticleSystem::reset() {

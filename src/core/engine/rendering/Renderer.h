@@ -1,14 +1,19 @@
 #ifndef TOOMANYBLOCKS_RENDERER_H
 #define TOOMANYBLOCKS_RENDERER_H
 
-#include <functional>
-#include <mutex>
+#include <array>
+#include <memory>
+#include <vector>
 
 #include "compatability/Compatability.h"
 #include "engine/env/lights/Light.h"
-#include "engine/rendering/LightProcessor.h"
 #include "engine/rendering/Renderable.h"
-#include "engine/rendering/SSAOProcessor.h"
+#include "engine/rendering/lowlevelapi/Texture.h"
+#include "engine/rendering/lowlevelapi/UniformBuffer.h"
+#include "engine/rendering/lowlevelapi/VertexArray.h"
+#include "engine/rendering/lowlevelapi/VertexBuffer.h"
+#include "engine/rendering/renderpasses/DebugReport.h"
+#include "engine/rendering/renderpasses/Renderpass.h"
 
 struct ApplicationContext;
 
@@ -58,28 +63,29 @@ struct RenderContext {
     SSAOInfo ssaoInfo;
 };
 
+struct RenderResources {
+    const std::vector<Light*>* lightsToRender;
+    const std::vector<Renderable*>* objectsToRender;
+
+    std::vector<Light*> priodLightsBuffer;
+    std::vector<Renderable*> culledObjectsBuffer;
+};
+
 class Renderer {
 private:
     std::vector<Light*> m_lightsToRender;
     std::vector<Renderable*> m_objectsToRender;
 
-    RawBuffer<Light*> m_priodLigthsBuffer;
-
     VertexArray m_fullScreenQuad_vao;
     VertexBuffer m_fullScreenQuad_vbo;
 
     RenderContext m_currentRenderContext;
-    LightProcessor m_lightProcessor;
-    SSAOProcessor m_ssaoProcessor;
+    RenderResources m_renderResources;
+    std::vector<std::unique_ptr<Renderpass>> renderpasses;
 
-    void beginTransformFeedbackPass(const ApplicationContext& context);
-    void endTransformFeedbackPass(const ApplicationContext& context);
-    void beginShadowpass(const ApplicationContext& context);
-    void endShadowpass(const ApplicationContext& context);
-    void beginAmbientOcclusionPass(const ApplicationContext& context);
-    void endAmbientOcclusionPass(const ApplicationContext& context);
-    void beginMainpass(const ApplicationContext& context);
-    void endMainpass(const ApplicationContext& context);
+    int m_lastLightCount;
+    int m_lastObjectCount;
+    float m_lastRenderTimeMs;
 
 public:
     void initialize();
@@ -91,6 +97,8 @@ public:
     void render(const ApplicationContext& context);
 
     void drawFullscreenQuad();
+
+    void fillDebugReport(DebugReport& report) const;
 };
 
 #endif

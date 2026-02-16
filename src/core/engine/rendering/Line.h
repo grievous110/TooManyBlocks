@@ -13,8 +13,6 @@ private:
     BoundingBox m_bounds;
     float m_lineWidth;
 
-    void draw() const override;
-
 public:
     Line(
         const glm::vec3& start,
@@ -23,6 +21,8 @@ public:
         std::shared_ptr<Material> material = nullptr
     );
     virtual ~Line() = default;
+
+    void draw() const override;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }
 

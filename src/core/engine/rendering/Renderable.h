@@ -8,17 +8,14 @@
 #include "engine/rendering/mat/Material.h"
 
 class Renderable : public SceneComponent {
-    friend class Renderer;
-
-private:
-    virtual void draw() const = 0;
-
 protected:
     std::shared_ptr<Material> m_material;
 
 public:
     Renderable(std::shared_ptr<Material> material = nullptr) : m_material(material) {}
     virtual ~Renderable() = default;
+
+    virtual void draw() const = 0;
 
     virtual bool isReady() const { return m_material && m_material->isReady(); }
 

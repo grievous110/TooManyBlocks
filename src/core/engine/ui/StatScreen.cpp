@@ -9,6 +9,8 @@
 #include "engine/GameInstance.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/entity/Entity.h"
+#include "engine/rendering/Renderer.h"
+#include "engine/ui/UiUtil.h"
 #include "engine/ui/fonts/FontUtil.h"
 #include "util/PrettyPrint.h"
 
@@ -52,6 +54,14 @@ void UI::StatScreen::render(ApplicationContext& context) {
             formatBytes(context.stats.processIo.bytesWritten, ByteUnit::Bytes),
             context.stats.processIo.writeCalls
         );
+
+        m_renderDebugReportAccumulator += context.stats.deltaAppTime;
+        if (m_renderDebugReportAccumulator > 0.1f) {
+            m_renderDebugReportAccumulator = 0.0f;
+            m_report.clear();
+            context.renderer->fillDebugReport(m_report);
+        }
+        UI::Util::DrawDebugNode(m_report.getRoot());
 
         ImGui::SeparatorText("World Info");
         ImGui::Text("Loaded chunks: %lu", context.instance->m_world->loadedChunks().size());
