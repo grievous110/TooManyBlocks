@@ -26,14 +26,18 @@ namespace UI::Util {
 
         // Horizontal line
         drawList->AddLine(
-            ImVec2(center.x - crossSize / 2, center.y), ImVec2(center.x + crossSize / 2, center.y),
-            IM_COL32(255, 255, 255, 255), thickness
+            ImVec2(center.x - crossSize / 2, center.y),
+            ImVec2(center.x + crossSize / 2, center.y),
+            IM_COL32(255, 255, 255, 255),
+            thickness
         );
 
         // Vertical line
         drawList->AddLine(
-            ImVec2(center.x, center.y - crossSize / 2), ImVec2(center.x, center.y + crossSize / 2),
-            IM_COL32(255, 255, 255, 255), thickness
+            ImVec2(center.x, center.y - crossSize / 2),
+            ImVec2(center.x, center.y + crossSize / 2),
+            IM_COL32(255, 255, 255, 255),
+            thickness
         );
     }
 
@@ -70,5 +74,28 @@ namespace UI::Util {
         drawList->AddText(ImVec2(endX.x + 2, endX.y), IM_COL32(255, 0, 0, 255), xLabel);
         drawList->AddText(ImVec2(endY.x + 2, endY.y), IM_COL32(0, 255, 0, 255), yLabel);
         drawList->AddText(ImVec2(endZ.x + 2, endZ.y), IM_COL32(0, 0, 255, 255), zLabel);
+    }
+
+    void DrawDebugNode(const DebugNode& node) {
+        for (const DebugValue& v : node.values) {
+            switch (v.type) {
+                case DebugValueType::Int: ImGui::Text("%s: %d", v.name, v.intValue); break;
+
+                case DebugValueType::Float: ImGui::Text("%s: %.3f", v.name, v.floatValue); break;
+
+                case DebugValueType::TimeMs: ImGui::Text("%s: %.3f ms", v.name, v.floatValue); break;
+            }
+        }
+
+        for (const DebugNode& child : node.children) {
+            ImGui::Spacing();
+            ImGui::SeparatorText(child.name);
+
+            ImGui::Indent();
+
+            DrawDebugNode(child);
+
+            ImGui::Unindent();
+        }
     }
 }  // namespace UI::Util

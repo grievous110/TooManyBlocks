@@ -13,8 +13,6 @@ private:
     BoundingBox m_bounds;
     float m_lineWidth;
 
-    void draw() const override;
-
 public:
     static Wireframe fromBoundigBox(const BoundingBox& bbox);
 
@@ -26,6 +24,8 @@ public:
     )
         : Renderable(material), m_data(renderData), m_bounds(bounds), m_lineWidth(lineWidth) {}
     virtual ~Wireframe() = default;
+
+    void draw() const override;
 
     inline void setLineWidth(float lineWidth) { m_lineWidth = lineWidth; }
 

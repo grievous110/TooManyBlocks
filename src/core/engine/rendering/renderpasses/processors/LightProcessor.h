@@ -3,8 +3,8 @@
 
 #include <array>
 #include <glm/glm.hpp>
+#include <vector>
 
-#include "datatypes/RawBuffer.h"
 #include "engine/env/lights/Light.h"
 #include "engine/rendering/lowlevelapi/FrameBuffer.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
@@ -19,31 +19,27 @@ private:
     std::array<unsigned int, LightPriority::Count> m_shadowMapSizes;
     std::array<unsigned int, LightPriority::Count> m_maxShadowMapsPerPriority;
 
-    RawBuffer<GPULight> m_lightBuffer;
+    std::vector<GPULight> m_lightBuffer;
     UniformBuffer m_lightUniformBuffer;
 
-    RawBuffer<glm::mat4> m_lightViewProjectionBuffer;
+    std::vector<glm::mat4> m_lightViewProjectionBuffer;
     UniformBuffer m_lightViewProjectionUniformBuffer;
 
-    bool isInitialized;
-
 public:
-    static void prioritizeLights(
+    static std::array<unsigned int, LightPriority::Count> prioritizeLights(
         const std::vector<Light*>& lights,
-        RawBuffer<Light*>& outputBuffer,
+        std::vector<Light*>& outputBuffer,
         const std::array<unsigned int, LightPriority::Count>& maxShadowMapsPerPriority,
         const RenderContext& context
     );
 
-    LightProcessor() : m_totalSupportedLights(0), isInitialized(false) {}
-
-    void initialize();
+    LightProcessor();
 
     void clearShadowMaps();
 
     void prepareShadowPass(const Light* light);
 
-    void updateBuffers(const RawBuffer<Light*>& activeLights);
+    void updateBuffers(const std::vector<Light*>& activeLights);
 
     std::array<Texture*, LightPriority::Count> getShadowMapAtlases() const;
 

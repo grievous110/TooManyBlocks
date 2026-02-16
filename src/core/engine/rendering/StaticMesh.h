@@ -18,20 +18,20 @@ public:
     };
 
     struct Internal {
-       std::shared_ptr<Shared> shared;
-       Instance instance;
+        std::shared_ptr<Shared> shared;
+        Instance instance;
     };
 
 private:
     Future<Internal> m_internalHandle;
-
-    void draw() const override;
 
 public:
     StaticMesh() = default;
     StaticMesh(const Future<Internal>& internalHandle, std::shared_ptr<Material> material = nullptr)
         : Renderable(material), m_internalHandle(internalHandle) {}
     virtual ~StaticMesh() = default;
+
+    void draw() const override;
 
     inline bool isReady() const override { return Renderable::isReady() && m_internalHandle.isReady(); }
 

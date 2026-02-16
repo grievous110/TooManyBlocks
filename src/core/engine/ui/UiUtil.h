@@ -2,6 +2,7 @@
 #define TOOMANYBLOCKS_UIUTIL_H
 
 #include <glm/vec3.hpp>
+#include "engine/rendering/renderpasses/DebugReport.h"
 
 namespace UI::Util {
     void CenterPopup();
@@ -19,6 +20,8 @@ namespace UI::Util {
         const char* yLabel = "Y",
         const char* zLabel = "Z"
     );
+
+    void DrawDebugNode(const DebugNode& node);
 }  // namespace UI::Util
 
 #endif

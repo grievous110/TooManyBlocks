@@ -6,11 +6,6 @@
 
 #include "engine/rendering/GLUtils.h"
 
-void Wireframe::draw() const {
-    GLCALL(glLineWidth(m_lineWidth));
-    m_data->drawAs(GL_LINES);
-}
-
 Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
     glm::vec3 corners[8] = {
         {bbox.min.x, bbox.min.y, bbox.min.z},  // 0
@@ -45,6 +40,11 @@ Wireframe Wireframe::fromBoundigBox(const BoundingBox& bbox) {
         std::make_shared<IndexedRenderData>(std::move(vao), std::move(vbo), std::move(ibo));
 
     return Wireframe(renderData, bbox);
+}
+
+void Wireframe::draw() const {
+    GLCALL(glLineWidth(m_lineWidth));
+    m_data->drawAs(GL_LINES);
 }
 
 BoundingBox Wireframe::getBoundingBox() const { return m_bounds; }

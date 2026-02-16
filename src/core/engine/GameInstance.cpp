@@ -28,7 +28,6 @@
 #include "engine/resource/providers/CPUAssetProvider.h"
 #include "rendering/StaticMesh.h"
 #include "threading/Future.h"
-#include "threading/ThreadPool.h"
 
 GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr) {}
 
@@ -45,7 +44,7 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_playerController = new PlayerController;
         m_player = new Player;
         m_world = newWorld;
-        m_world->setChunkLoadingDistance(2);
+        m_world->setChunkLoadingDistance(3);
         m_playerController->possess(m_player);
 
         CPUAssetProvider* provider = Application::getContext()->provider;
@@ -157,7 +156,7 @@ void GameInstance::deinitWorld() {
 
 void GameInstance::pushWorldRenderData() {
     ApplicationContext* context = Application::getContext();
-    
+
     Renderer* renderer = context->renderer;
     for (const auto& light : m_lights) {
         renderer->submitLight(light.get());

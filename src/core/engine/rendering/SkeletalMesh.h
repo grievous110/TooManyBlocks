@@ -36,13 +36,13 @@ private:
     Future<Internal> m_internalHandle;
     Animation* m_activeAnim;
 
-    void draw() const override;
-
 public:
     SkeletalMesh() : m_activeAnim(nullptr) {}
     SkeletalMesh(const Future<Internal>& internalHandle, std::shared_ptr<Material> material = nullptr)
         : Renderable(material), m_internalHandle(internalHandle), m_activeAnim(nullptr) {}
     virtual ~SkeletalMesh() = default;
+
+    void draw() const override;
 
     bool playAnimation(const std::string& animation, bool loop = false, bool restart = true);
 

@@ -1,12 +1,8 @@
 #ifndef TOOMANYBLOCKS_BOUNDINGVOLUME_H
 #define TOOMANYBLOCKS_BOUNDINGVOLUME_H
 
-#include <array>
 #include <cfloat>
 #include <glm/glm.hpp>
-
-#include "datatypes/RawBuffer.h"
-#include "engine/env/lights/Light.h"
 
 struct BoundingSphere {
     glm::vec3 center;

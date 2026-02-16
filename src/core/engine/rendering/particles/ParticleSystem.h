@@ -40,7 +40,7 @@ private:
     float m_accumulatedTime;
     float m_spawnAccumulator;
     float m_spawnRate;
-    std::vector<std::tuple<float, float, bool>> m_burstSpawns; // Delay, Amount, Fired flag
+    std::vector<std::tuple<float, float, bool>> m_burstSpawns;  // Delay, Amount, Fired flag
 
     unsigned int m_spawnCount;
     unsigned int m_particleSpawnOffset;
@@ -48,11 +48,11 @@ private:
     unsigned int m_allocatedParticleCount;
     uint32_t m_flags;
 
-    virtual void draw() const override;
-
 public:
     ParticleSystem(const std::vector<GenericGPUParticleModule>& modules);
     virtual ~ParticleSystem() = default;
+
+    virtual void draw() const override;
 
     void switchBuffers();
 
