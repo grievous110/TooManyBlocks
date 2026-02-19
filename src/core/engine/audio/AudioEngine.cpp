@@ -94,26 +94,26 @@ struct AudioEngineData {
 };
 
 void ensureMetadata(AudioAsset* asset, EngineState& engineState) {
-    std::lock_guard assetLock(asset->mtx);
+    std::lock_guard<std::mutex> assetLock(asset->mtx);
 
     if (asset->state == AudioAsset::State::Unloaded) {
         asset->state = AudioAsset::State::MetadataLoading;
 
-        std::lock_guard lock(engineState.loaderData.loadMtx);
+        std::lock_guard<std::mutex> lock(engineState.loaderData.loadMtx);
         engineState.loaderData.pendingLoads.push(asset);
         engineState.loaderData.loaderCV.notify_one();
     }
 }
 
 void ensureFullyLoaded(AudioAsset* asset, EngineState& engineState) {
-    std::lock_guard assetLock(asset->mtx);
+    std::lock_guard<std::mutex> assetLock(asset->mtx);
 
     asset->isFullLoadRequested = true;
     switch (asset->state) {
         case AudioAsset::State::Unloaded: {
             asset->state = AudioAsset::State::MetadataLoading;
 
-            std::lock_guard lock(engineState.loaderData.loadMtx);
+            std::lock_guard<std::mutex> lock(engineState.loaderData.loadMtx);
             engineState.loaderData.pendingLoads.push(asset);
             engineState.loaderData.loaderCV.notify_one();
             break;
@@ -122,7 +122,7 @@ void ensureFullyLoaded(AudioAsset* asset, EngineState& engineState) {
         case AudioAsset::State::MetadataReady: {
             asset->state = AudioAsset::State::FullLoading;
 
-            std::lock_guard lock(engineState.loaderData.loadMtx);
+            std::lock_guard<std::mutex> lock(engineState.loaderData.loadMtx);
             engineState.loaderData.pendingLoads.push(asset);
             engineState.loaderData.loaderCV.notify_one();
             break;
@@ -389,7 +389,7 @@ void AudioEngine::streamWorkerLoop() {
     while (true) {
         for (StreamBufferSlot& slot : streamData->streamSlots) {
             if (m_stopThreads.load()) return;
-            std::lock_guard lock(slot.streamingMtx);
+            std::lock_guard<std::mutex> lock(slot.streamingMtx);
             if (!slot.isActive) continue;
 
             if (slot.seekTargetFrameIdx != SIZE_MAX) {
@@ -460,7 +460,7 @@ void AudioEngine::audioLoadWorkerLoop() {
         if (ma_decoder_init_file(asset->assetPath.c_str(), &m_data->engine.decoderConfig, &decoder) != MA_SUCCESS) {
             lgr::lout.error("Failed to init decoder for audio file: " + asset->assetPath);
 
-            std::lock_guard lock(asset->mtx);
+            std::lock_guard<std::mutex> lock(asset->mtx);
             asset->state = AudioAsset::State::Failed;
             continue;
         }
@@ -469,7 +469,7 @@ void AudioEngine::audioLoadWorkerLoop() {
 
         // ---- Metadata Stage ----
         {
-            std::lock_guard lock(asset->mtx);
+            std::lock_guard<std::mutex> lock(asset->mtx);
             doMetadata = asset->state == AudioAsset::State::MetadataLoading;
         }
 
@@ -478,10 +478,10 @@ void AudioEngine::audioLoadWorkerLoop() {
             if (ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount) != MA_SUCCESS) {
                 lgr::lout.error("Failed to read pcm length: " + asset->assetPath);
 
-                std::lock_guard lock(asset->mtx);
+                std::lock_guard<std::mutex> lock(asset->mtx);
                 asset->state = AudioAsset::State::Failed;
             } else {
-                std::lock_guard lock(asset->mtx);
+                std::lock_guard<std::mutex> lock(asset->mtx);
 
                 asset->totalFrames = frameCount;
                 asset->state = asset->isFullLoadRequested ? AudioAsset::State::FullLoading
@@ -493,7 +493,7 @@ void AudioEngine::audioLoadWorkerLoop() {
         ma_uint64 frameCount = 0;
 
         {
-            std::lock_guard lock(asset->mtx);
+            std::lock_guard<std::mutex> lock(asset->mtx);
 
             // If the asset requested full load and it's not yet fully loaded
             if ((asset->state == AudioAsset::State::FullLoading) ||
@@ -510,7 +510,7 @@ void AudioEngine::audioLoadWorkerLoop() {
             ma_uint64 framesRead = 0;
             ma_result result = ma_decoder_read_pcm_frames(&decoder, pcm.data(), frameCount, &framesRead);
 
-            std::lock_guard lock(asset->mtx);
+            std::lock_guard<std::mutex> lock(asset->mtx);
             if (result != MA_SUCCESS || framesRead != frameCount) {
                 lgr::lout.error("Failed to read audio file: " + asset->assetPath);
                 asset->state = AudioAsset::State::Failed;
@@ -544,7 +544,7 @@ void AudioEngine::processCmdsFromAudioThread() {
                 switch (cmd.type) {
                     case AudioCmdType::Stop: {
                         if (slot.isStreamed) {
-                            std::lock_guard lock(slot.streamSlot->streamingMtx);
+                            std::lock_guard<std::mutex> lock(slot.streamSlot->streamingMtx);
                             slot.streamSlot->isActive = false;
                             slot.streamSlot->isLooping = false;
                             slot.streamSlot->seekTargetFrameIdx = SIZE_MAX;
@@ -566,7 +566,7 @@ void AudioEngine::processCmdsFromAudioThread() {
 
                     case AudioCmdType::SkipByRequest: {
                         if (slot.isActive && slot.isStreamed) {
-                            std::lock_guard lock(slot.streamSlot->streamingMtx);
+                            std::lock_guard<std::mutex> lock(slot.streamSlot->streamingMtx);
                             // Set the new frame index for streamed audio
                             slot.streamSlot->seekTargetFrameIdx = cmd.type == AudioCmdType::SkipToRequest
                                                                       ? cmd.data.skipTo.newFrameIndex
@@ -620,7 +620,7 @@ void AudioEngine::resolveAndSendAssetData() {
         if (!slot.isActive || slot.audioData != nullptr) continue;
 
         AudioAsset* asset = m_data->engine.usedAssets[i];
-        std::lock_guard lock(asset->mtx);
+        std::lock_guard<std::mutex> lock(asset->mtx);
         if (slot.isStreamed) {
             if (asset->state == AudioAsset::State::MetadataReady ||
                 asset->state == AudioAsset::State::FullLoading ||
@@ -904,7 +904,7 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
 
     StreamBufferSlot* freeSlot = nullptr;
     for (StreamBufferSlot& slot : m_data->engine.streamData.streamSlots) {
-        std::lock_guard lock(slot.streamingMtx);
+        std::lock_guard<std::mutex> lock(slot.streamingMtx);
         if (!slot.isActive) {
             freeSlot = &slot;
             break;
@@ -1158,7 +1158,7 @@ void AudioEngine::setLooping(AudioInstance instance, bool looping) {
 
     slot.isLooping = looping;
     if (slot.isStreamed) {
-        std::lock_guard lock(slot.streamSlot->streamingMtx);
+        std::lock_guard<std::mutex> lock(slot.streamSlot->streamingMtx);
         slot.streamSlot->isLooping = true;
     }
 
