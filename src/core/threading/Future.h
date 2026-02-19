@@ -93,7 +93,7 @@ private:
             return;  // already completed by other means
         }
 
-        std::lock_guard lock(state->mtx);
+        std::lock_guard<std::mutex> lock(state->mtx);
         if constexpr (!std::is_void_v<T>) {
             state->value.emplace(std::move(v));
         }
@@ -107,7 +107,7 @@ private:
             return;  // already completed by other means
         }
 
-        std::lock_guard lock(state->mtx);
+        std::lock_guard<std::mutex> lock(state->mtx);
         state->exception = e;
 
         onCompleted();
@@ -140,7 +140,7 @@ private:
     void trySchedule() {
         if (isEmpty()) throw std::runtime_error("Cannot schedule empty future");
 
-        std::lock_guard(state->mtx);
+        std::lock_guard<std::mutex> lock(state->mtx);
         if (state->unresolvedDeps.load() > 0) {
             return;
         }
@@ -179,8 +179,8 @@ public:
             throw std::runtime_error("Trying to add dependency to a finalized future");
 
         // Hold both locks to avoid concurrent state changes
-        std::lock_guard lock(state->mtx);
-        std::lock_guard otherLock(other.state->mtx);
+        std::lock_guard<std::mutex> lock(state->mtx);
+        std::lock_guard<std::mutex> otherLock(other.state->mtx);
 
         if (other.isReady()) return *this;
 
