@@ -5,6 +5,8 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <cstring>
 #include <glm/glm.hpp>
 #include <mutex>
@@ -20,11 +22,12 @@ constexpr unsigned int AUDIO_INSTANCE_LIMIT = 256;
 constexpr unsigned int COMMAND_QUEUE_CAPACITY = 512;
 constexpr unsigned int STREAM_CAPACITY = 8;
 constexpr unsigned int STREAM_BUFFER_DURATION_SEC = 1;
-constexpr unsigned int STREAM_FRAMES_PER_CHUNK = 8192;
 constexpr unsigned int FORMAT_CHANNELS = 2;
 constexpr unsigned int FORMAT_FRAME_RATE = 48000;
 constexpr unsigned int PREBUFFER_FRAME_COUNT = 4;
 constexpr unsigned int FRAMES_PER_PERIOD = 512;
+constexpr float SAFETY_STREAM_BUFFER_TIME = 0.5f;
+constexpr float SAFETY_STREAM_BUFFER_FRAMES = SAFETY_STREAM_BUFFER_TIME * FORMAT_FRAME_RATE;
 constexpr float FRAME_DURATION = 1000.0f / static_cast<float>(FORMAT_FRAME_RATE);
 constexpr size_t SAMPLE_BYTE_SIZE = sizeof(float);
 constexpr size_t FRAME_BYTE_SIZE = FORMAT_CHANNELS * SAMPLE_BYTE_SIZE;
@@ -146,37 +149,37 @@ struct AudioCmdKeyHash {
 
 struct LowpassConfig {
     bool enabled;
-    float cutoffHz; // Only allow frequencies below this
+    float cutoffHz;  // Only allow frequencies below this
 };
 
 struct HighpassConfig {
     bool enabled;
-    float cutoffHz; // Only allow frequencies above this
+    float cutoffHz;  // Only allow frequencies above this
 };
 
 struct LowpassState {
     float yPrev;
-    float alpha; // Constant derived from cutoffHz
+    float alpha;  // Constant derived from cutoffHz
 };
 
 struct HighpassState {
     float yPrev;
     float xPrev;
-    float alpha; // Constant derived from cutoffHz
+    float alpha;  // Constant derived from cutoffHz
 };
 
 struct CombFilter {
     float* buffer;
-    unsigned int bufferSize; // delay length in samples
+    unsigned int bufferSize;  // delay length in samples
     unsigned int currPosition;
-    float delayMs; // Duration of buffer
+    float delayMs;  // Duration of buffer
     float feedback;
     float lastSample;
 };
 
 struct AllPassFilter {
     float* buffer;
-    unsigned int bufferSize; // delay length in samples
+    unsigned int bufferSize;  // delay length in samples
     unsigned int currPosition;
     float feedback;
     float lastSample;
@@ -229,7 +232,7 @@ struct AudioInstanceState {
     LowpassState lowpassStates[FORMAT_CHANNELS];
     HighpassState highpassStates[FORMAT_CHANNELS];
 
-    struct Mix { // Mixing info, lazily computed
+    struct Mix {  // Mixing info, lazily computed
         float totalPitch;
         float channelGains[FORMAT_CHANNELS];
         bool dirty;
@@ -290,6 +293,10 @@ struct AudioThreadState {
     AudioInstanceSlot audioInstSlots[AUDIO_INSTANCE_LIMIT];
     AudioInstanceState audioInstStates[AUDIO_INSTANCE_LIMIT];
     ReverbInstanceSlot reverbInstSlots[REVERB_INSTANCE_LIMIT];
+
+    std::atomic<bool>* streamWakeRequested;
+    std::condition_variable* streamWakeCV;
+
     float* resolvedBusVolumes;
     ListenerState listenerState;
 };
@@ -299,7 +306,9 @@ struct AudioThreadContext {
     AudioThreadState* audio;
 };
 
-inline bool isNearZero(const glm::vec3& v) { return glm::all(glm::lessThan(glm::abs(v), glm::vec3(NEAR_ZERO_EPSILON))); }
+inline bool isNearZero(const glm::vec3& v) {
+    return glm::all(glm::lessThan(glm::abs(v), glm::vec3(NEAR_ZERO_EPSILON)));
+}
 
 template <typename T>
 size_t rbWriteElements(ma_rb* rb, const T* elements, size_t count) {

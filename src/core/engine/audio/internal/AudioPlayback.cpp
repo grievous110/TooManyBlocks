@@ -35,7 +35,7 @@ static FetchResult fetchFrames(
         }
     } else {
         const float* pcm = (float*)slot.audioData;
-        std::memcpy(dst, pcm + (frameIndex * FORMAT_CHANNELS), samplesToRead * sizeof(float));
+        std::memcpy(dst, pcm + (frameIndex * FORMAT_CHANNELS), samplesToRead * SAMPLE_BYTE_SIZE);
         *framesRead = framesToRead;
     }
     return framesToRead < frameCount ? FetchResult::EndReached : FetchResult::Success;
@@ -87,7 +87,7 @@ static void shiftPrebufferWindow(AudioInstanceSlot& slot, unsigned int offset) {
     unsigned int samplesToMove = framesRemaining * FORMAT_CHANNELS;
 
     const float* src = slot.state->prebuffer + (offset * FORMAT_CHANNELS);
-    std::memmove(slot.state->prebuffer, src, samplesToMove * sizeof(float));
+    std::memmove(slot.state->prebuffer, src, samplesToMove * SAMPLE_BYTE_SIZE);
 
     slot.state->validPrebufferFrames = framesRemaining;
 }
@@ -313,6 +313,22 @@ static float caclulatePitch(const AudioInstanceSlot& slot, const ListenerState& 
     return std::clamp<float>(resultPitch, 0.25f, 4.0f);
 }
 
+static void checkRemainingSampleAvailability(const AudioThreadContext* context, const AudioInstanceSlot& slot) {
+    if (!slot.isStreamed) return;
+
+    size_t availableSamples = ma_rb_available_read((ma_rb*)slot.audioData) / SAMPLE_BYTE_SIZE;
+    size_t availableFrames = availableSamples / FORMAT_CHANNELS;
+    if (availableFrames * slot.pitch <= SAFETY_STREAM_BUFFER_FRAMES) {
+        if (slot.state->currentFrameIndex + availableFrames >= slot.totalPcmFrames && !slot.isLooping) {
+            return;
+        }
+
+        // Notify streaming thread that more data is needed
+        context->audio->streamWakeRequested->store(true);
+        context->audio->streamWakeCV->notify_one();
+    }
+}
+
 static void mixInstance(const AudioThreadContext* context, AudioInstanceSlot& slot, float* out, size_t frameCount) {
     ReverbInstanceSlot& revSlot = context->audio->reverbInstSlots[slot.reverbId];
 
@@ -366,6 +382,8 @@ static void mixInstance(const AudioThreadContext* context, AudioInstanceSlot& sl
             return;
         }
     }
+
+    checkRemainingSampleAvailability(context, slot);
 }
 
 static void processCmdsFromMain(AudioThreadContext* context) {
