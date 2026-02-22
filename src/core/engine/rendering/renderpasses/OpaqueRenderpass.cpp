@@ -1,4 +1,4 @@
-#include "MainRenderpass.h"
+#include "OpaqueRenderpass.h"
 
 #include <GL/glew.h>
 
@@ -11,10 +11,13 @@
 #include "engine/rendering/Frustum.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/Renderer.h"
-#include "engine/rendering/lowlevelapi/FrameBuffer.h"
 
-void MainRenderpass::prepare(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
-    FrameBuffer::bindDefault();
+void OpaqueRenderpass::prepare(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
+    if (context.screenResChanged) {
+        createBuffers(context);
+    }
+
+    m_opaqueBuffer.bind();
     GLCALL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     glm::uvec2 screenRes = context.currScreenRes;
     GLCALL(glViewport(0, 0, screenRes.x, screenRes.y));
@@ -28,14 +31,14 @@ void MainRenderpass::prepare(RenderContext& context, RenderResources& resources,
     }
 }
 
-void MainRenderpass::execute(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
+void OpaqueRenderpass::execute(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
     m_objectsProcessed = 0;
 
     cullObjectsOutOfView(*resources.objectsToRender, resources.culledObjectsBuffer, context.tInfo.viewProjection);
-    batchByMaterialForPass(resources.culledObjectsBuffer, PassType::MainPass);
+    batchByMaterialForPass(resources.culledObjectsBuffer, PassType::OpaquePass);
 
     for (const auto& batch : m_materialBatches) {
-        batch.first->bindForPass(PassType::MainPass, context);
+        batch.first->bindForPass(PassType::OpaquePass, context);
 
         for (const Renderable* obj : batch.second) {
             if (const SkeletalMesh* sMesh = dynamic_cast<const SkeletalMesh*>(obj)) {
@@ -44,7 +47,7 @@ void MainRenderpass::execute(RenderContext& context, RenderResources& resources,
                 context.pInfo.flags = pSys->getFlags();
             }
             context.tInfo.meshTransform = obj->getRenderableTransform();
-            batch.first->bindForObjectDraw(PassType::MainPass, context);
+            batch.first->bindForObjectDraw(PassType::OpaquePass, context);
             obj->draw();
 
             m_objectsProcessed++;
@@ -54,17 +57,36 @@ void MainRenderpass::execute(RenderContext& context, RenderResources& resources,
     m_materialBatches.clear();
 }
 
-void MainRenderpass::cleanup(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
+void OpaqueRenderpass::cleanup(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
+    context.opaqueInfo.output = m_opaqueBuffer.getAttachedTextures().at(0).get();
+
     if (m_debugPolygonModeEnabled) {
         GLCALL(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
     }
 }
 
-const char* MainRenderpass::name() { return "Main Renderpass"; }
+OpaqueRenderpass::OpaqueRenderpass() : m_debugPolygonModeEnabled(false), m_objectsProcessed(0) {
+    m_opaqueBuffer = FrameBuffer::create();
+}
 
-void MainRenderpass::putDebugInfo(DebugReport& report) {
+const char* OpaqueRenderpass::name() { return "Main Renderpass"; }
+
+void OpaqueRenderpass::putDebugInfo(DebugReport& report) {
     report.beginGroup(name());
     report.addTimeMs("Processing Time", m_lastRunTimeMs);
     report.addCounter("Objects processed", static_cast<int>(m_objectsProcessed));
     report.endGroup();
+}
+
+void OpaqueRenderpass::createBuffers(RenderContext& context) {
+    m_opaqueBuffer.clearAttachedTextures();
+    m_opaqueBuffer.attachTexture(
+        std::make_shared<Texture>(
+            Texture::create(TextureType::Color, context.currScreenRes.x, context.currScreenRes.y, 3)
+        )
+    );
+    m_opaqueBuffer.attachTexture(
+        std::make_shared<Texture>(Texture::create(TextureType::Depth, context.currScreenRes.x, context.currScreenRes.y))
+    );
+    context.opaqueInfo.usedDepthTexture = m_opaqueBuffer.getAttachedDepthTexture();
 }

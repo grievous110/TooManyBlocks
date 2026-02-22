@@ -19,8 +19,6 @@ public:
 
     virtual bool isReady() const { return m_material && m_material->isReady(); }
 
-    virtual bool isTransparent() const { return m_material && m_material->isTransparent(); }
-
     virtual void assignMaterial(std::shared_ptr<Material> material) { m_material = material; }
 
     virtual std::shared_ptr<Material> getMaterial() const { return m_material; };

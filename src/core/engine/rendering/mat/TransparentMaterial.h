@@ -1,21 +1,25 @@
-#ifndef TOOMANYBLOCKS_SKELETALMATERIAL_H
-#define TOOMANYBLOCKS_SKELETALMATERIAL_H
+#ifndef TOOMANYBLOCKS_TRANSPARENTMATERIAL_H
+#define TOOMANYBLOCKS_TRANSPARENTMATERIAL_H
+
+#include <glm/vec4.hpp>
+#include <memory>
 
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
 #include "threading/Future.h"
 
-class SkeletalMaterial : public Material {
+class TransparentMaterial : public Material {
 private:
     Future<Shader> m_mainShader;
+    glm::vec4 m_color;
     Future<Texture> m_texture;
 
 public:
-    SkeletalMaterial(Future<Shader> mainShader, Future<Texture> texture)
-        : m_mainShader(mainShader), m_texture(texture) {}
+    TransparentMaterial(Future<Shader> mainShader, const glm::vec4 color, Future<Texture> texture = Future<Texture>())
+        : m_mainShader(mainShader), m_color(color), m_texture(texture) {}
 
-    virtual ~SkeletalMaterial() = default;
+    virtual ~TransparentMaterial() = default;
 
     bool isReady() const override;
 

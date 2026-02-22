@@ -18,9 +18,6 @@ void SSAORenderpass::prepare(RenderContext& context, RenderResources& resources,
     context.tInfo.view = appContext.instance->m_player->getCamera()->getViewMatrix();
     context.tInfo.viewportTransform = appContext.instance->m_player->getCamera()->getGlobalTransform();
     m_ssaoProcessor.validateBuffers(appContext);  // Possible resize sssao textures if resize happened
-    // Disable blending if enabled here cause rendering to textures that do not have 4 channels
-    // (alpha) will will be discarded. Blending expects a valid alpha component
-    // GLCALL(glDisable(GL_BLEND));
 }
 
 void SSAORenderpass::execute(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
@@ -54,7 +51,6 @@ void SSAORenderpass::execute(RenderContext& context, RenderResources& resources,
 }
 
 void SSAORenderpass::cleanup(RenderContext& context, RenderResources& resources, const ApplicationContext& appContext) {
-    // GLCALL(glEnable(GL_BLEND));
     context.ssaoInfo.output = m_ssaoProcessor.getOcclusionOutput();
 }
 

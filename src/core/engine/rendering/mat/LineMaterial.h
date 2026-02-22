@@ -2,7 +2,6 @@
 #define TOOMANYBLOCKS_LINEMATERIAL_H
 
 #include <glm/vec3.hpp>
-#include <memory>
 
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/mat/Material.h"

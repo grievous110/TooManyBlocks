@@ -9,7 +9,7 @@ bool ParticleMaterial::isReady() const {
 }
 
 bool ParticleMaterial::supportsPass(PassType passType) const {
-    return passType == PassType::TransformFeedback || passType == PassType::MainPass;
+    return passType == PassType::TransformFeedback || passType == PassType::OpaquePass;
 }
 
 void ParticleMaterial::bindForPass(PassType passType, const RenderContext& context) {
@@ -19,7 +19,7 @@ void ParticleMaterial::bindForPass(PassType passType, const RenderContext& conte
         tfShader.use();
         tfShader.setUniform("u_deltaTime", context.deltaTime);
         tfShader.setUniform("u_time", context.elapsedTime);
-    } else if (passType == PassType::MainPass) {
+    } else if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();
@@ -44,7 +44,7 @@ void ParticleMaterial::bindForObjectDraw(PassType passType, const RenderContext&
         tfShader.setUniform("u_particleSpawnOffset", context.pInfo.particleSpawnOffset);
         tfShader.setUniform("u_allocatedParticleCount", context.pInfo.allocatedParticleCount);
         tfShader.setUniform("u_flags", context.pInfo.flags);
-    } else if (passType == PassType::MainPass) {
+    } else if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();

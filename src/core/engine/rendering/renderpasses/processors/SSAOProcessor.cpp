@@ -13,17 +13,16 @@
 #include "engine/entity/Player.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/resource/loaders/ShaderLoader.h"
-#include "engine/resource/providers/CPUAssetProvider.h"
 
 static constexpr float PI = 3.14159265f;
 static constexpr size_t NOISE_TEXTURE_SIZE = 4U;
 
 void SSAOProcessor::createBuffers() {
     m_ssaoGBuffer.clearAttachedTextures();
-    m_ssaoGBuffer.attachTexture(
+    m_ssaoGBuffer.attachTexture( // Position render target
         std::make_shared<Texture>(Texture::create(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3))
     );
-    m_ssaoGBuffer.attachTexture(
+    m_ssaoGBuffer.attachTexture( // Normals render target
         std::make_shared<Texture>(Texture::create(TextureType::Float16, m_ssaoBufferWidth, m_ssaoBufferHeight, 3))
     );
     m_ssaoGBuffer.attachTexture(

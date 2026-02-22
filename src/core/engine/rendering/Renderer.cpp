@@ -9,10 +9,12 @@
 #include "engine/GameInstance.h"
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
-#include "engine/rendering/renderpasses/MainRenderpass.h"
+#include "engine/rendering/renderpasses/OpaqueRenderpass.h"
 #include "engine/rendering/renderpasses/SSAORenderpass.h"
 #include "engine/rendering/renderpasses/ShadowRenderpass.h"
 #include "engine/rendering/renderpasses/TransformFeebackpass.h"
+#include "engine/rendering/renderpasses/TransparencyRenderpass.h"
+#include "engine/rendering/renderpasses/ResolverRenderpass.h"
 
 static constexpr float fullScreenQuadCCW[] = {
     // Position   // UV-Coords
@@ -39,7 +41,6 @@ static constexpr float fullScreenQuadCW[] = {
 void Renderer::initialize() {
     // GLEnableDebugging();
 
-    // GLCALL(glEnable(GL_BLEND)); // Leave disabled for now (Blending will receive dedicated system)
     GLCALL(glEnable(GL_DEPTH_TEST));
     GLCALL(glEnable(GL_CULL_FACE));    // Enable face culling
     GLCALL(glCullFace(GL_BACK));       // Specify that back faces should be culled (not rendered)
@@ -51,7 +52,9 @@ void Renderer::initialize() {
     std::unique_ptr<TransformFeedbackpass> transformFeebackpass = std::make_unique<TransformFeedbackpass>();
     std::unique_ptr<ShadowRenderpass> shadowpass = std::make_unique<ShadowRenderpass>();
     std::unique_ptr<SSAORenderpass> ssaoRenderpass = std::make_unique<SSAORenderpass>();
-    std::unique_ptr<MainRenderpass> mainRenderpass = std::make_unique<MainRenderpass>();
+    std::unique_ptr<OpaqueRenderpass> opaqueRenderpass = std::make_unique<OpaqueRenderpass>();
+    std::unique_ptr<TransparencyRenderpass> transparencyRenderpass = std::make_unique<TransparencyRenderpass>();
+    std::unique_ptr<ResolverRenderpass> resolverRenderpass = std::make_unique<ResolverRenderpass>();
 
     LightProcessor& lightProcessor = shadowpass->getLightProcessor();
     m_renderResources.priodLightsBuffer.reserve(lightProcessor.totalSupportedLights());
@@ -63,7 +66,9 @@ void Renderer::initialize() {
     renderpasses.push_back(std::move(transformFeebackpass));
     renderpasses.push_back(std::move(shadowpass));
     renderpasses.push_back(std::move(ssaoRenderpass));
-    renderpasses.push_back(std::move(mainRenderpass));
+    renderpasses.push_back(std::move(opaqueRenderpass));
+    renderpasses.push_back(std::move(transparencyRenderpass));
+    renderpasses.push_back(std::move(resolverRenderpass));
 
     m_renderResources.lightsToRender = &m_lightsToRender;
     m_renderResources.objectsToRender = &m_objectsToRender;
@@ -91,7 +96,9 @@ void Renderer::render(const ApplicationContext& context) {
     auto totalTimerStart = std::chrono::high_resolution_clock::now();
 
     // Update render context
-    m_currentRenderContext.currScreenRes = glm::uvec2(context.state.screenWidth, context.state.screenHeight);
+    glm::uvec2 newScreenRes = glm::uvec2(context.state.screenWidth, context.state.screenHeight);
+    m_currentRenderContext.screenResChanged = newScreenRes != m_currentRenderContext.currScreenRes;
+    m_currentRenderContext.currScreenRes = newScreenRes;
     m_currentRenderContext.deltaTime = context.instance->gameState.deltaTime;
     m_currentRenderContext.elapsedTime = context.instance->gameState.elapsedGameTime;
 

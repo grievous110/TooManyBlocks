@@ -9,9 +9,8 @@ uniform bool u_useTexture;
 uniform sampler2D u_texture;
 
 void main() {
-	if (u_useTexture) {
-		outColor = texture(u_texture, uv).rgba;
-	} else {
-		outColor = vec4(u_color, 1.0);
-	}
+	vec4 color = u_useTexture ? texture(u_texture, uv) : vec4(u_color, 1.0);
+	if (color.a < 0.99)
+		discard;
+	outColor = color;
 }

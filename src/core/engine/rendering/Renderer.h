@@ -47,12 +47,23 @@ struct SSAOInfo {
     const Texture* output;
 };
 
+struct OpaqueInfo {
+    const Texture* output;
+    std::shared_ptr<Texture> usedDepthTexture;
+};
+
+struct TransparencyInfo {
+    const Texture* accumOutput;
+    const Texture* revealOutput;
+};
+
 struct SkeletalMeshInfo {
     const UniformBuffer* jointMatrices;
 };
 
 struct RenderContext {
     glm::uvec2 currScreenRes;
+    bool screenResChanged;
     float deltaTime;
     float elapsedTime;
 
@@ -61,6 +72,8 @@ struct RenderContext {
     LightingInfo lInfo;
     ParticleInfo pInfo;
     SSAOInfo ssaoInfo;
+    OpaqueInfo opaqueInfo;
+    TransparencyInfo transparencyInfo;
 };
 
 struct RenderResources {
@@ -88,6 +101,8 @@ private:
     float m_lastRenderTimeMs;
 
 public:
+    Renderer() : m_currentRenderContext{}, m_renderResources{} {}
+
     void initialize();
 
     void submitLight(Light* light);

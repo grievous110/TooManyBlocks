@@ -1,14 +1,14 @@
-#include "SimpleMaterial.h"
+#include "TransparentMaterial.h"
 
 #include "Logger.h"
 #include "engine/rendering/Renderer.h"
 
-bool SimpleMaterial::isReady() const { return m_mainShader.isReady(); }
+bool TransparentMaterial::isReady() const { return m_mainShader.isReady(); }
 
-bool SimpleMaterial::supportsPass(PassType passType) const { return passType == PassType::OpaquePass; }
+bool TransparentMaterial::supportsPass(PassType passType) const { return passType == PassType::TransparencyPass; }
 
-void SimpleMaterial::bindForPass(PassType passType, const RenderContext& context) {
-    if (passType == PassType::OpaquePass) {
+void TransparentMaterial::bindForPass(PassType passType, const RenderContext& context) {
+    if (passType == PassType::TransparencyPass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();
@@ -23,8 +23,8 @@ void SimpleMaterial::bindForPass(PassType passType, const RenderContext& context
     }
 }
 
-void SimpleMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) {
-    if (passType == PassType::OpaquePass) {
+void TransparentMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) {
+    if (passType == PassType::TransparencyPass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();

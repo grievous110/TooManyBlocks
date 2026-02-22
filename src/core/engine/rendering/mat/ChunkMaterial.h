@@ -1,8 +1,6 @@
 #ifndef TOOMANYBLOCKS_CHUNKMATERIAL_H
 #define TOOMANYBLOCKS_CHUNKMATERIAL_H
 
-#include <memory>
-
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"

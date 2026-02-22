@@ -7,14 +7,13 @@ enum PassType {
     TransformFeedback,
     ShadowPass,
     AmbientOcclusion,
-    MainPass
+    OpaquePass,
+    TransparencyPass
 };
 
 class Material {
 public:
     virtual ~Material() = default;
-
-    virtual bool isTransparent() const { return false; }
 
     virtual bool isReady() const { return false; }
     virtual bool supportsPass(PassType passType) const = 0;
