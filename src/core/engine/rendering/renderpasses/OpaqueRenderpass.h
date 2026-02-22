@@ -2,9 +2,11 @@
 #define TOOMANYBLOCKS_MAINRENDERPASS_H
 
 #include "engine/rendering/renderpasses/Renderpass.h"
+#include "engine/rendering/lowlevelapi/FrameBuffer.h"
 
-class MainRenderpass : public Renderpass {
+class OpaqueRenderpass : public Renderpass {
 private:
+    FrameBuffer m_opaqueBuffer;
     bool m_debugPolygonModeEnabled;
     size_t m_objectsProcessed;
     
@@ -26,12 +28,14 @@ protected:
     ) override;
 
 public:
-    MainRenderpass() : m_debugPolygonModeEnabled(false) {}
-    virtual ~MainRenderpass() = default;
+    OpaqueRenderpass();
+    virtual ~OpaqueRenderpass() = default;
 
     virtual const char* name() override;
 
     virtual void putDebugInfo(DebugReport& report) override;
+
+    void createBuffers(RenderContext& context);
 
     inline bool isDebugPolygonModeEnabled() const { return m_debugPolygonModeEnabled; }
 

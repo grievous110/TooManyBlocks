@@ -1,8 +1,7 @@
 #ifndef TOOMANYBLOCKS_SIMPLEMATERIAL_H
 #define TOOMANYBLOCKS_SIMPLEMATERIAL_H
 
-#include <glm/glm.hpp>
-#include <memory>
+#include <glm/vec3.hpp>
 
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
@@ -12,12 +11,13 @@
 class SimpleMaterial : public Material {
 private:
     Future<Shader> m_mainShader;
+    Future<Shader> m_trShader;
     glm::vec3 m_color;
     Future<Texture> m_texture;
 
 public:
-    SimpleMaterial(Future<Shader> mainShader, const glm::vec3 color, Future<Texture> texture = Future<Texture>())
-        : m_mainShader(mainShader), m_color(color), m_texture(texture) {}
+    SimpleMaterial(Future<Shader> mainShader, Future<Shader> trShader, const glm::vec3& color, Future<Texture> texture = Future<Texture>())
+        : m_mainShader(mainShader), m_trShader(trShader), m_color(color), m_texture(texture) {}
 
     virtual ~SimpleMaterial() = default;
 

@@ -23,6 +23,7 @@
 #include "engine/rendering/mat/ParticleMaterial.h"
 #include "engine/rendering/mat/SimpleMaterial.h"
 #include "engine/rendering/mat/SkeletalMaterial.h"
+#include "engine/rendering/mat/TransparentMaterial.h"
 #include "engine/resource/cpu/CPUShader.h"
 #include "engine/resource/cpu/CPUTexture.h"
 #include "engine/resource/providers/CPUAssetProvider.h"
@@ -68,10 +69,18 @@ void GameInstance::initializeWorld(World* newWorld) {
         }
 
         Future<Shader> shader = build(provider->getShader(Res::Shader::SIMPLE));
+        Future<Shader> transparentShader = build(provider->getShader(Res::Shader::TRANSPARENT));
         Future<Texture> texture = build(provider->getTexture(Res::Texture::TESTBLOCK_TEXTURE));
 
-        std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(shader, glm::vec3(0.0f), texture);
-        std::shared_ptr<Material> testMaterial2 = std::make_shared<SimpleMaterial>(shader, glm::vec3(1, 0.5f, 0));
+        std::shared_ptr<Material> testMaterial1 = std::make_shared<SimpleMaterial>(
+            shader, transparentShader, glm::vec3(0.0f), texture
+        );
+        std::shared_ptr<Material> testMaterial2 = std::make_shared<TransparentMaterial>(
+            transparentShader, glm::vec4(0.5f, 0.5f, 0.0f, 0.8f)
+        );
+        std::shared_ptr<Material> testMaterial3 = std::make_shared<TransparentMaterial>(
+            transparentShader, glm::vec4(0.2f, 0.1f, 0.7f, 0.4f)
+        );
         Future<CPURenderData<Vertex>> cpuStaticMesh = provider->getStaticMesh(Res::Model::TEST_UNIT_BLOCK);
         m_mesh1 = std::make_shared<StaticMesh>(build(cpuStaticMesh));
         m_mesh1->assignMaterial(testMaterial1);
@@ -79,10 +88,16 @@ void GameInstance::initializeWorld(World* newWorld) {
         m_mesh2 = std::make_shared<StaticMesh>(build(cpuStaticMesh));
         m_mesh2->assignMaterial(testMaterial2);
 
+        m_mesh3 = std::make_shared<StaticMesh>(build(cpuStaticMesh));
+        m_mesh3->assignMaterial(testMaterial3);
+
         m_mesh1->getLocalTransform().setPosition(glm::vec3(0.0f, 10.0f, 0.0f));
         m_mesh1->getLocalTransform().setScale(1.0f);
         m_mesh1->attachChild(m_mesh2.get(), AttachRule::Full);
         m_mesh2->getLocalTransform().translate(glm::vec3(0.0f, 3.0f, 0.0f));
+
+        m_mesh2->attachChild(m_mesh3.get(), AttachRule::Full);
+        m_mesh3->getLocalTransform().translate(glm::vec3(0.0f, 1.0f, 1.0f));
 
         Future<Shader> lineShader = build(provider->getShader(Res::Shader::LINE));
 
@@ -107,12 +122,11 @@ void GameInstance::initializeWorld(World* newWorld) {
             ParticleModules::InitialVelocityInCone(6.0f, 10.0f, glm::vec3(1.0, 2.0, 0.5), 15.0f),
             ParticleModules::Acceleration(glm::vec3(0, -9.86, 0)),
             ParticleModules::InitialLifetime(1.5f, 3.0f),
-            ParticleModules::InitialSize(0.5f),
+            ParticleModules::SizeOverLife({{0.5f, 1.0f}, {1.0f, 0.0f}}),
             ParticleModules::AnimatedTexture(4, 7, 3, 0.2f),
             ParticleModules::ColorOverLife(
                 {{0.0f, glm::vec3(1, 1, 0.5)}, {0.5f, glm::vec3(0.5, 1, 0.5)}, {1.0f, glm::vec3(0, 0.5, 1)}}
             ),
-            ParticleModules::AlphaOverLife({{0.3f, 1.0f}, {0.5f, 0.5f}, {1.0f, 0.0f}})
         });
         Future<CPUTexture> cpuTestBlockTextures = provider->getTexture(Res::Texture::BLOCK_TEX_ATLAS);
         Future<CPUShader> cpuParticleTfShader = provider->getTFShader("res/shaders/particleTFShader");
@@ -169,6 +183,7 @@ void GameInstance::pushWorldRenderData() {
     }
     renderer->submitRenderable(m_mesh1.get());
     renderer->submitRenderable(m_mesh2.get());
+    renderer->submitRenderable(m_mesh3.get());
     renderer->submitRenderable(m_skeletalMesh.get());
     renderer->submitRenderable(m_particles.get());
 
@@ -191,6 +206,7 @@ void GameInstance::update(float deltaTime) {
 
     Transform& mehs1Tr = m_mesh1->getLocalTransform();
     mehs1Tr.rotate(10.0f * deltaTime, WorldUp);
+    m_mesh3->getLocalTransform().rotate(2.0f * deltaTime, WorldUp);
     m_world->updateChunks(m_player->getTransform().getPosition());
 
     if (!m_skeletalMesh->getActiveAnimation()) {

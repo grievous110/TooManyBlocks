@@ -5,10 +5,10 @@
 
 bool LineMaterial::isReady() const { return m_mainShader.isReady(); }
 
-bool LineMaterial::supportsPass(PassType passType) const { return passType == PassType::MainPass; }
+bool LineMaterial::supportsPass(PassType passType) const { return passType == PassType::OpaquePass; }
 
 void LineMaterial::bindForPass(PassType passType, const RenderContext& context) {
-    if (passType == PassType::MainPass) {
+    if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();
@@ -19,7 +19,7 @@ void LineMaterial::bindForPass(PassType passType, const RenderContext& context) 
 }
 
 void LineMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) {
-    if (passType == PassType::MainPass) {
+    if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();

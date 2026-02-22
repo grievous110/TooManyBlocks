@@ -19,11 +19,8 @@ float rand(vec3 iv) {
 vec4 sampleFromTexAtlas(vec2 uv_coord) {
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
-    
-    vec2 index = vec2(
-        mod(float(texIndex), texturesPerRow),
-        floor(float(texIndex) / texturesPerRow)
-    );
+
+    vec2 index = vec2(mod(float(texIndex), texturesPerRow), floor(float(texIndex) / texturesPerRow));
 
     vec2 adjustedUV = vec2(uv_coord.x, 1.0 - uv_coord.y); // UVs are y-flipped
     vec2 atlasUV = (index + adjustedUV) * textureScale;
@@ -31,22 +28,21 @@ vec4 sampleFromTexAtlas(vec2 uv_coord) {
 }
 
 void main() {
-    if (timeToLive <= 0.0) {
+    if(timeToLive <= 0.0) {
         discard; // Discard pixels that belong to dead particles
     }
 
     vec4 fragColor = vec4(0.0);
 
-    if (u_useTexture) {
+    if(u_useTexture) {
         fragColor = sampleFromTexAtlas(uv).rgba;
         fragColor *= color;
     } else {
         fragColor = color;
     }
 
-    // Stochastic alpha discard
-    float threshold = rand(gl_FragCoord.xyz);
-    if (fragColor.a < threshold)
+    // Discard non full alpha pixels
+    if(fragColor.a < 0.99)
         discard;
-    outColor = fragColor;
+    outColor = vec4(fragColor.rgb, 1.0);
 }

@@ -14,11 +14,11 @@ bool ChunkMaterial::isReady() const {
 }
 
 bool ChunkMaterial::supportsPass(PassType passType) const {
-    return passType == PassType::ShadowPass || passType == PassType::AmbientOcclusion || passType == PassType::MainPass;
+    return passType == PassType::ShadowPass || passType == PassType::AmbientOcclusion || passType == PassType::OpaquePass;
 }
 
 void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context) {
-    if (passType == PassType::MainPass) {
+    if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();
@@ -73,7 +73,7 @@ void ChunkMaterial::bindForPass(PassType passType, const RenderContext& context)
 }
 
 void ChunkMaterial::bindForObjectDraw(PassType passType, const RenderContext& context) {
-    if (passType == PassType::MainPass) {
+    if (passType == PassType::OpaquePass) {
         Shader& mainShader = m_mainShader.value();
 
         mainShader.use();

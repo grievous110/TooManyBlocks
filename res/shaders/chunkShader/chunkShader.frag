@@ -22,7 +22,7 @@ struct Light {
     float range; // Used by point- / spotlight
     vec3 direction;
     float fovy; // Used by spotlicht
-    vec3 color;    
+    vec3 color;
     float innerCutoffAngle; // Used by spotlicht
 };
 
@@ -51,11 +51,8 @@ uniform uint u_shadowMapSizes[3];
 vec4 sampleFromTexAtlas(vec2 uv_coord) {
     float textureScale = float(u_textureSize) / float(u_textureAtlasSize);
     float texturesPerRow = float(u_textureAtlasSize) / float(u_textureSize);
-    
-    vec2 index = vec2(
-        mod(float(texIndex), texturesPerRow),
-        floor(float(texIndex) / texturesPerRow)
-    );
+
+    vec2 index = vec2(mod(float(texIndex), texturesPerRow), floor(float(texIndex) / texturesPerRow));
 
     vec2 atlasUV = (index + uv_coord) * textureScale;
     return texture(u_textureAtlas, atlasUV);
@@ -63,7 +60,7 @@ vec4 sampleFromTexAtlas(vec2 uv_coord) {
 
 vec3 calcLightContribution(int lightIndex) {
     vec4 lightSpacePosition = u_lightViewProjections[lightIndex] * vec4(position, 1.0);
-    
+
     uint lightType = u_lights[lightIndex].lightType;
     uint priority = u_lights[lightIndex].priority;
     uint shadowMapIndex = u_lights[lightIndex].shadowMapIndex;
@@ -79,7 +76,7 @@ vec3 calcLightContribution(int lightIndex) {
     lightSpaceCoord = lightSpaceCoord * 0.5 + 0.5; // Map to [0, 1]
 
     // Check if the fragment is outside the light's projection bounds
-    if (lightSpaceCoord.x < 0.0 || lightSpaceCoord.x > 1.0 ||
+    if(lightSpaceCoord.x < 0.0 || lightSpaceCoord.x > 1.0 ||
         lightSpaceCoord.y < 0.0 || lightSpaceCoord.y > 1.0 ||
         lightSpaceCoord.z < 0.0 || lightSpaceCoord.z > 1.0) {
         return vec3(0.0); // In shadow
@@ -99,7 +96,6 @@ vec3 calcLightContribution(int lightIndex) {
     vec2 shadowMapScale = vec2(shadowMapSize / shadowAtlasSize);
     vec2 atlasUV = lightSpaceCoord.xy / tilesPerRow + lightShadomapPos * shadowMapScale;
 
-
     // PCF shadow sampling
     float lightFactor = 0.0;
     float bias = 0.0001;
@@ -109,13 +105,13 @@ vec3 calcLightContribution(int lightIndex) {
     vec2 tileMin = lightShadomapPos * shadowMapScale;
     vec2 tileMax = tileMin + shadowMapScale;
     float validSamples = 0;
-    for (int x = -1; x <= 1; x++) {
-        for (int y = -1; y <= 1; y++) {
-            vec2 sampleOffset = vec2(x, y) * texelSize; 
+    for(int x = -1; x <= 1; x++) {
+        for(int y = -1; y <= 1; y++) {
+            vec2 sampleOffset = vec2(x, y) * texelSize;
             vec2 sampleUV = atlasUV + sampleOffset;
 
             // Stay inside the tile
-            if (all(greaterThanEqual(sampleUV, tileMin)) && all(lessThan(sampleUV, tileMax))) {                
+            if(all(greaterThanEqual(sampleUV, tileMin)) && all(lessThan(sampleUV, tileMax))) {
                 float pcfDepth = texture(u_shadowMapAtlas[priority], sampleUV).r;
                 lightFactor += (currentDepth <= pcfDepth + bias) ? 1.0 : 0.0;
                 validSamples += 1.0;
@@ -124,7 +120,7 @@ vec3 calcLightContribution(int lightIndex) {
     }
     lightFactor /= max(validSamples, 1.0);  // 1.0 if fully lit, 0.0 if fully in shadow
 
-    if (lightFactor > 0.0) {
+    if(lightFactor > 0.0) {
         // Diffuse color
         vec3 lightDirection = normalize(lightPosition - position);
         float diffuseFactor = max(dot(normal, lightDirection), 0.0);
@@ -136,7 +132,7 @@ vec3 calcLightContribution(int lightIndex) {
         float specularFactor = pow(max(dot(viewDirection, reflectionDirection), 0.0), specularEpxponent);
 
         float spotFactor = 1.0;
-        if (lightType == SPOTLIGHT) {
+        if(lightType == SPOTLIGHT) {
             // Spot effect
             float angle = degrees(acos(dot(-direction, lightDirection)));
             spotFactor = 1.0 - smoothstep(innerCutoffAngle / 2.0, fovy / 2.0, angle);
@@ -144,7 +140,7 @@ vec3 calcLightContribution(int lightIndex) {
 
         // Distant fade
         float falloff = 1.0;
-        if (lightType == SPOTLIGHT || lightType == POINTLIGHT) {
+        if(lightType == SPOTLIGHT || lightType == POINTLIGHT) {
             float distanceToLight = length(lightPosition - position);
             float falloffStartRange = range * 0.9;
             falloff = 1.0 - smoothstep(falloffStartRange, range, distanceToLight);
@@ -160,11 +156,16 @@ void main() {
     vec2 uv_frag = fract(uv); // Effectively modulo for repeating texture on faces larger 1
 
     // Sample the texture atlas
-    vec3 color = vec3(sampleFromTexAtlas(uv_frag));
+    vec4 texColor = sampleFromTexAtlas(uv_frag);
+    // Discard non full alpha pixels
+    if(texColor.a < 0.99)
+        discard;
+
+    vec3 color = texColor.rgb;
 
     // Initialize shadow factor
     vec3 lightContrib = vec3(0.0);
-    for (int i = 0; i < u_lightCount; i++) {
+    for(int i = 0; i < u_lightCount; i++) {
         // Accumulate light contribution
         lightContrib += calcLightContribution(i);
     }
@@ -172,15 +173,15 @@ void main() {
     vec2 screenUV = gl_FragCoord.xy / vec2(u_screenResolution);
     float occlusion = texture(u_ssaoTexture, screenUV).r;  // SSAO value [0, 1]
     color = ((0.15 * color) + (0.85 * clamp(lightContrib * color, 0.0, 1.0))) * occlusion;
-    
+
     // Gradual fade to black for distant elements
     float dist = length(u_cameraPosition - position);
     float dropoffStartDistance = 50.0;
     float fadeDistance = 32.0;
-    if (dist > dropoffStartDistance) {
+    if(dist > dropoffStartDistance) {
         float fade = smoothstep(dropoffStartDistance, dropoffStartDistance + fadeDistance, dist);
         color *= 1.0 - fade;
     }
 
-   outColor = vec4(color, 1.0);
+    outColor = vec4(color, 1.0);
 }
