@@ -61,6 +61,9 @@ struct EngineState {
     // Streaming
     struct StreamData {
         StreamBufferSlot streamSlots[STREAM_CAPACITY];
+        std::mutex wakeMtx;
+        std::atomic<bool> streamWakeRequested{false};
+        std::condition_variable wakeCV;
         float* tmpStreamBuffer;
     } streamData;
 
@@ -200,7 +203,8 @@ static ReverbDesign sanitizeReverbDesign(const ReverbDesign& in) {
     return out;
 }
 
-// Does design. ReverbDesign needs to be validated beforehand to be sure -> invalid combs / filters should be discarded before
+// Does design. ReverbDesign needs to be validated beforehand to be sure -> invalid combs / filters should be discarded
+// before
 static ReverbBuffers* allocateReverbBuffers(const ReverbDesign& design) {
     ReverbBuffers* buffers = new ReverbBuffers{};
     buffers->combCount = static_cast<unsigned int>(design.combMsDelays.size());
@@ -387,6 +391,15 @@ void AudioEngine::streamWorkerLoop() {
     EngineState::StreamData* streamData = &m_data->engine.streamData;
 
     while (true) {
+        {
+            // Sleep until notified
+            std::unique_lock<std::mutex> lock(streamData->wakeMtx);
+            streamData->wakeCV.wait(lock, [this, streamData]() {
+                return m_stopThreads.load() || streamData->streamWakeRequested.exchange(false);
+            });
+            if (m_stopThreads.load()) return;
+        }
+
         for (StreamBufferSlot& slot : streamData->streamSlots) {
             if (m_stopThreads.load()) return;
             std::lock_guard<std::mutex> lock(slot.streamingMtx);
@@ -399,13 +412,10 @@ void AudioEngine::streamWorkerLoop() {
                 slot.seekTargetFrameIdx = SIZE_MAX;
             }
 
-            ma_uint32 writableSamples = ma_rb_available_write(&slot.streamBuffer) / sizeof(float);
-
+            ma_uint32 writableSamples = ma_rb_available_write(&slot.streamBuffer) / SAMPLE_BYTE_SIZE;
             if (writableSamples < FORMAT_CHANNELS) continue;
 
-            uint32_t framesToDecode = std::min<unsigned int>(
-                writableSamples / FORMAT_CHANNELS, STREAM_FRAMES_PER_CHUNK
-            );
+            uint32_t framesToDecode = writableSamples / FORMAT_CHANNELS;
 
             ma_uint64 framesRead = 0;
             ma_result res = ma_decoder_read_pcm_frames(
@@ -430,8 +440,6 @@ void AudioEngine::streamWorkerLoop() {
                 lgr::lout.error("Written less samples on streaming audio. This should not happen!");
             }
         }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -579,6 +587,10 @@ void AudioEngine::processCmdsFromAudioThread() {
                             seekResolvedNote.instanceId = cmd.instanceId;
                             seekResolvedNote.needsAck = true;
                             pushCommand(seekResolvedNote, m_data->engine);
+
+                            // Notify stream thread
+                            m_data->engine.streamData.streamWakeRequested.store(true);
+                            m_data->engine.streamData.wakeCV.notify_one();
                         }
                         break;
                     }
@@ -622,8 +634,7 @@ void AudioEngine::resolveAndSendAssetData() {
         AudioAsset* asset = m_data->engine.usedAssets[i];
         std::lock_guard<std::mutex> lock(asset->mtx);
         if (slot.isStreamed) {
-            if (asset->state == AudioAsset::State::MetadataReady ||
-                asset->state == AudioAsset::State::FullLoading ||
+            if (asset->state == AudioAsset::State::MetadataReady || asset->state == AudioAsset::State::FullLoading ||
                 asset->state == AudioAsset::State::FullyLoaded) {
                 slot.audioData = &slot.streamSlot->streamBuffer;
                 slot.totalPcmFrames = asset->totalFrames;
@@ -687,7 +698,8 @@ bool AudioEngine::_isValid(AudioInstance instance) const {
 AudioEngine::AudioEngine() {
     m_data = new AudioEngineData{};
     std::fill_n(m_data->engine.slotVersions, AUDIO_INSTANCE_LIMIT, 1U);
-    m_data->engine.streamData.tmpStreamBuffer = new float[STREAM_FRAMES_PER_CHUNK * FORMAT_CHANNELS];
+    m_data->engine.streamData
+        .tmpStreamBuffer = new float[STREAM_BUFFER_DURATION_SEC * FORMAT_FRAME_RATE * FORMAT_CHANNELS];
 
     m_data->engine.freeSlotIndices.reserve(AUDIO_INSTANCE_LIMIT);
     for (unsigned int i = 0; i < AUDIO_INSTANCE_LIMIT; i++) {
@@ -718,6 +730,10 @@ AudioEngine::AudioEngine() {
         }
     }
 
+    // Point to stream wake up cvar and flag
+    m_data->audio.streamWakeRequested = &m_data->engine.streamData.streamWakeRequested;
+    m_data->audio.streamWakeCV = &m_data->engine.streamData.wakeCV;
+
     float* resolvedBusVolumes = new float[MIXING_BUS_LIMIT];
     std::fill_n(resolvedBusVolumes, MIXING_BUS_LIMIT, 1.0f);
     m_data->engine.resolvedBusVolumes = resolvedBusVolumes;
@@ -735,6 +751,7 @@ AudioEngine::~AudioEngine() {
         std::unique_lock lock(m_data->engine.engineMutex);
 
         m_stopThreads.store(true);
+        m_data->engine.streamData.wakeCV.notify_one();
         m_streamingWorker.join();
         m_data->engine.loaderData.loaderCV.notify_one();
         m_audioLoaderWorker.join();
@@ -874,7 +891,7 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
 
     unsigned int nextIndex = m_data->engine.freeSlotIndices.back();
     m_data->engine.freeSlotIndices.pop_back();
-    
+
     m_data->engine.usedAssets[nextIndex] = asset;
 
     ensureFullyLoaded(asset, m_data->engine);
@@ -883,7 +900,7 @@ AudioInstance AudioEngine::playBuffered(const std::string& file) {
     cmd.type = AudioCmdType::Play;
     cmd.target = AudioCmdTarget::AudioInstanceTarget;
     cmd.instanceId = nextIndex;
-    cmd.data.singleBool = false; // Not streamed
+    cmd.data.singleBool = false;  // Not streamed
     pushCommand(cmd, m_data->engine);
 
     AudioInstanceSlot& slot = m_data->engine.audioInstSlots[nextIndex];
@@ -942,7 +959,7 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
     cmd.type = AudioCmdType::Play;
     cmd.target = AudioCmdTarget::AudioInstanceTarget;
     cmd.instanceId = nextIndex;
-    cmd.data.singleBool = true; // Streamed
+    cmd.data.singleBool = true;  // Streamed
     pushCommand(cmd, m_data->engine);
 
     AudioInstanceSlot& slot = m_data->engine.audioInstSlots[nextIndex];
@@ -953,6 +970,10 @@ AudioInstance AudioEngine::playStreamed(const std::string& file) {
     slot.streamSlot = freeSlot;
 
     freeSlot->isActive = true;
+
+    // Notify stream thread
+    m_data->engine.streamData.streamWakeRequested.store(true);
+    m_data->engine.streamData.wakeCV.notify_one();
 
     return {nextIndex, m_data->engine.slotVersions[nextIndex]};
 }
