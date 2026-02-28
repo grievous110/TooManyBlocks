@@ -169,7 +169,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
 
                         // Parse position
                         const Json::JsonValue& positionAccessor = jsonChunkObj["accessors"]
-                                                                              [attributes.at("POSITION").toInt()];
+                                                                              [attributes["POSITION"].toInt()];
                         unsigned int compType = static_cast<unsigned int>(positionAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("POSITION is not of component type float");
@@ -195,7 +195,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
 
                         // Parse UV
                         const Json::JsonValue& uvAccessor = jsonChunkObj["accessors"]
-                                                                        [attributes.at("TEXCOORD_0").toInt()];
+                                                                        [attributes["TEXCOORD_0"].toInt()];
                         compType = static_cast<unsigned int>(uvAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("TEXCOORD_0 is not of component type float");
@@ -220,7 +220,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
 
                         // Parse Normal
                         const Json::JsonValue& normalAccessor = jsonChunkObj["accessors"]
-                                                                            [attributes.at("NORMAL").toInt()];
+                                                                            [attributes["NORMAL"].toInt()];
                         compType = static_cast<unsigned int>(normalAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("NORMAL is not of component type float");
@@ -246,7 +246,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
                         // Parse joint indices attrib (Indices my be stored as types GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT
                         // or GL_UNSIGNED_INT)
                         const Json::JsonValue& jointIdxAccessor = jsonChunkObj["accessors"]
-                                                                              [attributes.at("JOINTS_0").toInt()];
+                                                                              [attributes["JOINTS_0"].toInt()];
                         compType = static_cast<unsigned int>(jointIdxAccessor["componentType"].toInt());
                         if (compType != GL_UNSIGNED_BYTE && compType != GL_UNSIGNED_SHORT &&
                             compType != GL_UNSIGNED_INT) {
@@ -291,7 +291,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
 
                         // Parse weights
                         const Json::JsonValue& weightAccessor = jsonChunkObj["accessors"]
-                                                                            [attributes.at("WEIGHTS_0").toInt()];
+                                                                            [attributes["WEIGHTS_0"].toInt()];
                         compType = static_cast<unsigned int>(weightAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("WEIGHTS_0 is not of component type float");
@@ -378,7 +378,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
                         const Json::JsonValue& skin = jsonChunkObj["skins"][skinIndex];
 
                         // Parse joint indices
-                        const Json::JsonArray& joints = skin.at("joints").toArray();
+                        const Json::JsonArray& joints = skin["joints"].toArray();
                         skData.jointNodeIndices.reserve(joints.size());
                         for (const Json::JsonValue& jointIdx : joints) {
                             skData.jointNodeIndices.push_back(jointIdx.toInt());
@@ -422,7 +422,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
             skData.animations.reserve(jsonChunkObj["animations"].toArray().size());
             for (const Json::JsonValue& animationJson : jsonChunkObj["animations"].toArray()) {
                 AnimationdDeclare animDeclaration;
-                animDeclaration.name = animationJson.at("name").toString();
+                animDeclaration.name = animationJson["name"].toString();
                 animDeclaration.channels.reserve(animationJson["channels"].toArray().size());
 
                 for (const Json::JsonValue& channel : animationJson["channels"].toArray()) {
