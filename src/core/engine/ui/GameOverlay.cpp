@@ -1,6 +1,5 @@
 #include "GameOverlay.h"
 
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 
 #include "Application.h"
@@ -9,7 +8,9 @@
 #include "engine/entity/Entity.h"
 #include "engine/ui/fonts/FontUtil.h"
 
-void UI::GameOverlay::render(ApplicationContext& context) {
+void UI::GameOverlay::render() {
+    ApplicationContext* context = Application::getContext();
+
     ImGuiIO& io = ImGui::GetIO();
 
     if (ImGui::IsKeyPressed(ImGuiKey_F3, false)) {
@@ -22,10 +23,10 @@ void UI::GameOverlay::render(ApplicationContext& context) {
     UI::Util::MakeNextWindowFullscreen();
     ImGui::Begin("Game Overlay", nullptr, window_flags);
     {
-        ScopedFont font(context.fontPool->getFont(20));
+        ScopedFont font(context->fontPool->getFont(20));
 
         if (m_showStats) {
-            m_statScreen.render(context);
+            m_statScreen.render();
         }
 
         ImVec2 pos(io.DisplaySize.x - 110, 10);  // Adjust X for width
@@ -35,13 +36,13 @@ void UI::GameOverlay::render(ApplicationContext& context) {
 
         if (ImGui::BeginCombo("##Dropdown", "Movement Mode", ImGuiComboFlags_NoArrowButton)) {
             if (ImGui::Selectable("Walk")) {
-                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Walk);
+                context->instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Walk);
             }
             if (ImGui::Selectable("Fly")) {
-                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Fly);
+                context->instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Fly);
             }
             if (ImGui::Selectable("Spectator")) {
-                context.instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Spectator);
+                context->instance->m_player->getMovementComponent()->setMovementMode(MovementMode::Spectator);
             }
             ImGui::EndCombo();
         }
@@ -52,19 +53,19 @@ void UI::GameOverlay::render(ApplicationContext& context) {
         bool newShowMouse = ImGui::IsKeyDown(ImGuiKey_LeftAlt);
         if (newShowMouse != m_showMouse) {
             m_showMouse = newShowMouse;
-            glfwSetInputMode(context.window, GLFW_CURSOR, m_showMouse ? GLFW_CURSOR_NORMAL : GLFW_CURSOR_DISABLED);
+            context->windowManager->setCursorMode(m_showMouse ? CursorMode::Normal : CursorMode::HiddenAndCaptured);
         }
 
         if (ImGui::IsKeyPressed(ImGuiKey_Escape)) {
-            context.instance->gameState.gamePaused = true;
-            context.io->keyAdapter().detach(
-                static_cast<PlayerController*>(context.instance->m_player->getController())
+            context->instance->gameState.gamePaused = true;
+            context->inputManager->keyAdapter()->detach(
+                static_cast<PlayerController*>(context->instance->m_player->getController())
             );
-            context.io->mouseAdapter().detach(
-                static_cast<PlayerController*>(context.instance->m_player->getController())
+            context->inputManager->mouseAdapter()->detach(
+                static_cast<PlayerController*>(context->instance->m_player->getController())
             );
-            glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            navigateToWindow(context, "PauseMenu");
+            context->windowManager->setCursorMode(CursorMode::Normal);
+            navigateToWidget("PauseMenu");
         }
     }
     ImGui::End();

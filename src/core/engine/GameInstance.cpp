@@ -1,7 +1,6 @@
 #include "GameInstance.h"
 
 #include <GL/glew.h>
-#include <GLFW/glfw3.h>
 
 #include <random>
 #include <vector>
@@ -28,7 +27,7 @@
 #include "engine/resource/cpu/CPUTexture.h"
 #include "engine/resource/providers/CPUAssetProvider.h"
 #include "rendering/StaticMesh.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 GameInstance::GameInstance() : m_playerController(nullptr), m_player(nullptr), m_world(nullptr) {}
 

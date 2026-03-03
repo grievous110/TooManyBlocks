@@ -8,7 +8,7 @@
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
 #include "engine/rendering/lowlevelapi/UniformBuffer.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 class SkeletalMesh : public Renderable, public Updatable {
 public:

@@ -5,7 +5,6 @@
 #include <condition_variable>
 #include <cstdint>
 #include <queue>
-#include <functional>
 #include <mutex>
 #include <thread>
 #include <unordered_set>

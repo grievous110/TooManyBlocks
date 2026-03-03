@@ -12,13 +12,13 @@
 #include "engine/rendering/Camera.h"
 
 PlayerController::PlayerController() : m_cameraPitch(0.0f), m_playerNeedsReadjustment(true) {
-    Application::getContext()->io->keyAdapter().attach(this);
-    Application::getContext()->io->mouseAdapter().attach(this);
+    Application::getContext()->inputManager->keyAdapter()->attach(this);
+    Application::getContext()->inputManager->mouseAdapter()->attach(this);
 }
 
 PlayerController::~PlayerController() {
-    Application::getContext()->io->keyAdapter().detach(this);
-    Application::getContext()->io->mouseAdapter().detach(this);
+    Application::getContext()->inputManager->keyAdapter()->detach(this);
+    Application::getContext()->inputManager->mouseAdapter()->detach(this);
 }
 
 void PlayerController::notify(KeyEvent event, KeyEventData data) {

@@ -7,8 +7,7 @@
 #include "Application.h"
 #include "Logger.h"
 #include "engine/ui/fonts/FontUtil.h"
-#include "threading/ThreadPool.h"
-#include "util/Utility.h"
+#include "foundation/util/Utility.h"
 
 namespace UI {
     void AboutScreen::startLoadingContent() {
@@ -19,7 +18,9 @@ namespace UI {
         m_content.start();
     }
 
-    void AboutScreen::render(ApplicationContext& context) {
+    void AboutScreen::render() {
+        ApplicationContext* context = Application::getContext();
+
         if (m_content.isEmpty()) {
             startLoadingContent();
         }
@@ -41,11 +42,13 @@ namespace UI {
         UI::Util::MakeNextWindowFullscreen();
         ImGui::Begin("About", NULL, window_flags);
         {
-            ScopedFont font(context.fontPool->getFont(25));
-            ImVec2 titleSize = ImGui::CalcTextSize("About TooManyBlocks");
+            ScopedFont font(context->fontPool->getFont(25));
+            char aboutTxt[32];
+            std::sprintf(aboutTxt, "About %s", APP_NAME);
+            ImVec2 titleSize = ImGui::CalcTextSize(aboutTxt);
 
             ImGui::SetCursorPosX((io.DisplaySize.x - titleSize.x) * 0.5f);  // Center horizontally
-            ImGui::Text("About TooManyBlocks");
+            ImGui::Text("%s", aboutTxt);
             ImGui::Dummy(ImVec2(0, 20));
 
             float availableHeight = ImGui::GetContentRegionAvail().y;
@@ -62,7 +65,7 @@ namespace UI {
                     if (!m_content.isReady()) {
                         ImGui::Text("Loading...");
                     } else {
-                        ScopedFont contentFont(context.fontPool->getFont(20));
+                        ScopedFont contentFont(context->fontPool->getFont(20));
                         ImGui::TextUnformatted(m_content.value().c_str());
                     }
                 }
@@ -75,7 +78,7 @@ namespace UI {
             float centerX = (io.DisplaySize.x - buttonWidth) * 0.5f;
             ImGui::SetCursorPosX(centerX);
             if (ImGui::Button("Back", ImVec2(buttonWidth, buttonHeight))) {
-                navigateToWindow(context, "MainMenu");
+                navigateToWidget("MainMenu");
             }
         }
         ImGui::End();

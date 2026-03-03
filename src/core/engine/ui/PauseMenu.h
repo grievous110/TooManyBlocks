@@ -4,7 +4,7 @@
 #include "engine/ui/Ui.h"
 
 namespace UI {
-    class PauseMenu : public Window {
+    class PauseMenu : public Widget {
     private:
         bool m_escWasReleased;
 
@@ -12,7 +12,7 @@ namespace UI {
         PauseMenu() : m_escWasReleased(false) {}
         virtual ~PauseMenu() = default;
 
-        void render(ApplicationContext& context) override;
+        void render() override;
     };
 }  // namespace UI
 

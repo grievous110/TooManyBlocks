@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-#include "datatypes/KeyMouseIO.h"
+#include "platform/input/KeyMouseIO.h"
 #include "engine/controllers/Controller.h"
 
 class PlayerController : public Controller, public KeyObserver, public MouseObserver {

@@ -6,7 +6,7 @@
 #include "engine/geometry/BoundingVolume.h"
 #include "engine/rendering/RenderData.h"
 #include "engine/rendering/Renderable.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 class StaticMesh : public Renderable {
 public:

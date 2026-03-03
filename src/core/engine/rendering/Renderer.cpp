@@ -10,11 +10,11 @@
 #include "engine/rendering/Camera.h"
 #include "engine/rendering/GLUtils.h"
 #include "engine/rendering/renderpasses/OpaqueRenderpass.h"
+#include "engine/rendering/renderpasses/ResolverRenderpass.h"
 #include "engine/rendering/renderpasses/SSAORenderpass.h"
 #include "engine/rendering/renderpasses/ShadowRenderpass.h"
 #include "engine/rendering/renderpasses/TransformFeebackpass.h"
 #include "engine/rendering/renderpasses/TransparencyRenderpass.h"
-#include "engine/rendering/renderpasses/ResolverRenderpass.h"
 
 static constexpr float fullScreenQuadCCW[] = {
     // Position   // UV-Coords
@@ -38,15 +38,23 @@ static constexpr float fullScreenQuadCW[] = {
     1.0f,  1.0f,  1.0f, 1.0f   // Top-Right
 };
 
-void Renderer::initialize() {
+void Renderer::init() {
+    if (glewInit() != GLEW_OK) {
+        throw std::runtime_error("Error initializing glew!");
+    }
+
+    // Graphic api details
+    std::ostringstream detailsBuf;
+    detailsBuf << "Open GL Version: " << glGetString(GL_VERSION) << "\n";
+    detailsBuf << "GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
+    detailsBuf << "Graphics: " << glGetString(GL_RENDERER) << "[" << glGetString(GL_VENDOR) << "]" << "\n";
+
     // GLEnableDebugging();
 
     GLCALL(glEnable(GL_DEPTH_TEST));
     GLCALL(glEnable(GL_CULL_FACE));    // Enable face culling
     GLCALL(glCullFace(GL_BACK));       // Specify that back faces should be culled (not rendered)
     GLCALL(glFrontFace(GL_CW));        // Specify frontfaces as faces with clockwise winding
-    GLCALL(glEnable(GL_MULTISAMPLE));  // Enable MSAA
-    GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));  // Blending
     GLCALL(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
 
     std::unique_ptr<TransformFeedbackpass> transformFeebackpass = std::make_unique<TransformFeedbackpass>();

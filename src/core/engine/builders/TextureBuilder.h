@@ -3,7 +3,7 @@
 
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/resource/cpu/CPUTexture.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 Future<Texture> build(const Future<CPUTexture>& cpuTexture);
 

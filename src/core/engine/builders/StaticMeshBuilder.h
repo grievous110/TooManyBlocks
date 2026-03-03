@@ -4,7 +4,7 @@
 #include "engine/rendering/StaticMesh.h"
 #include "engine/rendering/Vertices.h"
 #include "engine/resource/cpu/CPURenderData.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 Future<StaticMesh::Internal> build(const Future<CPURenderData<Vertex>>& cpuMesh);
 

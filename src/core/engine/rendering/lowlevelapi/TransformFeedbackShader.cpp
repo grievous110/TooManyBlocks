@@ -3,7 +3,7 @@
 #include <GL/glew.h>
 
 #include "engine/rendering/GLUtils.h"
-#include "util/Utility.h"
+#include "foundation/util/Utility.h"
 
 TransformFeedbackShader::TransformFeedbackShader(
     const std::unordered_map<unsigned int, std::string>& shaderTypeAndSource,

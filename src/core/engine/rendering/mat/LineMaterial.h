@@ -5,7 +5,7 @@
 
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/mat/Material.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 class LineMaterial : public Material {
 private:

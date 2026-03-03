@@ -194,8 +194,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
                         }
 
                         // Parse UV
-                        const Json::JsonValue& uvAccessor = jsonChunkObj["accessors"]
-                                                                        [attributes["TEXCOORD_0"].toInt()];
+                        const Json::JsonValue& uvAccessor = jsonChunkObj["accessors"][attributes["TEXCOORD_0"].toInt()];
                         compType = static_cast<unsigned int>(uvAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("TEXCOORD_0 is not of component type float");
@@ -219,8 +218,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
                         }
 
                         // Parse Normal
-                        const Json::JsonValue& normalAccessor = jsonChunkObj["accessors"]
-                                                                            [attributes["NORMAL"].toInt()];
+                        const Json::JsonValue& normalAccessor = jsonChunkObj["accessors"][attributes["NORMAL"].toInt()];
                         compType = static_cast<unsigned int>(normalAccessor["componentType"].toInt());
                         if (compType != GL_FLOAT) {
                             throw std::runtime_error("NORMAL is not of component type float");
@@ -542,7 +540,7 @@ CPUSkeletalMeshData loadSkeletalMeshFromGlbFile(const std::string& glbFilePath, 
         }
     }
 
-    skData.meshData.bounds = BoundingBox::notCullable(); // TODO: Remove, this is just for testing
+    skData.meshData.bounds = BoundingBox::notCullable();  // TODO: Remove, this is just for testing
 
     return skData;
 }

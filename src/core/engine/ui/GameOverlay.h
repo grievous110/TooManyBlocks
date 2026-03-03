@@ -5,7 +5,7 @@
 #include "engine/ui/StatScreen.h"
 
 namespace UI {
-    class GameOverlay : public Window {
+    class GameOverlay : public Widget {
     private:
         StatScreen m_statScreen;
 
@@ -16,7 +16,7 @@ namespace UI {
         GameOverlay() : m_showMouse(false), m_showStats(false) {}
         virtual ~GameOverlay() = default;
 
-        void render(ApplicationContext& context) override;
+        void render() override;
     };
 }  // namespace UI
 

@@ -4,7 +4,7 @@
 #include "engine/rendering/lowlevelapi/Shader.h"
 #include "engine/rendering/lowlevelapi/TransformFeedbackShader.h"
 #include "engine/resource/cpu/CPUShader.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 Future<Shader> build(const Future<CPUShader>& cpuShader);
 

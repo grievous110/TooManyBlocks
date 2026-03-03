@@ -10,7 +10,7 @@
 
 #include "Logger.h"
 #include "engine/rendering/GLUtils.h"
-#include "util/Utility.h"
+#include "foundation/util/Utility.h"
 
 thread_local unsigned int Shader::currentlyUsedShader = 0;
 
