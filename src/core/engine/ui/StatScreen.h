@@ -5,7 +5,7 @@
 #include "engine/rendering/renderpasses/DebugReport.h"
 
 namespace UI {
-    class StatScreen : public Window {
+    class StatScreen : public Widget {
     private:
         float m_renderDebugReportAccumulator;
         DebugReport m_report;
@@ -14,7 +14,7 @@ namespace UI {
         StatScreen() : m_renderDebugReportAccumulator(0) {};
         virtual ~StatScreen() = default;
 
-        void render(ApplicationContext& context) override;
+        void render() override;
     };
 }  // namespace UI
 

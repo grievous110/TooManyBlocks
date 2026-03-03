@@ -1,6 +1,5 @@
 #include "PauseMenu.h"
 
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 
 #include "Application.h"
@@ -9,7 +8,9 @@
 #include "engine/ui/fonts/FontUtil.h"
 
 namespace UI {
-    void UI::PauseMenu::render(ApplicationContext& context) {
+    void UI::PauseMenu::render() {
+        ApplicationContext* context = Application::getContext();
+
         ImGuiIO& io = ImGui::GetIO();
 
         if (!ImGui::IsKeyDown(ImGuiKey_Escape)) {
@@ -27,21 +28,21 @@ namespace UI {
         ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
         ImGui::Begin("Pause Menu", nullptr, window_flags);
         {
-            ScopedFont font(context.fontPool->getFont(30));
+            ScopedFont font(context->fontPool->getFont(30));
             ImGui::Text("Game Paused");
             ImGui::Separator();
             if (ImGui::Button("Resume", ImVec2(-1, 0)) ||
                 (ImGui::IsKeyPressed(ImGuiKey_Escape) && m_escWasReleased)) {  // -1 makes it fill width
-                context.io->keyAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
-                context.io->mouseAdapter().attach(static_cast<PlayerController*>(context.instance->m_playerController));
-                glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                context.instance->gameState.gamePaused = false;
-                navigateToWindow(context, "GameOverlay");
+                context->inputManager->keyAdapter()->attach(static_cast<PlayerController*>(context->instance->m_playerController));
+                context->inputManager->mouseAdapter()->attach(static_cast<PlayerController*>(context->instance->m_playerController));
+                context->windowManager->setCursorMode(CursorMode::HiddenAndCaptured);
+                context->instance->gameState.gamePaused = false;
+                navigateToWidget("GameOverlay");
             }
             if (ImGui::Button("Exit", ImVec2(-1, 0))) {
-                context.instance->gameState.gamePaused = false;
-                context.instance->deinitWorld();
-                navigateToWindow(context, "MainMenu");
+                context->instance->gameState.gamePaused = false;
+                context->instance->deinitWorld();
+                navigateToWidget("MainMenu");
             }
         }
         ImGui::End();

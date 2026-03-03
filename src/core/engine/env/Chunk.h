@@ -7,7 +7,7 @@
 
 #include "datatypes/DatatypeDefs.h"
 #include "engine/rendering/StaticMesh.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 constexpr int CHUNK_SIZE = 32;
 constexpr int CHUNK_WIDTH = CHUNK_SIZE;

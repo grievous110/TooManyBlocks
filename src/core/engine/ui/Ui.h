@@ -4,47 +4,41 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <vector>
 
+#include "engine/ui/Manager.h"
 #include "engine/ui/UiDialog.h"
 #include "engine/ui/UiUtil.h"
-
-struct ApplicationContext;
+#include "engine/ui/Widget.h"
 
 namespace UI {
-    class Window;
-    using WindowFactory = std::unordered_map<std::string, std::function<Window*()>>;
-
-    WindowFactory& getWindowFactory();
+    extern Manager* _manager;
 
     template <typename T>
-    void registerWindow(const std::string& windowName) {
-        // Register creator function in singelton factory
-        getWindowFactory()[windowName] = []() { return new T; };
+    void init() {
+        _manager = new T;
+        _manager->init();
     }
 
-    std::vector<std::string> listRegisteredWindows();
+    inline void shutdown() {
+        if (_manager) {
+            _manager->shutdown();
+            delete _manager;
+            _manager = nullptr;
+        }
+    }
 
-    bool navigateToWindow(ApplicationContext& context, const std::string& windowName);
+    inline void render() { _manager->renderFrame(); }
 
-    class Window {
-    private:
-        std::string m_errorString;
+    template <typename T>
+    void registerWidget(const std::string& widgetName) {
+        static_assert(std::is_base_of<Widget, T>::value, "T must derive from Widget");
+        _manager->registerWidget(widgetName, []() { return new T; });
+    }
 
-    public:
-        virtual ~Window() = default;
-
-        virtual void render(ApplicationContext& context) = 0;
-
-        inline void setError(const std::string& error) { m_errorString = error; }
-
-        inline const char* getError() const { return m_errorString.c_str(); }
-
-        inline bool hasError() const { return !m_errorString.empty(); }
-
-        inline void clearError() { m_errorString.clear(); }
-    };
+    inline bool navigateToWidget(const std::string& widgetName) { return _manager->navigateToWidget(widgetName); }
 }  // namespace UI
 
 #endif

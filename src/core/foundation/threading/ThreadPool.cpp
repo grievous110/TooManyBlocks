@@ -1,7 +1,5 @@
 #include "ThreadPool.h"
 
-#include <GLFW/glfw3.h>
-
 #define MAX_MAINTHREAD_TASKS_PER_CALL 1024
 
 void ThreadPool::loop(unsigned int workerIndex) {

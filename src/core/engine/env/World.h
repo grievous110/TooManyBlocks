@@ -13,7 +13,7 @@
 #include "engine/rendering/Vertices.h"
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/resource/cpu/CPURenderData.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 class World {
 private:

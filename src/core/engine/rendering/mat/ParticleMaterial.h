@@ -5,7 +5,7 @@
 #include "engine/rendering/lowlevelapi/TransformFeedbackShader.h"
 #include "engine/rendering/lowlevelapi/Texture.h"
 #include "engine/rendering/mat/Material.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 class ParticleMaterial : public Material {
 private:

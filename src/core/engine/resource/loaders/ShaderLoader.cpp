@@ -1,6 +1,6 @@
 #include "ShaderLoader.h"
 
-#include "util/Utility.h"
+#include "foundation/util/Utility.h"
 
 CPUShader loadShaderFromFile(const std::string& shaderPath, ShaderLoadOption option) {
     CPUShader shader;

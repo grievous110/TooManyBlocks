@@ -1,5 +1,7 @@
 # ========================== GLFW ==========================
 # GLFW has its own CMake file that exposes "glfw" as a static library
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "Disable doc generation" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "Disable installation target" FORCE)
 add_subdirectory(glfw)
 
 # ========================== GLEW ==========================

@@ -2,21 +2,21 @@
 #define TOOMANYBLOCKS_APPLICATION_H
 
 #include <stddef.h>
-#include "datatypes/KeyMouseIO.h"
-#include "util/SystemMetrics.h"
+#include "platform/input/InputManager.h"
+#include "platform/window/WindowManager.h"
+#include "foundation/util/SystemMetrics.h"
 
-struct GLFWwindow;
+#ifndef APP_NAME
+#define APP_NAME "Unspecified"
+#endif
+
 class CPUAssetProvider;
 class Application;
 class Renderer;
 class AudioEngine;
 class GameInstance;
 class FontPool;
-class AppIO;
 class ThreadPool;
-namespace UI {
-    class Window;
-};
 
 struct ApplicationContext {
     struct AppState {
@@ -38,49 +38,33 @@ struct ApplicationContext {
     } stats;
 
     ThreadPool* workerPool;
-    GLFWwindow* window;
     CPUAssetProvider* provider;
     Renderer* renderer;
     AudioEngine* audioEngine;
     GameInstance* instance;
-    UI::Window* currentWindow;
-    UI::Window* nextWindow;
     FontPool* fontPool;
-    AppIO* io;
-};
-
-class AppIO {
-private:
-    KeyObservable m_keyObs;
-    MouseObservable m_mouseObs;
-
-    AppIO() = default;
-    virtual ~AppIO() = default;
-
-    friend Application;
-
-public:
-    inline KeyObservable& keyAdapter() { return m_keyObs; };
-    inline MouseObservable& mouseAdapter() { return m_mouseObs; };
+    WindowManager* windowManager;
+    InputManager* inputManager;
 };
 
 class Application {
 private:
+    void updateStats(float deltaTime);
+    
+    void createContext();
+    void deleteContext();
+
+protected:
     static ApplicationContext* currentContext;
 
-    void init();
-
-    void updateStats(float deltaTime);
-
-    void shutdown();
+    virtual void init();
+    virtual void execute();
+    virtual void shutdown();
 
 public:
-    static void setCurrentContext(ApplicationContext* context);
-    static ApplicationContext* createContext();
-    static void deleteCurrentContext();
     static ApplicationContext* getContext();
 
-    virtual void run();
+    void run();
 };
 
 #endif

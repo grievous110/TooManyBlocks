@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "datatypes/DatatypeDefs.h"
-#include "util/BitOperations.h"
+#include "foundation/util/BitOperations.h"
 
 #define POSITION_BITMASK              0x3F
 #define X_POSITION_OFFSET             26

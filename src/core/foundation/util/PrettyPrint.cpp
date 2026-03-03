@@ -52,8 +52,8 @@ static void formatUnitImpl(
     const UnitDef* units,
     size_t unitCount,
     size_t startUnit,
-    int precision)
-{
+    int precision
+) {
     size_t unit = startUnit;
 
     // Scale upward

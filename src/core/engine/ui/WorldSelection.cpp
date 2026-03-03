@@ -1,6 +1,5 @@
 #include "WorldSelection.h"
 
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 
 #include <algorithm>
@@ -15,8 +14,7 @@
 #include "engine/GameInstance.h"
 #include "engine/env/World.h"
 #include "engine/ui/fonts/FontUtil.h"
-#include "threading/ThreadPool.h"
-#include "util/Utility.h"
+#include "foundation/util/Utility.h"
 
 namespace fs = std::filesystem;
 
@@ -92,12 +90,13 @@ namespace UI {
         }
     }
 
-    void WorldSelection::render(ApplicationContext& context) {
+    void WorldSelection::render() {
+        ApplicationContext* context = Application::getContext();
+        
         if (m_worldInfos.isEmpty()) {
             loadWorldInfo();
         }
         if (m_worldInfos.hasError()) {
-            lgr::lout.debug("TEST");
             try {
                 std::rethrow_exception(m_worldInfos.getException());
             } catch (const std::exception& e) {
@@ -118,14 +117,14 @@ namespace UI {
         ImVec2 oldSpacing = style.ItemSpacing;
         style.ItemSpacing = ImVec2(25.0f, 20.0f);
         {
-            ScopedFont font(context.fontPool->getFont(35));
+            ScopedFont font(context->fontPool->getFont(35));
             ImVec2 titleSize = ImGui::CalcTextSize("World Selection");
 
             ImGui::SetCursorPosX((io.DisplaySize.x - titleSize.x) * 0.5f);  // Center horizontally
             ImGui::Text("World Selection");
         }
         {
-            ScopedFont font(context.fontPool->getFont(25));
+            ScopedFont font(context->fontPool->getFont(25));
             ImVec2 available = ImGui::GetContentRegionAvail();
             ImVec2 childSize = ImVec2(available.x * 0.8f, available.y * 0.6f);  // Adjust child siz
             ImGui::SetCursorPosX((available.x - childSize.x) * 0.5f);
@@ -141,7 +140,7 @@ namespace UI {
                     for (Json::JsonValue& worldInfo : infos) {
                         std::string label = worldInfo["worldName"].toString() + "\n";
                         label += "Seed: " + worldInfo["seed"].toString() + "\n";
-
+                        
                         bool isSelected = m_selectedWorld == &worldInfo;
                         float buttonHeight = 70.0f;
                         if (ImGui::Button(label.c_str(), ImVec2(400.0f, buttonHeight))) {
@@ -181,12 +180,12 @@ namespace UI {
                 try {
                     fs::path worldPath = getAppDataPath() / "saved" / (*m_selectedWorld)["worldName"].toString();
                     World* world = new World(worldPath);
-                    context.instance->initializeWorld(world);
+                    context->instance->initializeWorld(world);
                     // Capture and hide the mouse cursor
-                    glfwSetInputMode(context.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-                    navigateToWindow(context, "GameOverlay");
+                    context->windowManager->setCursorMode(CursorMode::HiddenAndCaptured);
+                    navigateToWidget("GameOverlay");
                 } catch (const std::exception& e) {
-                    context.instance->deinitWorld();
+                    context->instance->deinitWorld();
                     setError(e.what());
                     lgr::lout.error(e.what());
                 }
@@ -226,7 +225,7 @@ namespace UI {
             ImGui::SameLine();
 
             if (ImGui::Button("Back", ImVec2(350.0f, 45.0f))) {
-                navigateToWindow(context, "MainMenu");
+                navigateToWidget("MainMenu");
             }
 
             if (ImGui::BeginPopupModal(

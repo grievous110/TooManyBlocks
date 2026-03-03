@@ -8,7 +8,12 @@
 namespace lgr {
     class Logger {
     private:
-        enum LogLevel { DEBUG, INFO, WARNING, ERR };
+        enum LogLevel {
+            DEBUG,
+            INFO,
+            WARNING,
+            ERR
+        };
 
         bool m_consoleAvailable;
         std::ofstream m_logFile;

@@ -19,7 +19,7 @@ target_compile_definitions(TooManyBlocks PRIVATE APP_NAME="TooManyBlocks" GLEW_N
 target_compile_definitions(TooManyBlocks PRIVATE $<$<CONFIG:Debug>:DEBUG_MODE>)
 
 # Include directories
-target_include_directories(TooManyBlocks PRIVATE src/core src/core/log)
+target_include_directories(TooManyBlocks PRIVATE src/core src/core/foundation/log)
 
 # Load configuration of all librarys from dependency folder wich contains intermediate cmake file
 add_subdirectory(dependencies)

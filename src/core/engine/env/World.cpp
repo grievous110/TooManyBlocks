@@ -18,8 +18,8 @@
 #include "engine/rendering/mat/ChunkMaterial.h"
 #include "engine/resource/providers/CPUAssetProvider.h"
 #include "engine/worldgen/PerlinNoise.h"
-#include "threading/ThreadPool.h"
-#include "util/Utility.h"
+#include "foundation/threading/ThreadPool.h"
+#include "foundation/util/Utility.h"
 
 static void generateChunkBlocks(Block* blocks, const glm::ivec3& chunkPos, uint32_t seed) {
     PerlinNoise noiseGenerator(seed);

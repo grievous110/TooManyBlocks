@@ -103,7 +103,7 @@ private:
 public:
     Renderer() : m_currentRenderContext{}, m_renderResources{} {}
 
-    void initialize();
+    void init();
 
     void submitLight(Light* light);
 

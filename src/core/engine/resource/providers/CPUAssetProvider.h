@@ -12,8 +12,7 @@
 #include "engine/resource/cpu/CPUShader.h"
 #include "engine/resource/cpu/CPUSkeletalMeshData.h"
 #include "engine/resource/cpu/CPUTexture.h"
-#include "threading/Future.h"
-#include "threading/ThreadPool.h"
+#include "foundation/threading/Future.h"
 
 class CPUAssetProvider : public Updatable {
 private:

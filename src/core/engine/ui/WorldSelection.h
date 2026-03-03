@@ -6,10 +6,10 @@
 #include <string>
 
 #include "engine/ui/Ui.h"
-#include "threading/Future.h"
+#include "foundation/threading/Future.h"
 
 namespace UI {
-    class WorldSelection : public Window {
+    class WorldSelection : public Widget {
     private:
         Future<Json::JsonArray> m_worldInfos;
         Json::JsonValue* m_selectedWorld;
@@ -32,7 +32,7 @@ namespace UI {
 
         virtual ~WorldSelection() = default;
 
-        void render(ApplicationContext& context) override;
+        void render() override;
     };
 }  // namespace UI
 

@@ -4,9 +4,9 @@
 #include "engine/ui/Ui.h"
 
 namespace UI {
-    class MainMenu : public Window {
+    class MainMenu : public Widget {
     public:
-        void render(ApplicationContext& context) override;
+        void render() override;
     };
 }  // namespace UI
 

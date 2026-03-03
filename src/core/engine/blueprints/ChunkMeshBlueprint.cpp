@@ -17,7 +17,7 @@
 #include "engine/rendering/lowlevelapi/VertexArray.h"
 #include "engine/rendering/lowlevelapi/VertexBuffer.h"
 #include "engine/rendering/lowlevelapi/VertexBufferLayout.h"
-#include "util/BitOperations.h"
+#include "foundation/util/BitOperations.h"
 
 typedef unsigned int** BinaryPlaneArray;
 typedef unsigned int* BinaryPlane;

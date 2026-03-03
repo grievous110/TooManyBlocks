@@ -5,7 +5,6 @@
 #include "engine/resource/loaders/SkeletalMeshLoader.h"
 #include "engine/resource/loaders/StaticMeshLoader.h"
 #include "engine/resource/loaders/TextureLoader.h"
-#include "threading/ThreadPool.h"
 
 Future<CPUTexture> CPUAssetProvider::getTexture(const std::string& filePath) {
     return getAsset<CPUTexture>(m_textures, filePath, [filePath]() { return loadTextureFromFile(filePath); });
