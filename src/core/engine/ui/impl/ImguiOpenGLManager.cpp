@@ -23,6 +23,8 @@ void UI::ImguiOpenGLManager::init() {
     ImGui_ImplGlfw_InitForOpenGL(glfwGetCurrentContext(), true);
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGuiStyle& style = ImGui::GetStyle();
+    style.WindowBorderSize = 0.0f; // Weird 1px border otherwise
     ImGui::StyleColorsDark();
 }
 
