@@ -15,7 +15,6 @@ class Application;
 class Renderer;
 class AudioEngine;
 class GameInstance;
-class FontPool;
 class ThreadPool;
 
 struct ApplicationContext {
@@ -42,7 +41,6 @@ struct ApplicationContext {
     Renderer* renderer;
     AudioEngine* audioEngine;
     GameInstance* instance;
-    FontPool* fontPool;
     WindowManager* windowManager;
     InputManager* inputManager;
 };

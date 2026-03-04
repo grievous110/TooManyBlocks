@@ -29,7 +29,7 @@ void UI::StatScreen::render() {
     ImGui::SetNextWindowBgAlpha(0.5f);
     ImGui::Begin("Stat Screen", nullptr, window_flags);
     {
-        ScopedFont font(context->fontPool->getFont(18));
+        ScopedFont font(UI::manager().getFont(18));
 
         Transform& cameraTransform = context->instance->m_player->getCamera()->getLocalTransform();
         glm::vec3 camRotation = cameraTransform.getRotationEuler();

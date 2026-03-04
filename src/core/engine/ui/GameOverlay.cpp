@@ -23,7 +23,7 @@ void UI::GameOverlay::render() {
     UI::Util::MakeNextWindowFullscreen();
     ImGui::Begin("Game Overlay", nullptr, window_flags);
     {
-        ScopedFont font(context->fontPool->getFont(20));
+        ScopedFont font(UI::manager().getFont(20));
 
         if (m_showStats) {
             m_statScreen.render();

@@ -1,25 +1,36 @@
 #ifndef TOOMANYBLOCKS_MANAGER_H
 #define TOOMANYBLOCKS_MANAGER_H
 
-#include <string>
 #include <functional>
+#include <string>
 
 #include "engine/ui/Widget.h"
+#include "engine/ui/fonts/FontUtil.h"
 
 namespace UI {
     class Manager {
+        std::unordered_map<std::string, std::function<Widget*()>> m_widgetFactory;
+
+        FontPool m_fontPool;
+
+        Widget* m_currentWidget;
+        Widget* m_nextWidget;
+
     public:
-        virtual ~Manager() = default;
+        Manager();
+        ~Manager();
 
-        virtual void init() = 0;
+        void init();
 
-        virtual void shutdown() = 0;
+        void shutdown();
 
-        virtual void renderFrame() = 0;
+        void renderFrame();
 
-        virtual void registerWidget(const std::string& widgetName, std::function<Widget*()> createFn) = 0;
+        void registerWidget(const std::string& widgetName, std::function<Widget*()> createFn);
 
-        virtual bool navigateToWidget(const std::string& widgetName) = 0;
+        bool navigateToWidget(const std::string& widgetName);
+
+        FontData getFont(float requestedSize);
     };
 }  // namespace UI
 

@@ -3,7 +3,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include <sstream>
 #include <stdexcept>
 
 #include "AppConstants.h"
@@ -17,8 +16,6 @@
 #include "engine/ui/PauseMenu.h"
 #include "engine/ui/Ui.h"
 #include "engine/ui/WorldSelection.h"
-#include "engine/ui/fonts/FontUtil.h"
-#include "engine/ui/impl/ImguiOpenGLManager.h"
 #include "foundation/threading/Future.h"
 #include "foundation/threading/ThreadPool.h"
 #include "platform/audio/AudioEngine.h"
@@ -56,7 +53,6 @@ void Application::createContext() {
     context->renderer = new Renderer;
     context->audioEngine = new AudioEngine;
     context->instance = new GameInstance;
-    context->fontPool = new FontPool;
     context->windowManager = new GLFWWindowManager;
     context->inputManager = new GLFWInputManager;
 
@@ -70,7 +66,6 @@ void Application::deleteContext() {
         delete context->instance;
         delete context->audioEngine;
         delete context->workerPool;  // <- May clean up remaining opengl ressources here
-        delete context->fontPool;
         delete context->inputManager;
         delete context->windowManager;  // Keep last, destroys opengl context
 
@@ -100,9 +95,7 @@ void Application::init() {
 
     context->renderer->init();
 
-    UI::init<UI::ImguiOpenGLManager>();
-
-    context->fontPool->loadFontSizes(Res::Font::PROGGY_CLEAN, {16.0f, 32.0f, 48.0f, 64.0f});
+    UI::init();
 
     UI::registerWidget<UI::MainMenu>("MainMenu");
     UI::registerWidget<UI::GameOverlay>("GameOverlay");

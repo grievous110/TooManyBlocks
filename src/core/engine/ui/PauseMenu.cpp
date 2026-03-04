@@ -28,7 +28,7 @@ namespace UI {
         ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
         ImGui::Begin("Pause Menu", nullptr, window_flags);
         {
-            ScopedFont font(context->fontPool->getFont(30));
+            ScopedFont font(UI::manager().getFont(30));
             ImGui::Text("Game Paused");
             ImGui::Separator();
             if (ImGui::Button("Resume", ImVec2(-1, 0)) ||

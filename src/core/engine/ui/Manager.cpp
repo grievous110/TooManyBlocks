@@ -1,13 +1,15 @@
-#include "ImguiOpenGLManager.h"
+#include "Manager.h"
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-UI::ImguiOpenGLManager::ImguiOpenGLManager() : m_currentWidget(nullptr), m_nextWidget(nullptr) {}
+#include "AppConstants.h"
 
-UI::ImguiOpenGLManager::~ImguiOpenGLManager() {
+UI::Manager::Manager() : m_currentWidget(nullptr), m_nextWidget(nullptr) {}
+
+UI::Manager::~Manager() {
     if (m_currentWidget) {
         delete m_currentWidget;
     }
@@ -16,7 +18,7 @@ UI::ImguiOpenGLManager::~ImguiOpenGLManager() {
     }
 }
 
-void UI::ImguiOpenGLManager::init() {
+void UI::Manager::init() {
     // ImGui setup
     ImGui::CreateContext();
     ImGui_ImplOpenGL3_Init();
@@ -24,17 +26,20 @@ void UI::ImguiOpenGLManager::init() {
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     ImGuiStyle& style = ImGui::GetStyle();
-    style.WindowBorderSize = 0.0f; // Weird 1px border otherwise
+    style.WindowBorderSize = 0.0f;  // Weird 1px border otherwise
     ImGui::StyleColorsDark();
+
+    // Load font with sizes used for interpolation
+    m_fontPool.loadFontSizes(Res::Font::PROGGY_CLEAN, {16.0f, 32.0f, 48.0f, 64.0f});
 }
 
-void UI::ImguiOpenGLManager::shutdown() {
+void UI::Manager::shutdown() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 
-void UI::ImguiOpenGLManager::renderFrame() {
+void UI::Manager::renderFrame() {
     if (m_nextWidget) {
         // Navigate safely to new window
         if (m_currentWidget) {
@@ -56,11 +61,11 @@ void UI::ImguiOpenGLManager::renderFrame() {
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
-void UI::ImguiOpenGLManager::registerWidget(const std::string& widgetName, std::function<Widget*()> createFn) {
+void UI::Manager::registerWidget(const std::string& widgetName, std::function<Widget*()> createFn) {
     m_widgetFactory.emplace(widgetName, createFn);
 }
 
-bool UI::ImguiOpenGLManager::navigateToWidget(const std::string& widgetName) {
+bool UI::Manager::navigateToWidget(const std::string& widgetName) {
     auto it = m_widgetFactory.find(widgetName);
     if (it != m_widgetFactory.end()) {
         // Set create as next window
@@ -71,3 +76,5 @@ bool UI::ImguiOpenGLManager::navigateToWidget(const std::string& widgetName) {
     }
     return false;
 }
+
+FontData UI::Manager::getFont(float requestedSize) { return m_fontPool.getFont(requestedSize); }
