@@ -42,7 +42,7 @@ namespace UI {
         UI::Util::MakeNextWindowFullscreen();
         ImGui::Begin("About", NULL, window_flags);
         {
-            ScopedFont font(context->fontPool->getFont(25));
+            ScopedFont font(UI::manager().getFont(25));
             char aboutTxt[32];
             std::sprintf(aboutTxt, "About %s", APP_NAME);
             ImVec2 titleSize = ImGui::CalcTextSize(aboutTxt);
@@ -65,7 +65,7 @@ namespace UI {
                     if (!m_content.isReady()) {
                         ImGui::Text("Loading...");
                     } else {
-                        ScopedFont contentFont(context->fontPool->getFont(20));
+                        ScopedFont contentFont(UI::manager().getFont(20));
                         ImGui::TextUnformatted(m_content.value().c_str());
                     }
                 }

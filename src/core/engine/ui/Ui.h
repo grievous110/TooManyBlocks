@@ -16,11 +16,12 @@
 namespace UI {
     extern Manager* _manager;
 
-    template <typename T>
-    void init() {
-        _manager = new T;
+    inline void init() {
+        _manager = new Manager;
         _manager->init();
     }
+
+    inline Manager& manager() { return *_manager; }
 
     inline void shutdown() {
         if (_manager) {

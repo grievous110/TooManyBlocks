@@ -117,14 +117,14 @@ namespace UI {
         ImVec2 oldSpacing = style.ItemSpacing;
         style.ItemSpacing = ImVec2(25.0f, 20.0f);
         {
-            ScopedFont font(context->fontPool->getFont(35));
+            ScopedFont font(UI::manager().getFont(35));
             ImVec2 titleSize = ImGui::CalcTextSize("World Selection");
 
             ImGui::SetCursorPosX((io.DisplaySize.x - titleSize.x) * 0.5f);  // Center horizontally
             ImGui::Text("World Selection");
         }
         {
-            ScopedFont font(context->fontPool->getFont(25));
+            ScopedFont font(UI::manager().getFont(25));
             ImVec2 available = ImGui::GetContentRegionAvail();
             ImVec2 childSize = ImVec2(available.x * 0.8f, available.y * 0.6f);  // Adjust child siz
             ImGui::SetCursorPosX((available.x - childSize.x) * 0.5f);

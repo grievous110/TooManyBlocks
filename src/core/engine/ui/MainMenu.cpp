@@ -19,7 +19,7 @@ namespace UI {
         UI::Util::MakeNextWindowFullscreen();
         ImGui::Begin("Main Menu", NULL, window_flags);
         {
-            ScopedFont font(context->fontPool->getFont(55));
+            ScopedFont font(UI::manager().getFont(55));
 
             float buttonWidth = 400.0f;
             float buttonHeight = 75.0f;

@@ -1,10 +1,10 @@
 #ifndef TOOMANYBLOCKS_FONTUTIL_H
 #define TOOMANYBLOCKS_FONTUTIL_H
 
-#include <imgui.h>
-
 #include <string>
 #include <vector>
+
+struct ImFont;
 
 struct FontData {
     ImFont* fontPtr;
