@@ -11,8 +11,8 @@
 #include "engine/entity/Entity.h"
 #include "engine/rendering/Renderer.h"
 #include "engine/ui/UiUtil.h"
-#include "engine/ui/fonts/FontUtil.h"
 #include "foundation/util/PrettyPrint.h"
+#include "foundation/time/Timer.h"
 
 void UI::StatScreen::render() {
     ApplicationContext* context = Application::getContext();
@@ -57,7 +57,7 @@ void UI::StatScreen::render() {
             context->stats.processIo.writeCalls
         );
 
-        m_renderDebugReportAccumulator += context->stats.deltaAppTime;
+        m_renderDebugReportAccumulator += context->timer->deltaSeconds();
         if (m_renderDebugReportAccumulator > 0.1f) {
             m_renderDebugReportAccumulator = 0.0f;
             m_report.clear();

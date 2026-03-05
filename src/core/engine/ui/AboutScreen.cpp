@@ -6,7 +6,6 @@
 
 #include "Application.h"
 #include "Logger.h"
-#include "engine/ui/fonts/FontUtil.h"
 #include "foundation/util/Utility.h"
 
 namespace UI {

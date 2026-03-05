@@ -6,7 +6,6 @@
 #include "engine/GameInstance.h"
 #include "engine/controllers/PlayerController.h"
 #include "engine/entity/Entity.h"
-#include "engine/ui/fonts/FontUtil.h"
 
 void UI::GameOverlay::render() {
     ApplicationContext* context = Application::getContext();
