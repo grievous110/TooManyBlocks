@@ -101,8 +101,6 @@ void Renderer::submitRenderable(Renderable* obj) {
 }
 
 void Renderer::render(const ApplicationContext& context) {
-    auto totalTimerStart = std::chrono::high_resolution_clock::now();
-
     // Update render context
     glm::uvec2 newScreenRes = glm::uvec2(context.state.screenWidth, context.state.screenHeight);
     m_currentRenderContext.screenResChanged = newScreenRes != m_currentRenderContext.currScreenRes;

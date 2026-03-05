@@ -2,20 +2,14 @@
 #define TOOMANYBLOCKS_APPLICATION_H
 
 #include <stddef.h>
+
+#include "foundation/util/SystemMetrics.h"
 #include "platform/input/InputManager.h"
 #include "platform/window/WindowManager.h"
-#include "foundation/util/SystemMetrics.h"
 
 #ifndef APP_NAME
 #define APP_NAME "Unspecified"
 #endif
-
-class CPUAssetProvider;
-class Application;
-class Renderer;
-class AudioEngine;
-class GameInstance;
-class ThreadPool;
 
 struct ApplicationContext {
     struct AppState {
@@ -26,9 +20,6 @@ struct ApplicationContext {
     } state;
 
     struct Stats {
-        float deltaAppTime;
-        float elapsedAppTime;
-
         float cpuUsage;
         uint64_t processUsedBytes;
         MemoryInfo memInfo;
@@ -36,19 +27,20 @@ struct ApplicationContext {
         CpuTimes cpuTimes;
     } stats;
 
-    ThreadPool* workerPool;
-    CPUAssetProvider* provider;
-    Renderer* renderer;
-    AudioEngine* audioEngine;
-    GameInstance* instance;
-    WindowManager* windowManager;
-    InputManager* inputManager;
+    class Timer* timer;
+    class ThreadPool* workerPool;
+    class CPUAssetProvider* provider;
+    class Renderer* renderer;
+    class AudioEngine* audioEngine;
+    class GameInstance* instance;
+    class WindowManager* windowManager;
+    class InputManager* inputManager;
 };
 
 class Application {
 private:
     void updateStats(float deltaTime);
-    
+
     void createContext();
     void deleteContext();
 

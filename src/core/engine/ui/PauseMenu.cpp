@@ -5,7 +5,6 @@
 #include "Application.h"
 #include "engine/GameInstance.h"
 #include "engine/controllers/PlayerController.h"
-#include "engine/ui/fonts/FontUtil.h"
 
 namespace UI {
     void UI::PauseMenu::render() {

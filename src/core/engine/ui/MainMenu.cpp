@@ -4,7 +4,6 @@
 
 #include "Application.h"
 #include "engine/GameInstance.h"
-#include "engine/ui/fonts/FontUtil.h"
 
 namespace UI {
     void MainMenu::render() {

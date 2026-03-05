@@ -18,6 +18,7 @@
 #include "engine/ui/WorldSelection.h"
 #include "foundation/threading/Future.h"
 #include "foundation/threading/ThreadPool.h"
+#include "foundation/time/Timer.h"
 #include "platform/audio/AudioEngine.h"
 #include "platform/input/impl/GLFWInputManager.h"
 #include "platform/window/impl/GLFWWindowManager.h"
@@ -48,6 +49,7 @@ void Application::createContext() {
 
     ApplicationContext* context = new ApplicationContext{};
 
+    context->timer = new Timer;
     context->workerPool = new ThreadPool(WORKER_COUNT);
     context->provider = new CPUAssetProvider;
     context->renderer = new Renderer;
@@ -61,6 +63,7 @@ void Application::createContext() {
 
 void Application::deleteContext() {
     if (ApplicationContext* context = Application::currentContext) {
+        delete context->timer;
         delete context->provider;
         delete context->renderer;
         delete context->instance;
@@ -109,15 +112,12 @@ void Application::execute() {
     ApplicationContext* context = Application::getContext();
     // Loop until the user closes the window
     try {
-        float previousTime = static_cast<float>(glfwGetTime());
-        float statUpdateAccumulator = previousTime;
+        float statUpdateAccumulator = 0.0f;
 
         while (!context->windowManager->shouldWindowClose() && !context->instance->gameState.quitGame) {
-            context->stats.elapsedAppTime = static_cast<float>(glfwGetTime());
-            context->stats.deltaAppTime = context->stats.elapsedAppTime - previousTime;
-            previousTime = context->stats.elapsedAppTime;
-            statUpdateAccumulator += context->stats.deltaAppTime;
+            context->timer->tick();
 
+            statUpdateAccumulator += context->timer->deltaSeconds();
             if (statUpdateAccumulator >= 1.0f) {
                 updateStats(statUpdateAccumulator);
                 statUpdateAccumulator = 0.0f;
@@ -125,7 +125,7 @@ void Application::execute() {
 
             if (context->instance->isWorldInitialized()) {
                 if (!context->instance->gameState.gamePaused) {
-                    context->instance->update(context->stats.deltaAppTime);
+                    context->instance->update(context->timer->deltaSeconds());
                 } else {
                     context->instance->gameState.deltaTime = 0.0f;
                 }
@@ -133,10 +133,10 @@ void Application::execute() {
                 context->renderer->render(*context);
             }
 
-            context->audioEngine->update(context->stats.deltaAppTime);
+            context->audioEngine->update(context->timer->deltaSeconds());
             context->workerPool->processMainThreadJobs();
             context->workerPool->cleanupFinishedJobs();
-            
+
             UI::render();
 
             // Swap front and back buffers

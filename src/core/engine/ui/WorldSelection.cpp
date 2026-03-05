@@ -13,7 +13,6 @@
 #include "Logger.h"
 #include "engine/GameInstance.h"
 #include "engine/env/World.h"
-#include "engine/ui/fonts/FontUtil.h"
 #include "foundation/util/Utility.h"
 
 namespace fs = std::filesystem;
