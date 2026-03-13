@@ -1,5 +1,6 @@
 #include "ParticleModules.h"
 
+#include <string>
 #include <stdexcept>
 
 static constexpr size_t MAX_KEYFRAMES = 4;
