@@ -15,7 +15,7 @@
 	url = https://github.com/nothings/stb.git
 [submodule "dependencies/JsonParser"]
 	path = dependencies/JsonParser
-	url = https://github.com/grievous110/JsonParser.git
+	url = https://github.com/GrivianDev/JsonParser.git
 [submodule "dependencies/miniaudio"]
 	path = dependencies/miniaudio
 	url = https://github.com/mackron/miniaudio.git
